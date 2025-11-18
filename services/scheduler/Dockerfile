@@ -3,47 +3,70 @@
 # Stage 1: Build stage
 FROM node:20-alpine AS builder
 
+# Install pnpm
+RUN npm install -g pnpm
+
 # Set working directory
 WORKDIR /app
 
-# Copy package files
-COPY package*.json ./
-COPY tsconfig.json ./
+# Copy workspace and package files
+COPY pnpm-workspace.yaml ./
+COPY package.json pnpm-lock.yaml ./
 
-# Install dependencies (including dev dependencies for build)
-RUN npm ci
+# Copy core package
+COPY packages/core/package.json ./packages/core/
+COPY packages/core/tsconfig.json ./packages/core/
+COPY packages/core/src ./packages/core/src
 
-# Copy source files
-COPY src ./src
+# Copy scheduler package
+COPY services/scheduler/package.json ./services/scheduler/
+COPY services/scheduler/tsconfig.json ./services/scheduler/
+COPY services/scheduler/src ./services/scheduler/src
 
-# Build TypeScript
-RUN npm run build
+# Install dependencies for both packages
+RUN pnpm install --frozen-lockfile
+
+# Build TypeScript (from scheduler directory)
+WORKDIR /app/services/scheduler
+RUN pnpm run build
 
 # Stage 2: Production stage
 FROM node:20-alpine
 
+# Install pnpm and dumb-init
+RUN npm install -g pnpm && \
+    apk add --no-cache dumb-init
+
 # Set working directory
 WORKDIR /app
 
-# Install dumb-init to handle signals properly
-RUN apk add --no-cache dumb-init
+# Copy workspace and package files
+COPY pnpm-workspace.yaml ./
+COPY package.json pnpm-lock.yaml ./
 
-# Copy package files
-COPY package*.json ./
+# Copy core package (only package.json for dependency resolution)
+COPY packages/core/package.json ./packages/core/
+
+# Copy scheduler package files
+COPY services/scheduler/package.json ./services/scheduler/
 
 # Install only production dependencies
-RUN npm ci --only=production && \
-    npm cache clean --force
+RUN pnpm install --frozen-lockfile --prod && \
+    pnpm store prune
 
 # Copy built JavaScript from builder stage
-COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/services/scheduler/dist ./services/scheduler/dist
+COPY --from=builder /app/packages/core/src ./packages/core/src
+
+# Set working directory to scheduler
+WORKDIR /app/services/scheduler
 
 # Create a non-root user
 RUN addgroup -g 1001 -S nodejs && \
     adduser -S nodejs -u 1001
 
 # Change ownership of the app directory
-RUN chown -R nodejs:nodejs /app
+RUN chown -R nodejs:nodejs /app /app/services/scheduler /app/packages/core
 
 # Switch to non-root user
 USER nodejs
