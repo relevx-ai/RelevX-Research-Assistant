@@ -133,10 +133,7 @@ export function normalizeUrl(url: string): string {
 /**
  * Build query string with site filters
  */
-function buildQueryWithFilters(
-  query: string,
-  filters?: SearchFilters
-): string {
+function buildQueryWithFilters(query: string, filters?: SearchFilters): string {
   let modifiedQuery = query;
 
   // Add site: operators for included domains
@@ -237,7 +234,7 @@ export async function searchWeb(
       );
     }
 
-    const data = await response.json();
+    const data: any = await response.json();
 
     // Extract web results
     const webResults = data.web?.results || [];
@@ -344,4 +341,3 @@ export function deduplicateResults(
 
   return uniqueResults;
 }
-
