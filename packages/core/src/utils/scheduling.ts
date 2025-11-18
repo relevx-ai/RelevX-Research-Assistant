@@ -5,6 +5,8 @@
  * for user-specified delivery times and frequencies.
  */
 
+import { add, set, isAfter } from "date-fns";
+import { toZonedTime, fromZonedTime } from "date-fns-tz";
 import type { Frequency } from "../models/project";
 
 /**
@@ -64,41 +66,33 @@ export function calculateNextRunAt(
   // Parse delivery time
   const [hours, minutes] = deliveryTime.split(":").map(Number);
 
-  // Get current time in the user's timezone
-  const nowInUserTz = convertToTimezone(new Date(), timezone);
+  // Get current time in UTC
+  const now = new Date();
 
-  // Create a date object for today at the delivery time in user's timezone
-  let nextRun = new Date(nowInUserTz);
-  nextRun.setHours(hours, minutes, 0, 0);
+  // Convert to user's timezone
+  const nowInUserTz = toZonedTime(now, timezone);
+
+  // Set the delivery time for today in user's timezone
+  let nextRunInUserTz = set(nowInUserTz, {
+    hours,
+    minutes,
+    seconds: 0,
+    milliseconds: 0,
+  });
 
   // If we've already passed the delivery time today, move to the next period
-  if (nextRun.getTime() <= Date.now()) {
-    nextRun = addFrequencyPeriod(nextRun, frequency);
+  if (!isAfter(nextRunInUserTz, nowInUserTz)) {
+    nextRunInUserTz = addFrequencyPeriod(nextRunInUserTz, frequency);
   }
 
-  // Apply frequency rules
-  switch (frequency) {
-    case "daily":
-      // Already handled above - next occurrence at delivery time
-      break;
-
-    case "weekly":
-      // Move to next week if needed
-      while (nextRun.getTime() <= Date.now()) {
-        nextRun = addFrequencyPeriod(nextRun, frequency);
-      }
-      break;
-
-    case "monthly":
-      // Move to next month if needed
-      while (nextRun.getTime() <= Date.now()) {
-        nextRun = addFrequencyPeriod(nextRun, frequency);
-      }
-      break;
+  // Apply frequency rules - ensure we're in the future
+  while (!isAfter(nextRunInUserTz, nowInUserTz)) {
+    nextRunInUserTz = addFrequencyPeriod(nextRunInUserTz, frequency);
   }
 
-  // Convert back to UTC timestamp
-  return nextRun.getTime();
+  // Convert from user's timezone to UTC timestamp
+  const nextRunUtc = fromZonedTime(nextRunInUserTz, timezone);
+  return nextRunUtc.getTime();
 }
 
 /**
@@ -108,34 +102,24 @@ export function calculateNextRunAt(
  * @returns New date with period added
  */
 function addFrequencyPeriod(date: Date, frequency: Frequency): Date {
-  const newDate = new Date(date);
-
   switch (frequency) {
     case "daily":
-      newDate.setDate(newDate.getDate() + 1);
-      break;
+      return add(date, { days: 1 });
     case "weekly":
-      newDate.setDate(newDate.getDate() + 7);
-      break;
+      return add(date, { weeks: 1 });
     case "monthly":
-      newDate.setMonth(newDate.getMonth() + 1);
-      break;
+      return add(date, { months: 1 });
   }
-
-  return newDate;
 }
 
 /**
- * Convert a date to a specific timezone (simplified version)
- * Note: For production, use a library like date-fns-tz for proper timezone handling
- * @param date - Date to convert
+ * Convert a UTC date to a specific timezone
+ * @param date - Date in UTC
  * @param timezone - IANA timezone identifier
- * @returns Date adjusted to timezone
+ * @returns Date object representing the same moment in the target timezone
  */
 function convertToTimezone(date: Date, timezone: string): Date {
-  // Use Intl.DateTimeFormat to get the date in the target timezone
-  const dateString = date.toLocaleString("en-US", { timeZone: timezone });
-  return new Date(dateString);
+  return toZonedTime(date, timezone);
 }
 
 /**
@@ -185,8 +169,11 @@ export function formatTimestampInTimezone(
   timestamp: number,
   timezone: string
 ): string {
-  const date = new Date(timestamp);
-  return date.toLocaleString("en-US", {
+  const utcDate = new Date(timestamp);
+  const zonedDate = toZonedTime(utcDate, timezone);
+
+  // Use Intl for formatting (this part is safe and proper for display)
+  return zonedDate.toLocaleString("en-US", {
     timeZone: timezone,
     year: "numeric",
     month: "long",
