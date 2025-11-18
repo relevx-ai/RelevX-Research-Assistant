@@ -124,16 +124,22 @@ Queries should be concise (3-8 words typically) and use natural search language.
   const userPrompt = `Project Description:
 ${description}
 
-${contextParts.length > 0 ? `Additional Context:\n${contextParts.join("\n")}\n` : ""}${queryPerformanceContext}${iterationGuidance}
+${
+  contextParts.length > 0
+    ? `Additional Context:\n${contextParts.join("\n")}\n`
+    : ""
+}${queryPerformanceContext}${iterationGuidance}
 
-Generate 5-7 diverse search queries. Return ONLY a JSON array with this structure:
-[
-  {
-    "query": "the search query text",
-    "type": "broad|specific|question|temporal",
-    "reasoning": "brief explanation of strategy"
-  }
-]`;
+Generate 5-7 diverse search queries. Return ONLY a JSON object with this structure:
+{
+  "queries": [
+    {
+      "query": "the search query text",
+      "type": "broad|specific|question|temporal",
+      "reasoning": "brief explanation of strategy"
+    }
+  ]
+}`;
 
   try {
     const response = await client.chat.completions.create({
@@ -160,6 +166,10 @@ Generate 5-7 diverse search queries. Return ONLY a JSON array with this structur
     } else if (parsed.queries && Array.isArray(parsed.queries)) {
       queries = parsed.queries;
     } else {
+      console.error(
+        "Unexpected response format. Received:",
+        JSON.stringify(parsed, null, 2)
+      );
       throw new Error("Unexpected response format from OpenAI");
     }
 
@@ -542,4 +552,3 @@ export async function compileReportWithRetry(
     `Failed to compile report after ${maxRetries} attempts: ${lastError?.message}`
   );
 }
-
