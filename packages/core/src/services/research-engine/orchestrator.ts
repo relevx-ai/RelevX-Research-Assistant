@@ -1,6 +1,9 @@
 /**
  * Research orchestrator
  * Core logic for executing the research flow
+ *
+ * Now uses provider interfaces for LLM and Search providers,
+ * allowing easy switching between OpenAI/Gemini and Brave/ScrapingBee
  */
 
 import { db } from "../firebase";
@@ -8,23 +11,51 @@ import type { Project } from "../../models/project";
 import type { SearchResult } from "../../models/search-result";
 import type { ProcessedUrl } from "../../models/search-history";
 import type { DeliveryStats } from "../../models/delivery-log";
-import {
-  generateSearchQueriesWithRetry,
-  analyzeRelevancyWithRetry,
-  compileReportWithRetry,
-  type ContentToAnalyze,
-  type ResultForReport,
-} from "../openai";
-import {
-  searchMultipleQueries,
-  deduplicateResults,
-  type SearchFilters,
-} from "../brave-search";
+import type {
+  LLMProvider,
+  ContentToAnalyze,
+  ResultForReport,
+} from "../../interfaces/llm-provider";
+import type {
+  SearchProvider,
+  SearchFilters,
+} from "../../interfaces/search-provider";
 import { extractMultipleContents } from "../content-extractor";
 import { calculateNextRunAt, validateFrequency } from "../../utils/scheduling";
 import { getSearchHistory, updateSearchHistory } from "./search-history";
 import { saveSearchResults, saveDeliveryLog } from "./result-storage";
 import type { ResearchOptions, ResearchResult } from "./types";
+
+// Default providers (can be overridden via options)
+let defaultLLMProvider: LLMProvider | null = null;
+let defaultSearchProvider: SearchProvider | null = null;
+
+/**
+ * Set default providers for research execution
+ * Call this during initialization to set up default providers
+ */
+export function setDefaultProviders(
+  llmProvider: LLMProvider,
+  searchProvider: SearchProvider
+): void {
+  defaultLLMProvider = llmProvider;
+  defaultSearchProvider = searchProvider;
+}
+
+/**
+ * Get or create default providers
+ */
+function getDefaultProviders(): { llm: LLMProvider; search: SearchProvider } {
+  if (!defaultLLMProvider || !defaultSearchProvider) {
+    throw new Error(
+      "Default providers not set. Call setDefaultProviders() or provide providers in options."
+    );
+  }
+  return {
+    llm: defaultLLMProvider,
+    search: defaultSearchProvider,
+  };
+}
 
 /**
  * Calculate date range based on project frequency
@@ -65,6 +96,11 @@ export async function executeResearchForProject(
 ): Promise<ResearchResult> {
   const startedAt = Date.now();
   const maxIterations = options?.maxIterations || 3;
+
+  // Get providers (use injected or defaults)
+  const defaults = getDefaultProviders();
+  const llmProvider = options?.llmProvider || defaults.llm;
+  const searchProvider = options?.searchProvider || defaults.search;
 
   try {
     // 1. Load project
@@ -136,11 +172,15 @@ export async function executeResearchForProject(
 
       // 7.1 Generate search queries
       console.log("Generating search queries...");
-      const generatedQueries = await generateSearchQueriesWithRetry(
+      const generatedQueries = await llmProvider.generateSearchQueries(
         project.description,
-        project.searchParameters,
-        history.queryPerformance,
-        iteration
+        undefined, // additionalContext
+        {
+          count: 7,
+          focusRecent:
+            project.searchParameters?.dateRangePreference === "last_24h" ||
+            project.searchParameters?.dateRangePreference === "last_week",
+        }
       );
 
       const queries = generatedQueries.map((q) => q.query);
@@ -149,7 +189,7 @@ export async function executeResearchForProject(
 
       // 7.2 Execute searches
       console.log("Executing searches...");
-      const searchResponses = await searchMultipleQueries(
+      const searchResponses = await searchProvider.searchMultiple(
         queries,
         searchFilters
       );
@@ -157,11 +197,30 @@ export async function executeResearchForProject(
 
       // 7.3 Deduplicate results
       console.log("Deduplicating results...");
-      const allBraveResults = Array.from(searchResponses.values());
-      const uniqueResults = deduplicateResults(
-        allBraveResults,
-        processedUrlsSet
+      const allSearchResponses = Array.from(searchResponses.values());
+
+      // Convert generic search results to URLs for deduplication
+      const allUrlsWithMeta = allSearchResponses.flatMap((response) =>
+        response.results.map((result) => ({
+          url: result.url,
+          title: result.title,
+          description: result.description,
+          publishedDate: result.publishedDate,
+        }))
       );
+
+      // Simple deduplication by URL
+      const uniqueUrlsMap = new Map<string, (typeof allUrlsWithMeta)[0]>();
+      for (const item of allUrlsWithMeta) {
+        const normalizedUrl = item.url.toLowerCase().replace(/\/$/, "");
+        if (
+          !processedUrlsSet.has(normalizedUrl) &&
+          !uniqueUrlsMap.has(normalizedUrl)
+        ) {
+          uniqueUrlsMap.set(normalizedUrl, item);
+        }
+      }
+      const uniqueResults = Array.from(uniqueUrlsMap.values());
 
       console.log(
         `Found ${uniqueResults.length} unique URLs (after deduplication)`
@@ -208,11 +267,13 @@ export async function executeResearchForProject(
         })
       );
 
-      const relevancyResults = await analyzeRelevancyWithRetry(
-        contentsToAnalyze,
+      const relevancyResults = await llmProvider.analyzeRelevancy(
         project.description,
-        project.searchParameters,
-        relevancyThreshold
+        contentsToAnalyze,
+        {
+          threshold: relevancyThreshold,
+          batchSize: 10,
+        }
       );
 
       // 7.6 Filter and create SearchResult objects
@@ -246,7 +307,7 @@ export async function executeResearchForProject(
           url: extractedContent.url,
           normalizedUrl: extractedContent.normalizedUrl,
           sourceQuery,
-          searchEngine: "brave",
+          searchEngine: searchProvider.getName().toLowerCase(),
           snippet: extractedContent.snippet,
           fullContent: extractedContent.fullContent,
           relevancyScore: relevancyResult.score,
@@ -323,11 +384,13 @@ export async function executeResearchForProject(
         imageAlt: r.metadata.imageAlt,
       }));
 
-      const compiledReport = await compileReportWithRetry(
-        resultsForReport,
-        project.title,
+      const compiledReport = await llmProvider.compileReport(
         project.description,
-        project.searchParameters
+        resultsForReport,
+        {
+          tone: "professional",
+          maxLength: 5000,
+        }
       );
 
       report = {

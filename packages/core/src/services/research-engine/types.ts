@@ -3,6 +3,8 @@
  */
 
 import type { SearchResult } from "../../models/search-result";
+import type { LLMProvider } from "../../interfaces/llm-provider";
+import type { SearchProvider } from "../../interfaces/search-provider";
 
 /**
  * Research execution options
@@ -13,6 +15,10 @@ export interface ResearchOptions {
   maxResults?: number; // Max results to include (default: from project.settings)
   relevancyThreshold?: number; // Min score (default: from project.settings)
   concurrentExtractions?: number; // Parallel extractions (default: 3)
+
+  // Provider injection (for switching between providers)
+  llmProvider?: LLMProvider; // Custom LLM provider (default: OpenAI)
+  searchProvider?: SearchProvider; // Custom search provider (default: Brave)
 }
 
 /**
