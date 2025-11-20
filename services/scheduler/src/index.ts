@@ -12,6 +12,9 @@ import { logger } from "./logger";
 // Load environment variables
 dotenv.config();
 
+// Provider instances (initialized once at startup)
+let providersInitialized = false;
+
 /**
  * Project interface (minimal fields needed for scheduling)
  */
@@ -81,6 +84,52 @@ async function getDueProjects(): Promise<
 }
 
 /**
+ * Initialize providers once at startup
+ */
+async function initializeProviders(): Promise<void> {
+  if (providersInitialized) {
+    return;
+  }
+
+  logger.info("Initializing research providers");
+
+  try {
+    // Validate API keys
+    const openaiKey = process.env.OPENAI_API_KEY;
+    const braveKey = process.env.BRAVE_SEARCH_API_KEY;
+
+    if (!openaiKey || !braveKey) {
+      throw new Error(
+        "Missing required API keys (OPENAI_API_KEY or BRAVE_SEARCH_API_KEY)"
+      );
+    }
+
+    // Import provider classes and setup function from core package
+    const { OpenAIProvider, BraveSearchProvider, setDefaultProviders } =
+      await import("core");
+
+    // Create provider instances
+    const llmProvider = new OpenAIProvider(openaiKey);
+    const searchProvider = new BraveSearchProvider(braveKey);
+
+    // Set as defaults for research engine
+    setDefaultProviders(llmProvider, searchProvider);
+
+    providersInitialized = true;
+    logger.info("Research providers initialized successfully", {
+      llmProvider: "OpenAI",
+      searchProvider: "Brave Search",
+    });
+  } catch (error: any) {
+    logger.error("Failed to initialize providers", {
+      error: error.message,
+      stack: error.stack,
+    });
+    throw error;
+  }
+}
+
+/**
  * Execute research for a single project
  */
 async function executeProjectResearch(
@@ -95,27 +144,13 @@ async function executeProjectResearch(
   });
 
   try {
-    // Import the research engine and services from core package
-    const {
-      executeResearchForProject,
-      initializeOpenAI,
-      initializeBraveSearch,
-    } = await import("core");
+    // Ensure providers are initialized
+    await initializeProviders();
 
-    // Initialize services if not already done
-    const openaiKey = process.env.OPENAI_API_KEY;
-    const braveKey = process.env.BRAVE_SEARCH_API_KEY;
+    // Import the research engine from core package
+    const { executeResearchForProject } = await import("core");
 
-    if (!openaiKey || !braveKey) {
-      throw new Error(
-        "Missing required API keys (OPENAI_API_KEY or BRAVE_SEARCH_API_KEY)"
-      );
-    }
-
-    initializeOpenAI(openaiKey);
-    initializeBraveSearch(braveKey);
-
-    // Execute research
+    // Execute research (providers are already set as defaults)
     const result = await executeResearchForProject(userId, project.id);
 
     if (result.success) {
@@ -253,6 +288,16 @@ async function startScheduler(): Promise<void> {
   // Firebase Admin is automatically initialized by core package when imported
   logger.info("Firebase Admin SDK will be used (initialized by core package)");
 
+  // Initialize providers at startup
+  try {
+    await initializeProviders();
+  } catch (error: any) {
+    logger.error("Failed to initialize providers, cannot start scheduler", {
+      error: error.message,
+    });
+    process.exit(1);
+  }
+
   // Check if scheduler is enabled
   if (process.env.SCHEDULER_ENABLED === "false") {
     logger.warn("Scheduler is disabled by configuration");
@@ -278,6 +323,10 @@ async function startScheduler(): Promise<void> {
   logger.info("Scheduler service started successfully", {
     schedule: "Every 15 minutes",
     timezone: process.env.SCHEDULER_TIMEZONE || "UTC",
+    providers: {
+      llm: "OpenAI",
+      search: "Brave Search",
+    },
   });
 
   // Keep the process running
