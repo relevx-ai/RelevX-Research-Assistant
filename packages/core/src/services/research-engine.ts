@@ -361,41 +361,6 @@ async function saveDeliveryLog(
 }
 
 /**
- * Execute research for a project
- */
-export async function executeResearch(
-  projectId: string,
-  options?: ResearchOptions
-): Promise<ResearchResult> {
-  const startedAt = Date.now();
-
-  try {
-    // This function is deprecated - use executeResearchForProject instead
-    // which requires userId parameter for proper data access
-    throw new Error(
-      "executeResearch needs userId parameter - use executeResearchForProject instead"
-    );
-  } catch (error: any) {
-    return {
-      success: false,
-      projectId,
-      relevantResults: [],
-      totalResultsAnalyzed: 0,
-      iterationsUsed: 0,
-      queriesGenerated: [],
-      queriesExecuted: [],
-      urlsFetched: 0,
-      urlsSuccessful: 0,
-      urlsRelevant: 0,
-      error: error.message,
-      startedAt,
-      completedAt: Date.now(),
-      durationMs: Date.now() - startedAt,
-    };
-  }
-}
-
-/**
  * Execute research with full context (main implementation)
  */
 export async function executeResearchForProject(

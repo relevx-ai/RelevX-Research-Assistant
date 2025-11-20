@@ -94,7 +94,6 @@ export type {
 } from "./services/content-extractor";
 
 export {
-  executeResearch,
   executeResearchForProject,
   executeResearchBatch,
 } from "./services/research-engine";
@@ -104,45 +103,12 @@ export type {
 } from "./services/research-engine";
 
 // Utils
-export {
-  normalizeUrl as utilNormalizeUrl,
-  isDuplicate,
-  addToProcessed,
-  filterDuplicates,
-  extractDomain,
-  isSameDomain,
-  groupByDomain,
-  calculateUrlSimilarity,
-  createUrlIndex,
-  checkDuplicates,
-} from "./utils/deduplication";
-
-export {
-  RateLimiter,
-  Throttle,
-  SimpleRateLimiter,
-  delay,
-  calculateBackoff,
-  executeWithRateLimit,
-  executeBatchWithRateLimit,
-  retryWithBackoff,
-} from "./utils/rate-limiter";
+export { normalizeUrl as utilNormalizeUrl } from "./utils/deduplication";
 
 export {
   calculateDateRange,
   calculateDateRangeByFrequency,
   calculateDateRangeByPreference,
-  calculateNextRunTime,
-  isProjectDue,
-  formatDateForQuery,
-  getRelativeTimeDescription,
-  parsePublishedDate,
-  isDateInRange,
-  getTemporalKeywords,
-  formatDateRangeDisplay,
-  getStartOfDay,
-  getEndOfDay,
-  isOlderThan,
 } from "./utils/date-filters";
 export type { DateRange } from "./utils/date-filters";
 
