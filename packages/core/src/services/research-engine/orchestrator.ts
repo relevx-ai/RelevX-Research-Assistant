@@ -1,96 +1,30 @@
 /**
- * Research Engine service
- *
- * Core orchestrator that coordinates the full research flow:
- * 1. Generate search queries (OpenAI)
- * 2. Execute searches (Brave Search)
- * 3. Extract content from URLs
- * 4. Analyze relevancy (OpenAI)
- * 5. Compile report (OpenAI)
- * 6. Save results and update project
- *
- * Includes retry logic and deduplication.
+ * Research orchestrator
+ * Core logic for executing the research flow
  */
 
-import { db } from "./firebase";
-import type { Project } from "../models/project";
-import type { SearchResult, NewSearchResult } from "../models/search-result";
-import type {
-  SearchHistory,
-  NewSearchHistory,
-  ProcessedUrl,
-  QueryPerformance,
-} from "../models/search-history";
-import type { NewDeliveryLog, DeliveryStats } from "../models/delivery-log";
+import { db } from "../firebase";
+import type { Project } from "../../models/project";
+import type { SearchResult } from "../../models/search-result";
+import type { ProcessedUrl } from "../../models/search-history";
+import type { DeliveryStats } from "../../models/delivery-log";
 import {
   generateSearchQueriesWithRetry,
   analyzeRelevancyWithRetry,
   compileReportWithRetry,
-  type GeneratedQuery,
   type ContentToAnalyze,
   type ResultForReport,
-} from "./openai";
+} from "../openai";
 import {
   searchMultipleQueries,
   deduplicateResults,
-  normalizeUrl as normalizeSearchUrl,
-  type BraveSearchResult,
   type SearchFilters,
-} from "./brave-search";
-import {
-  extractMultipleContents,
-  type ExtractedContent,
-} from "./content-extractor";
-import { calculateNextRunAt, validateFrequency } from "../utils/scheduling";
-
-/**
- * Research execution options
- */
-export interface ResearchOptions {
-  maxIterations?: number; // Max retry iterations (default: 3)
-  minResults?: number; // Min results to find (default: from project.settings)
-  maxResults?: number; // Max results to include (default: from project.settings)
-  relevancyThreshold?: number; // Min score (default: from project.settings)
-  concurrentExtractions?: number; // Parallel extractions (default: 3)
-}
-
-/**
- * Research execution result
- */
-export interface ResearchResult {
-  success: boolean;
-  projectId: string;
-
-  // Results
-  relevantResults: SearchResult[];
-  totalResultsAnalyzed: number;
-  iterationsUsed: number;
-
-  // Queries
-  queriesGenerated: string[];
-  queriesExecuted: string[];
-
-  // URLs
-  urlsFetched: number;
-  urlsSuccessful: number;
-  urlsRelevant: number;
-
-  // Report
-  report?: {
-    markdown: string;
-    title: string;
-    summary: string;
-    averageScore: number;
-  };
-
-  // Errors
-  error?: string;
-
-  // Timing
-  startedAt: number;
-  completedAt: number;
-  durationMs: number;
-}
+} from "../brave-search";
+import { extractMultipleContents } from "../content-extractor";
+import { calculateNextRunAt, validateFrequency } from "../../utils/scheduling";
+import { getSearchHistory, updateSearchHistory } from "./search-history";
+import { saveSearchResults, saveDeliveryLog } from "./result-storage";
+import type { ResearchOptions, ResearchResult } from "./types";
 
 /**
  * Calculate date range based on project frequency
@@ -119,245 +53,6 @@ function calculateDateRange(frequency: "daily" | "weekly" | "monthly"): {
     dateFrom: dateFrom.toISOString().split("T")[0],
     dateTo,
   };
-}
-
-/**
- * Get or create search history for a project
- */
-async function getSearchHistory(
-  userId: string,
-  projectId: string
-): Promise<SearchHistory> {
-  const historyRef = db
-    .collection("users")
-    .doc(userId)
-    .collection("projects")
-    .doc(projectId)
-    .collection("metadata")
-    .doc("searchHistory");
-
-  const historyDoc = await historyRef.get();
-
-  if (historyDoc.exists) {
-    return historyDoc.data() as SearchHistory;
-  }
-
-  // Create new history
-  const newHistory: NewSearchHistory = {
-    projectId,
-    userId,
-    processedUrls: [],
-    urlIndex: {},
-    queryPerformance: [],
-    queryIndex: {},
-    totalUrlsProcessed: 0,
-    totalSearchesExecuted: 0,
-    totalReportsGenerated: 0,
-    createdAt: Date.now(),
-    updatedAt: Date.now(),
-  };
-
-  await historyRef.set(newHistory);
-  return newHistory as SearchHistory;
-}
-
-/**
- * Update search history with new data
- */
-async function updateSearchHistory(
-  userId: string,
-  projectId: string,
-  newUrls: ProcessedUrl[],
-  queryPerformance: Map<string, { relevant: number; total: number }>
-): Promise<void> {
-  const historyRef = db
-    .collection("users")
-    .doc(userId)
-    .collection("projects")
-    .doc(projectId)
-    .collection("metadata")
-    .doc("searchHistory");
-
-  const history = await getSearchHistory(userId, projectId);
-
-  // Update processed URLs
-  const updatedUrls = [...history.processedUrls];
-  const updatedUrlIndex = { ...history.urlIndex };
-
-  for (const newUrl of newUrls) {
-    const existing = updatedUrls.find(
-      (u) => u.normalizedUrl === newUrl.normalizedUrl
-    );
-
-    if (existing) {
-      existing.timesFound++;
-      existing.lastRelevancyScore = newUrl.lastRelevancyScore;
-      existing.wasIncluded = existing.wasIncluded || newUrl.wasIncluded;
-    } else {
-      updatedUrls.push(newUrl);
-      updatedUrlIndex[newUrl.normalizedUrl] = true;
-    }
-  }
-
-  // Update query performance
-  const updatedQueryPerformance = [...history.queryPerformance];
-  const updatedQueryIndex = { ...history.queryIndex };
-
-  for (const [query, stats] of queryPerformance.entries()) {
-    const existingIdx = updatedQueryIndex[query];
-
-    if (existingIdx !== undefined) {
-      const existing = updatedQueryPerformance[existingIdx];
-      existing.timesUsed++;
-      existing.urlsFound += stats.total;
-      existing.relevantUrlsFound += stats.relevant;
-      existing.lastUsedAt = Date.now();
-
-      const totalRelevant = existing.relevantUrlsFound;
-      const totalFound = existing.urlsFound;
-      existing.successRate =
-        totalFound > 0 ? (totalRelevant / totalFound) * 100 : 0;
-      existing.averageRelevancyScore =
-        totalRelevant > 0 ? existing.averageRelevancyScore : 0;
-    } else {
-      const newPerf: QueryPerformance = {
-        query,
-        timesUsed: 1,
-        urlsFound: stats.total,
-        relevantUrlsFound: stats.relevant,
-        averageRelevancyScore: 0,
-        lastUsedAt: Date.now(),
-        successRate: stats.total > 0 ? (stats.relevant / stats.total) * 100 : 0,
-      };
-      updatedQueryPerformance.push(newPerf);
-      updatedQueryIndex[query] = updatedQueryPerformance.length - 1;
-    }
-  }
-
-  await historyRef.update({
-    processedUrls: updatedUrls,
-    urlIndex: updatedUrlIndex,
-    queryPerformance: updatedQueryPerformance,
-    queryIndex: updatedQueryIndex,
-    totalUrlsProcessed: updatedUrls.length,
-    totalSearchesExecuted:
-      history.totalSearchesExecuted + queryPerformance.size,
-    updatedAt: Date.now(),
-  });
-}
-
-/**
- * Save search results to Firestore
- */
-async function saveSearchResults(
-  userId: string,
-  projectId: string,
-  results: SearchResult[]
-): Promise<string[]> {
-  const resultsCollection = db
-    .collection("users")
-    .doc(userId)
-    .collection("projects")
-    .doc(projectId)
-    .collection("searchResults");
-
-  const resultIds: string[] = [];
-
-  for (const result of results) {
-    const resultData: NewSearchResult = {
-      projectId: result.projectId,
-      userId: result.userId,
-      url: result.url,
-      normalizedUrl: result.normalizedUrl,
-      sourceQuery: result.sourceQuery,
-      searchEngine: result.searchEngine,
-      snippet: result.snippet,
-      fullContent: result.fullContent,
-      relevancyScore: result.relevancyScore,
-      relevancyReason: result.relevancyReason,
-      metadata: result.metadata,
-      fetchedAt: result.fetchedAt,
-      fetchStatus: result.fetchStatus,
-      fetchError: result.fetchError,
-    };
-
-    const docRef = await resultsCollection.add(resultData);
-    resultIds.push(docRef.id);
-  }
-
-  return resultIds;
-}
-
-/**
- * Save delivery log to Firestore
- */
-async function saveDeliveryLog(
-  userId: string,
-  projectId: string,
-  project: Project,
-  report: {
-    markdown: string;
-    title: string;
-    summary: string;
-    averageScore: number;
-  },
-  stats: DeliveryStats,
-  searchResultIds: string[],
-  researchStartedAt: number,
-  researchCompletedAt: number
-): Promise<string> {
-  const deliveryLogsCollection = db
-    .collection("users")
-    .doc(userId)
-    .collection("projects")
-    .doc(projectId)
-    .collection("deliveryLogs");
-
-  // Determine destination and address based on project configuration
-  let destination: "email" | "slack" | "sms" = "email"; // Default
-  let destinationAddress = "pending";
-
-  if (project.resultsDestination !== "none" && project.deliveryConfig) {
-    if (
-      project.resultsDestination === "email" &&
-      project.deliveryConfig.email
-    ) {
-      destination = "email";
-      destinationAddress = project.deliveryConfig.email.address;
-    } else if (
-      project.resultsDestination === "slack" &&
-      project.deliveryConfig.slack
-    ) {
-      destination = "slack";
-      destinationAddress = project.deliveryConfig.slack.webhookUrl;
-    } else if (
-      project.resultsDestination === "sms" &&
-      project.deliveryConfig.sms
-    ) {
-      destination = "sms";
-      destinationAddress = project.deliveryConfig.sms.phoneNumber;
-    }
-  }
-
-  const deliveryLogData: NewDeliveryLog = {
-    projectId,
-    userId,
-    // For now, mark as pending delivery - actual delivery will be implemented later
-    destination,
-    destinationAddress,
-    reportMarkdown: report.markdown,
-    reportTitle: report.title,
-    stats,
-    status: "success", // Research was successful, even if delivery hasn't happened yet
-    retryCount: 0,
-    searchResultIds,
-    deliveredAt: researchCompletedAt, // For now, same as completion time
-    researchStartedAt,
-    researchCompletedAt,
-  };
-
-  const docRef = await deliveryLogsCollection.add(deliveryLogData);
-  return docRef.id;
 }
 
 /**
