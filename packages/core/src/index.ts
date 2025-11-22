@@ -32,6 +32,14 @@ export type {
 } from "./models/delivery-log";
 
 export type {
+  AdminNotification,
+  NewAdminNotification,
+  NotificationType,
+  NotificationSeverity,
+  NotificationStatus,
+} from "./models/admin-notification";
+
+export type {
   SearchHistory,
   NewSearchHistory,
   ProcessedUrl,
