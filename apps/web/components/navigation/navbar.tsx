@@ -12,7 +12,7 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
-import { User, LogOut, FolderKanban, Sparkles } from "lucide-react";
+import { User, LogOut, Sparkles } from "lucide-react";
 
 export function Navbar() {
   const { user, loading } = useAuth();
@@ -37,7 +37,10 @@ export function Navbar() {
     <nav className="sticky top-0 z-40 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container-wide flex h-16 items-center justify-between">
         {/* Logo / Brand */}
-        <Link href="/" className="flex items-center gap-2 group">
+        <Link
+          href={user ? "/projects" : "/"}
+          className="flex items-center gap-2 group"
+        >
           <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600">
             <Sparkles className="w-5 h-5 text-white" />
           </div>
@@ -48,15 +51,6 @@ export function Navbar() {
 
         {/* Navigation Links & Auth */}
         <div className="flex items-center gap-4">
-          {!loading && user && (
-            <Link href="/projects">
-              <Button variant="ghost" className="gap-2">
-                <FolderKanban className="w-4 h-4" />
-                Projects
-              </Button>
-            </Link>
-          )}
-
           {loading ? (
             <div className="w-20 h-10 animate-pulse bg-muted rounded-md" />
           ) : user ? (
