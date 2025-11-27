@@ -62,6 +62,7 @@ export async function saveDeliveryLog(
     title: string;
     summary: string;
     averageScore: number;
+    resultCount?: number;
   },
   stats: DeliveryStats,
   searchResultIds: string[],

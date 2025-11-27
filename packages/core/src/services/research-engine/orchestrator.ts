@@ -15,6 +15,7 @@ import type {
   LLMProvider,
   ContentToAnalyze,
   ResultForReport,
+  CompiledReport,
 } from "../../interfaces/llm-provider";
 import type {
   SearchProvider,
@@ -24,6 +25,7 @@ import { extractMultipleContents } from "../content-extractor";
 import { calculateNextRunAt, validateFrequency } from "../../utils/scheduling";
 import { getSearchHistory, updateSearchHistory } from "./search-history";
 import { saveSearchResults, saveDeliveryLog } from "./result-storage";
+import { sendReportEmail } from "../email";
 import type { ResearchOptions, ResearchResult } from "./types";
 
 // Default providers (can be overridden via options)
@@ -430,7 +432,8 @@ export async function executeResearchForProject(
     );
 
     // 9. Compile report (if we have results)
-    let report;
+    // 9. Compile report (if we have results)
+    let report: CompiledReport | undefined;
     if (sortedResults.length > 0) {
       console.log("Compiling report...");
       const resultsForReport: ResultForReport[] = sortedResults.map((r) => ({
@@ -459,6 +462,7 @@ export async function executeResearchForProject(
         title: compiledReport.title,
         summary: compiledReport.summary,
         averageScore: compiledReport.averageScore,
+        resultCount: compiledReport.resultCount,
       };
     }
 
@@ -497,6 +501,29 @@ export async function executeResearchForProject(
         startedAt,
         Date.now()
       );
+
+      // 10.6 Send email if configured
+      if (
+        project.resultsDestination === "email" &&
+        project.deliveryConfig?.email?.address
+      ) {
+        console.log(`Sending report email to ${project.deliveryConfig.email.address}...`);
+        try {
+          const emailResult = await sendReportEmail(
+            project.deliveryConfig.email.address,
+            report,
+            projectId
+          );
+          
+          if (emailResult.success) {
+            console.log("Email sent successfully:", emailResult.id);
+          } else {
+            console.error("Failed to send email:", emailResult.error);
+          }
+        } catch (emailError) {
+          console.error("Exception sending email:", emailError);
+        }
+      }
     }
 
     // 11. Update search history
