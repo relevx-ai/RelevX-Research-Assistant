@@ -22,20 +22,8 @@ export function usePlans(): UsePlansResult {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const { user, loading: authLoading } = useAuth();
-
   useEffect(() => {
     const loadPlans = async () => {
-      // Wait for auth to initialize
-      if (authLoading) return;
-
-      if (!user) {
-        // If auth finished loading but no user, we might want to fail or just return empty
-        // Assuming plans require auth, we stop here.
-        setLoading(false);
-        return;
-      }
-
       setLoading(true);
       setError(null);
 
@@ -57,7 +45,7 @@ export function usePlans(): UsePlansResult {
     };
 
     loadPlans();
-  }, [user, authLoading]);
+  }, []);
 
   return { plans, loading, error };
 }
