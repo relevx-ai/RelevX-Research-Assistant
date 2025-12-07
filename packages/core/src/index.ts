@@ -18,6 +18,11 @@ export type {
 } from "./models/project";
 
 export type {
+  Plan,
+  PlanInfo,
+} from "./models/plans";
+
+export type {
   SearchResult,
   NewSearchResult,
   SearchResultSummary,
@@ -134,3 +139,4 @@ export {
 // Hooks
 export { useAuth } from "./hooks/useAuth";
 export { useProjects } from "./hooks/useProjects";
+export { usePlans } from "./hooks/usePlans";
