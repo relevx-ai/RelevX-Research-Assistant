@@ -119,8 +119,16 @@ export async function executeResearchForProject(
 
     const project = { id: projectDoc.id, ...projectDoc.data() } as Project;
 
+    // 1.5 Load user (for email fallback)
+    const userRef = db.collection("users").doc(userId);
+    const userDoc = await userRef.get();
+    const userEmail = userDoc.exists ? userDoc.data()?.email : undefined;
+
     // 2. Validate frequency (prevent running too often)
-    if (!validateFrequency(project.frequency, project.lastRunAt)) {
+    if (
+      !options?.ignoreFrequencyCheck &&
+      !validateFrequency(project.frequency, project.lastRunAt)
+    ) {
       throw new Error(
         `Project cannot be run more than once per day. Last run: ${new Date(
           project.lastRunAt!
@@ -503,14 +511,16 @@ export async function executeResearchForProject(
       );
 
       // 10.6 Send email if configured
+      const deliveryEmail = project.deliveryConfig?.email?.address || userEmail;
+
       if (
         project.resultsDestination === "email" &&
-        project.deliveryConfig?.email?.address
+        deliveryEmail
       ) {
-        console.log(`Sending report email to ${project.deliveryConfig.email.address}...`);
+        console.log(`Sending report email to ${deliveryEmail}...`);
         try {
           const emailResult = await sendReportEmail(
-            project.deliveryConfig.email.address,
+            deliveryEmail,
             report,
             projectId
           );
