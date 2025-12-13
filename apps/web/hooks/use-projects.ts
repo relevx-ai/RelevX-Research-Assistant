@@ -1,8 +1,11 @@
 /**
  * useProjects hook for web app
+ *
+ * Uses core types and Client SDK wrappers from lib/projects
  */
 
 import { useState, useEffect, useCallback } from "react";
+import type { Project, NewProject, ProjectStatus } from "core";
 import {
   subscribeToProjects,
   createProject as createProjectService,
@@ -12,17 +15,23 @@ import {
 } from "@/lib/projects";
 
 interface UseProjectsResult {
-  projects: any[];
+  projects: Project[];
   loading: boolean;
   error: string | null;
-  createProject: (data: any) => Promise<any | null>;
-  updateProject: (projectId: string, data: any) => Promise<boolean>;
-  toggleProjectActive: (projectId: string, status: string) => Promise<boolean>;
+  createProject: (data: Omit<NewProject, "userId">) => Promise<Project | null>;
+  updateProject: (
+    projectId: string,
+    data: Partial<Omit<Project, "id" | "userId" | "createdAt">>
+  ) => Promise<boolean>;
+  toggleProjectActive: (
+    projectId: string,
+    status: ProjectStatus
+  ) => Promise<boolean>;
   deleteProject: (projectId: string) => Promise<boolean>;
 }
 
 export function useProjects(userId: string | undefined): UseProjectsResult {
-  const [projects, setProjects] = useState<any[]>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -45,7 +54,7 @@ export function useProjects(userId: string | undefined): UseProjectsResult {
   }, [userId]);
 
   const createProject = useCallback(
-    async (data: any): Promise<any | null> => {
+    async (data: Omit<NewProject, "userId">): Promise<Project | null> => {
       if (!userId) {
         setError("User must be logged in to create a project");
         return null;
@@ -65,7 +74,10 @@ export function useProjects(userId: string | undefined): UseProjectsResult {
   );
 
   const updateProject = useCallback(
-    async (projectId: string, data: any): Promise<boolean> => {
+    async (
+      projectId: string,
+      data: Partial<Omit<Project, "id" | "userId" | "createdAt">>
+    ): Promise<boolean> => {
       if (!userId) {
         setError("User must be logged in to update a project");
         return false;
@@ -85,7 +97,7 @@ export function useProjects(userId: string | undefined): UseProjectsResult {
   );
 
   const toggleProjectActive = useCallback(
-    async (projectId: string, status: string): Promise<boolean> => {
+    async (projectId: string, status: ProjectStatus): Promise<boolean> => {
       if (!userId) {
         setError("User must be logged in to toggle project status");
         return false;

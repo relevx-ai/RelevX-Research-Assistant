@@ -1,14 +1,17 @@
 /**
  * useProjects hook
  *
- * Provides real-time access to a user's projects and methods to create new ones.
+ * Provides real-time access to a user's projects and methods to manage them.
  */
 
 import { useState, useEffect, useCallback } from "react";
-import type { Project, NewProject } from "../models/project";
+import type { Project, NewProject, ProjectStatus } from "../models/project";
 import {
   subscribeToProjects,
   createProject as createProjectService,
+  updateProject as updateProjectService,
+  updateProjectStatus,
+  deleteProject as deleteProjectService,
 } from "../services/projects";
 
 interface UseProjectsResult {
@@ -16,6 +19,15 @@ interface UseProjectsResult {
   loading: boolean;
   error: string | null;
   createProject: (data: Omit<NewProject, "userId">) => Promise<Project | null>;
+  updateProject: (
+    projectId: string,
+    data: Partial<Omit<Project, "id" | "userId" | "createdAt">>
+  ) => Promise<boolean>;
+  toggleProjectActive: (
+    projectId: string,
+    status: ProjectStatus
+  ) => Promise<boolean>;
+  deleteProject: (projectId: string) => Promise<boolean>;
 }
 
 export function useProjects(userId: string | undefined): UseProjectsResult {
@@ -61,5 +73,78 @@ export function useProjects(userId: string | undefined): UseProjectsResult {
     [userId]
   );
 
-  return { projects, loading, error, createProject };
+  const updateProject = useCallback(
+    async (
+      projectId: string,
+      data: Partial<Omit<Project, "id" | "userId" | "createdAt">>
+    ): Promise<boolean> => {
+      if (!userId) {
+        setError("User must be logged in to update a project");
+        return false;
+      }
+
+      try {
+        await updateProjectService(userId, projectId, data);
+        return true;
+      } catch (err) {
+        const errorMessage =
+          err instanceof Error ? err.message : "Failed to update project";
+        setError(errorMessage);
+        return false;
+      }
+    },
+    [userId]
+  );
+
+  const toggleProjectActive = useCallback(
+    async (projectId: string, status: ProjectStatus): Promise<boolean> => {
+      if (!userId) {
+        setError("User must be logged in to toggle project status");
+        return false;
+      }
+
+      try {
+        await updateProjectStatus(userId, projectId, status);
+        return true;
+      } catch (err) {
+        const errorMessage =
+          err instanceof Error
+            ? err.message
+            : "Failed to toggle project status";
+        setError(errorMessage);
+        return false;
+      }
+    },
+    [userId]
+  );
+
+  const deleteProject = useCallback(
+    async (projectId: string): Promise<boolean> => {
+      if (!userId) {
+        setError("User must be logged in to delete a project");
+        return false;
+      }
+
+      try {
+        await deleteProjectService(userId, projectId);
+        return true;
+      } catch (err) {
+        const errorMessage =
+          err instanceof Error ? err.message : "Failed to delete project";
+        setError(errorMessage);
+        return false;
+      }
+    },
+    [userId]
+  );
+
+  return {
+    projects,
+    loading,
+    error,
+    createProject,
+    updateProject,
+    toggleProjectActive,
+    deleteProject,
+  };
 }

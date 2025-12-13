@@ -17,11 +17,7 @@ export type {
   DeliveryConfig,
 } from "./models/project";
 
-export type {
-  Plan,
-  PlanInfo,
-  FetchPlansResponse
-} from "./models/plans";
+export type { Plan, PlanInfo, FetchPlansResponse } from "./models/plans";
 
 export type {
   SearchResult,
@@ -53,6 +49,13 @@ export type {
   DuplicateCheckResult,
 } from "./models/search-history";
 
+export type {
+  RelevxUser,
+  RelevxUserProfile,
+  CreateProfileRequest,
+  CreateProfileResponse,
+} from "./models/users";
+
 // Services
 export { auth, db } from "./services/firebase";
 export { signInWithGoogle, signOut } from "./services/auth";
@@ -63,6 +66,8 @@ export {
   updateProjectStatus,
   updateProjectExecution,
   activateProject,
+  updateProject,
+  deleteProject,
 } from "./services/projects";
 
 export {

@@ -1,5 +1,7 @@
 /**
  * Authentication helpers for web app
+ *
+ * Web-specific auth logic using core types.
  */
 
 import {
@@ -8,19 +10,8 @@ import {
   signOut as firebaseSignOut,
 } from "firebase/auth";
 import { auth } from "./firebase";
-import { CreateProfileResponse, RelevxUser } from "core/models/users";
+import { CreateProfileResponse, RelevxUser } from "core";
 import { relevx_api } from "./client";
-
-export interface UserProfile {
-  email: string;
-  displayName: string | null;
-  photoURL: string | null;
-  planId: string;
-  freeTrailRedeemed: boolean;
-  createdAt: string;
-  updatedAt: string;
-  lastLoginAt: string;
-}
 
 /**
  * Sign in with Google using popup
@@ -35,17 +26,25 @@ export async function signInWithGoogle(): Promise<RelevxUser | null> {
   }
 
   try {
+    // Get the authenticated user's UID
+    const currentUser = auth.currentUser;
+    if (!currentUser) {
+      throw new Error("No authenticated user");
+    }
+
     // Create or update user document in Firestore
     const response = await createOrUpdateUser();
     if (!response.ok) {
       throw new Error("Failed to create or update user");
     }
 
-    // Update user profile
-    const user: RelevxUser =
-    {
-      ...response
-    }
+    // Combine response with uid from Firebase auth
+    // Exclude 'ok' property as it's not part of RelevxUser
+    const { ok, ...userData } = response;
+    const user: RelevxUser = {
+      ...userData,
+      uid: currentUser.uid,
+    };
     return user;
   } catch (error) {
     console.error("Error creating or updating user:", error);
@@ -57,7 +56,7 @@ export async function signInWithGoogle(): Promise<RelevxUser | null> {
 /**
  * Create or update a user document in Firestore
  * This should be called after successful authentication
-*/
+ */
 export async function createOrUpdateUser(): Promise<CreateProfileResponse> {
   try {
     const response = await relevx_api.post<CreateProfileResponse>(

@@ -3,17 +3,57 @@
  *
  * Handles all Firestore operations for projects.
  * Uses subcollection pattern: users/{userId}/projects/{projectId}
+ * Works with both Admin SDK (server) and Client SDK (browser)
  */
 
-import { db } from "./firebase";
+import {
+  db as defaultDb,
+  isUsingAdminSDK as defaultIsUsingAdminSDK,
+} from "./firebase";
 import type { Project, NewProject, ProjectStatus } from "../models/project";
 import { calculateNextRunAt as calculateNextRunAtWithTimezone } from "../utils/scheduling";
 
 /**
  * Get the projects collection reference for a user
+ * Works with both Admin SDK and Client SDK
  */
-function getProjectsCollection(userId: string) {
-  return db.collection("users").doc(userId).collection("projects");
+function getProjectsCollection(
+  userId: string,
+  dbInstance: any = defaultDb,
+  isAdminSDK: boolean = defaultIsUsingAdminSDK
+) {
+  if (isAdminSDK) {
+    // Admin SDK API
+    return dbInstance.collection("users").doc(userId).collection("projects");
+  } else {
+    // Client SDK API - need to use collection/doc functions
+    const { collection, doc } = require("firebase/firestore");
+    return collection(doc(collection(dbInstance, "users"), userId), "projects");
+  }
+}
+
+/**
+ * Get a project document reference
+ */
+function getProjectRef(
+  userId: string,
+  projectId: string,
+  dbInstance: any = defaultDb,
+  isAdminSDK: boolean = defaultIsUsingAdminSDK
+) {
+  if (isAdminSDK) {
+    return dbInstance
+      .collection("users")
+      .doc(userId)
+      .collection("projects")
+      .doc(projectId);
+  } else {
+    const { doc, collection } = require("firebase/firestore");
+    return doc(
+      collection(doc(collection(dbInstance, "users"), userId), "projects"),
+      projectId
+    );
+  }
 }
 
 /**
@@ -21,7 +61,9 @@ function getProjectsCollection(userId: string) {
  */
 export async function createProject(
   userId: string,
-  data: Omit<NewProject, "userId">
+  data: Omit<NewProject, "userId">,
+  dbInstance?: any,
+  isAdminSDK?: boolean
 ): Promise<Project> {
   try {
     const now = Date.now();
@@ -54,7 +96,17 @@ export async function createProject(
       updatedAt: now,
     };
 
-    const docRef = await getProjectsCollection(userId).add(projectData);
+    const collectionRef = getProjectsCollection(userId, dbInstance, isAdminSDK);
+
+    let docRef;
+    if (isAdminSDK) {
+      // Admin SDK uses .add()
+      docRef = await collectionRef.add(projectData);
+    } else {
+      // Client SDK uses addDoc()
+      const { addDoc } = require("firebase/firestore");
+      docRef = await addDoc(collectionRef, projectData);
+    }
 
     return {
       id: docRef.id,
@@ -69,16 +121,40 @@ export async function createProject(
 /**
  * List all projects for a user (one-time fetch)
  */
-export async function listProjects(userId: string): Promise<Project[]> {
+export async function listProjects(
+  userId: string,
+  dbInstance?: any,
+  isAdminSDK?: boolean
+): Promise<Project[]> {
   try {
-    const snapshot = await getProjectsCollection(userId)
-      .orderBy("createdAt", "desc")
-      .get();
+    let snapshot;
+    if (isAdminSDK) {
+      // Admin SDK
+      snapshot = await getProjectsCollection(userId, dbInstance, isAdminSDK)
+        .orderBy("createdAt", "desc")
+        .get();
+    } else {
+      // Client SDK - need to use getDocs with query
+      const { query, orderBy, getDocs } = require("firebase/firestore");
+      const collectionRef = getProjectsCollection(
+        userId,
+        dbInstance,
+        isAdminSDK
+      );
+      const q = query(collectionRef, orderBy("createdAt", "desc"));
+      snapshot = await getDocs(q);
+    }
 
-    return snapshot.docs.map((doc: any) => ({
-      id: doc.id,
-      ...doc.data(),
-    })) as Project[];
+    return snapshot.docs.map((doc: any) => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        ...data,
+        // Convert timestamps to numbers for consistency (Client SDK)
+        createdAt: data.createdAt?.toMillis?.() || data.createdAt || Date.now(),
+        updatedAt: data.updatedAt?.toMillis?.() || data.updatedAt || Date.now(),
+      };
+    }) as Project[];
   } catch (error) {
     console.error("Error listing projects:", error);
     throw error;
@@ -91,22 +167,55 @@ export async function listProjects(userId: string): Promise<Project[]> {
  */
 export function subscribeToProjects(
   userId: string,
-  callback: (projects: Project[]) => void
+  callback: (projects: Project[]) => void,
+  dbInstance?: any,
+  isAdminSDK?: boolean
 ): () => void {
-  return getProjectsCollection(userId)
-    .orderBy("createdAt", "desc")
-    .onSnapshot(
+  if (isAdminSDK) {
+    // Admin SDK - can use onSnapshot directly on collection reference
+    return getProjectsCollection(userId, dbInstance, isAdminSDK)
+      .orderBy("createdAt", "desc")
+      .onSnapshot(
+        (snapshot: any) => {
+          const projects = snapshot.docs.map((doc: any) => ({
+            id: doc.id,
+            ...doc.data(),
+          })) as Project[];
+          callback(projects);
+        },
+        (error: any) => {
+          console.error("Error subscribing to projects:", error);
+        }
+      );
+  } else {
+    // Client SDK - need to use onSnapshot with query
+    const { query, orderBy, onSnapshot } = require("firebase/firestore");
+    const collectionRef = getProjectsCollection(userId, dbInstance, isAdminSDK);
+    const q = query(collectionRef, orderBy("createdAt", "desc"));
+
+    return onSnapshot(
+      q,
       (snapshot: any) => {
-        const projects = snapshot.docs.map((doc: any) => ({
-          id: doc.id,
-          ...doc.data(),
-        })) as Project[];
+        const projects: Project[] = [];
+        snapshot.forEach((doc: any) => {
+          const data = doc.data();
+          projects.push({
+            id: doc.id,
+            ...data,
+            // Convert timestamps to numbers for consistency
+            createdAt:
+              data.createdAt?.toMillis?.() || data.createdAt || Date.now(),
+            updatedAt:
+              data.updatedAt?.toMillis?.() || data.updatedAt || Date.now(),
+          } as Project);
+        });
         callback(projects);
       },
       (error: any) => {
         console.error("Error subscribing to projects:", error);
       }
     );
+  }
 }
 
 /**
@@ -115,18 +224,23 @@ export function subscribeToProjects(
 export async function updateProjectStatus(
   userId: string,
   projectId: string,
-  status: ProjectStatus
+  status: ProjectStatus,
+  dbInstance?: any,
+  isAdminSDK?: boolean
 ): Promise<void> {
   try {
-    const projectRef = db
-      .collection("users")
-      .doc(userId)
-      .collection("projects")
-      .doc(projectId);
-    await projectRef.update({
+    const projectRef = getProjectRef(userId, projectId, dbInstance, isAdminSDK);
+    const updateData = {
       status,
       updatedAt: Date.now(),
-    });
+    };
+
+    if (isAdminSDK) {
+      await projectRef.update(updateData);
+    } else {
+      const { updateDoc } = require("firebase/firestore");
+      await updateDoc(projectRef, updateData);
+    }
   } catch (error) {
     console.error("Error updating project status:", error);
     throw error;
@@ -144,18 +258,23 @@ export async function updateProjectExecution(
     lastRunAt?: number;
     nextRunAt?: number;
     lastError?: string;
-  }
+  },
+  dbInstance?: any,
+  isAdminSDK?: boolean
 ): Promise<void> {
   try {
-    const projectRef = db
-      .collection("users")
-      .doc(userId)
-      .collection("projects")
-      .doc(projectId);
-    await projectRef.update({
+    const projectRef = getProjectRef(userId, projectId, dbInstance, isAdminSDK);
+    const updateData = {
       ...updates,
       updatedAt: Date.now(),
-    });
+    };
+
+    if (isAdminSDK) {
+      await projectRef.update(updateData);
+    } else {
+      const { updateDoc } = require("firebase/firestore");
+      await updateDoc(projectRef, updateData);
+    }
   } catch (error) {
     console.error("Error updating project execution:", error);
     throw error;
@@ -167,19 +286,26 @@ export async function updateProjectExecution(
  */
 export async function activateProject(
   userId: string,
-  projectId: string
+  projectId: string,
+  dbInstance?: any,
+  isAdminSDK?: boolean
 ): Promise<void> {
   try {
-    const projectRef = db
-      .collection("users")
-      .doc(userId)
-      .collection("projects")
-      .doc(projectId);
+    const projectRef = getProjectRef(userId, projectId, dbInstance, isAdminSDK);
 
     // Get current project data to calculate nextRunAt
-    const projectDoc = await projectRef.get();
-    if (!projectDoc.exists) {
-      throw new Error("Project not found");
+    let projectDoc;
+    if (isAdminSDK) {
+      projectDoc = await projectRef.get();
+      if (!projectDoc.exists) {
+        throw new Error("Project not found");
+      }
+    } else {
+      const { getDoc } = require("firebase/firestore");
+      projectDoc = await getDoc(projectRef);
+      if (!projectDoc.exists()) {
+        throw new Error("Project not found");
+      }
     }
 
     const project = projectDoc.data() as Project;
@@ -191,13 +317,116 @@ export async function activateProject(
       project.timezone
     );
 
-    await projectRef.update({
-      status: "active",
+    const updateData = {
+      status: "active" as ProjectStatus,
       nextRunAt,
       updatedAt: Date.now(),
-    });
+    };
+
+    if (isAdminSDK) {
+      await projectRef.update(updateData);
+    } else {
+      const { updateDoc } = require("firebase/firestore");
+      await updateDoc(projectRef, updateData);
+    }
   } catch (error) {
     console.error("Error activating project:", error);
+    throw error;
+  }
+}
+
+/**
+ * Update a project with partial data
+ */
+export async function updateProject(
+  userId: string,
+  projectId: string,
+  data: Partial<Omit<Project, "id" | "userId" | "createdAt">>,
+  dbInstance?: any,
+  isAdminSDK?: boolean
+): Promise<void> {
+  try {
+    const projectRef = getProjectRef(userId, projectId, dbInstance, isAdminSDK);
+
+    // If frequency, deliveryTime, or timezone are being updated, recalculate nextRunAt
+    if (data.frequency || data.deliveryTime || data.timezone) {
+      // Get current project to merge with updates
+      let projectDoc;
+      if (isAdminSDK) {
+        projectDoc = await projectRef.get();
+        if (!projectDoc.exists) {
+          throw new Error("Project not found");
+        }
+      } else {
+        const { getDoc } = require("firebase/firestore");
+        projectDoc = await getDoc(projectRef);
+        if (!projectDoc.exists()) {
+          throw new Error("Project not found");
+        }
+      }
+
+      const currentProject = projectDoc.data() as Project;
+      const updatedFrequency = data.frequency || currentProject.frequency;
+      const updatedDeliveryTime =
+        data.deliveryTime || currentProject.deliveryTime;
+      const updatedTimezone = data.timezone || currentProject.timezone;
+
+      const nextRunAt = calculateNextRunAtWithTimezone(
+        updatedFrequency,
+        updatedDeliveryTime,
+        updatedTimezone
+      );
+
+      const updateData = {
+        ...data,
+        nextRunAt,
+        updatedAt: Date.now(),
+      };
+
+      if (isAdminSDK) {
+        await projectRef.update(updateData);
+      } else {
+        const { updateDoc } = require("firebase/firestore");
+        await updateDoc(projectRef, updateData);
+      }
+    } else {
+      const updateData = {
+        ...data,
+        updatedAt: Date.now(),
+      };
+
+      if (isAdminSDK) {
+        await projectRef.update(updateData);
+      } else {
+        const { updateDoc } = require("firebase/firestore");
+        await updateDoc(projectRef, updateData);
+      }
+    }
+  } catch (error) {
+    console.error("Error updating project:", error);
+    throw error;
+  }
+}
+
+/**
+ * Delete a project
+ */
+export async function deleteProject(
+  userId: string,
+  projectId: string,
+  dbInstance?: any,
+  isAdminSDK?: boolean
+): Promise<void> {
+  try {
+    const projectRef = getProjectRef(userId, projectId, dbInstance, isAdminSDK);
+    if (isAdminSDK) {
+      await projectRef.delete();
+    } else {
+      const { deleteDoc } = require("firebase/firestore");
+      await deleteDoc(projectRef);
+    }
+  } catch (error) {
+    console.error("Error deleting project:", error);
     throw error;
   }
 }
