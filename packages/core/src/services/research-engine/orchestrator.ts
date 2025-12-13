@@ -275,6 +275,12 @@ export async function executeResearchForProject(
         break;
       }
 
+      // 7.3.7 Mark these URLs as processed so we don't try them again in future iterations
+      for (const result of limitedResults) {
+        const normalizedUrl = result.url.toLowerCase().replace(/\/$/, "");
+        processedUrlsSet.add(normalizedUrl);
+      }
+      
       // 7.4.a Filter results using LLM (Pre-fetch filtering)
       // This saves tokens/time by not fetching irrelevant pages
       let resultsToFetch = limitedResults;
@@ -450,8 +456,7 @@ export async function executeResearchForProject(
 
         allRelevantResults.push(searchResult);
 
-        // 7.7.3 Update processed URLs
-        processedUrlsSet.add(extractedContent.normalizedUrl);
+        // processedUrlsSet update moved to earlier step (7.3.7)
       }
 
       // 7.8 Track query performance
