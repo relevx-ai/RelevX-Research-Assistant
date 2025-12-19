@@ -1,6 +1,7 @@
 import type { FastifyPluginAsync } from "fastify";
 import type Stripe from "stripe";
 import type { RelevxUserProfile, CreateProfileResponse } from "core";
+import { isUserSubscribed } from "../utils/billing";
 
 // API key management routes: create/list/revoke. All routes rely on the auth
 // plugin to populate req.userId and tenant authorization.
@@ -91,18 +92,9 @@ const routes: FastifyPluginAsync = async (app) => {
           }
 
           // check to see if user is still subscribed
-          if (userData.billing.stripeSubscriptionId !== "") {
-            const subscription = await stripe.subscriptions.retrieve(
-              userData.billing.stripeSubscriptionId
-            );
-            console.log("Subscription status:", subscription.status);
-            if (
-              subscription.status !== "active" &&
-              subscription.status !== "trialing"
-            ) {
-              updateFields.planId = "";
-              updateFields["billing.stripeSubscriptionId"] = "";
-            }
+          if (!isUserSubscribed(userData, stripe)) {
+            updateFields.planId = "";
+            updateFields["billing.stripeSubscriptionId"] = "";
           }
 
           // Update user document in Firestore

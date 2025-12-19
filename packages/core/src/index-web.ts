@@ -68,71 +68,6 @@ export type {
   CreateProfileResponse,
 } from "./models/users";
 
-// Services
-export { auth, db } from "./services/firebase";
-export { signInWithGoogle, signOut } from "./services/auth";
-// export {
-//   createProject,
-//   listProjects,
-//   subscribeToProjects,
-//   updateProjectStatus,
-//   //updateProjectExecution,
-//   activateProject,
-//   updateProject,
-//   deleteProject,
-// } from "../../../apps/web/lib/projects";
-
-export {
-  extractContent,
-  extractContentWithRetry,
-  extractMultipleContents,
-  getContentPreview,
-} from "./services/content-extractor";
-export type {
-  ExtractedContent,
-  ExtractionOptions,
-} from "./services/content-extractor";
-
-export {
-  executeResearchForProject,
-  executeResearchBatch,
-  setDefaultProviders,
-} from "./services/research-engine";
-export type {
-  ResearchResult,
-  ResearchOptions,
-} from "./services/research-engine";
-
-// Provider Interfaces
-export type {
-  LLMProvider,
-  SearchProvider,
-  GeneratedQuery,
-  SearchFilters,
-  SearchResultItem,
-  SearchResponse,
-} from "./interfaces";
-
-// Provider Implementations
-export { OpenAIProvider, createOpenAIProvider } from "./services/llm";
-export {
-  BraveSearchProvider,
-  createBraveSearchProvider,
-} from "./services/search";
-
-// Provider Factories
-export {
-  createLLMProvider,
-  createSearchProvider,
-  createProviders,
-} from "./providers";
-export type {
-  LLMProviderType,
-  SearchProviderType,
-  LLMProviderConfig,
-  SearchProviderConfig,
-} from "./providers";
-
 // Utils
 export { normalizeUrl as utilNormalizeUrl } from "./utils/deduplication";
 
@@ -149,11 +84,5 @@ export {
   isProjectDue,
 } from "./utils/scheduling";
 
-export {
-  saveDeliveryLog,
-  saveSearchResults,
-} from "./services/research-engine/result-storage";
-
 // Hooks
-export { useAuth } from "./hooks/useAuth";
-export { useProjects } from "../../../apps/web/hooks/use-projects";
+// export { useAuth } from "./hooks/useAuth";

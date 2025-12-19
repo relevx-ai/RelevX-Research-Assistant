@@ -1,10 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { useAuth } from "@/contexts/auth-context";
-import { useProjects } from "core";
-import { db } from "@/lib/firebase";
-import type { Project, Frequency, ResultsDestination } from "@/lib/projects";
+import type { ProjectInfo, Frequency, ResultsDestination } from "core";
 import {
   Dialog,
   DialogContent,
@@ -19,9 +16,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { Settings } from "lucide-react";
+import { useProjects } from "@/hooks/use-projects";
 
 interface EditProjectSettingsDialogProps {
-  project: Project;
+  project: ProjectInfo;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
@@ -31,8 +29,7 @@ export function EditProjectSettingsDialog({
   open,
   onOpenChange,
 }: EditProjectSettingsDialogProps) {
-  const { user } = useAuth();
-  const { updateProject } = useProjects(user?.uid, db, false);
+  const { updateProject } = useProjects();
 
   const [title, setTitle] = useState(project.title);
   const [description, setDescription] = useState(project.description);
@@ -161,7 +158,7 @@ export function EditProjectSettingsDialog({
         updateData.searchParameters = searchParameters;
       }
 
-      const success = await updateProject(project.id, updateData);
+      const success = await updateProject(project.title, updateData);
 
       if (success) {
         onOpenChange(false);

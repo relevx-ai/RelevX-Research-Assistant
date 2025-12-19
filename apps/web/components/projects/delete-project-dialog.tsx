@@ -33,7 +33,7 @@ export function DeleteProjectDialog({
     setIsDeleting(true);
     setError(null);
     try {
-      const success = await onDelete(project.id);
+      const success = await onDelete(project.title);
       if (success) {
         onOpenChange(false);
       } else {

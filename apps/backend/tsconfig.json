@@ -10,8 +10,20 @@
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "paths": {
-      "@/*": ["./*"]
+      "@/*": [
+        "./*"
+      ],
+      "core": [
+        "../../packages/core/src/index-backend.ts"
+      ],
+      "core/utils": [
+        "../../packages/core/src/utils/index.ts"
+      ]
     }
   },
-  "include": ["src/**/*"]
+  "include": [
+    "src/**/*",
+    "**/*.ts",
+    "**/*.tsx",
+  ]
 }

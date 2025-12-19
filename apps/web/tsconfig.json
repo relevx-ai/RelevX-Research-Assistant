@@ -28,7 +28,7 @@
         "./*"
       ],
       "core": [
-        "../../packages/core/src/index.ts"
+        "../../packages/core/src/index-web.ts"
       ],
       "core/*": [
         "../../packages/core/src/*"

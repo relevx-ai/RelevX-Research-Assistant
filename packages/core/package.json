@@ -6,11 +6,19 @@
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
+      "import": "./src/index.ts",
       "default": "./dist/index.js"
     },
+    "./backend": {
+      "import": "./src/index-backend.ts",
+      "default": "./dist/index-backend.js"
+    },
+    "./web": {
+      "import": "./src/index-web.ts",
+      "default": "./dist/index-web.js"
+    },
     "./utils": {
-      "types": "./dist/utils/index.d.ts",
+      "import": "./src/utils/index.ts",
       "default": "./dist/utils/index.js"
     }
   },

@@ -14,6 +14,14 @@
     "esModuleInterop": true,
     "skipLibCheck": true
   },
-  "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist", "src/scripts"]
+  "include": [
+    "src/**/*",
+    "../../apps/web/lib/projects.ts",
+    "../../apps/web/hooks/use-projects.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "src/scripts"
+  ]
 }

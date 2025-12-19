@@ -16,7 +16,7 @@ import type { Frequency } from "../models/project";
  * @returns true if enough time has passed, false if too soon
  */
 export function validateFrequency(
-  frequency: Frequency,
+  // frequency: Frequency,
   lastRunAt?: number
 ): boolean {
   if (!lastRunAt) {
@@ -43,7 +43,7 @@ export function calculateNextRunAt(
   frequency: Frequency,
   deliveryTime: string,
   timezone: string,
-  lastRunAt?: number
+  // lastRunAt?: number
 ): number {
   // Parse delivery time
   const [hours, minutes] = deliveryTime.split(":").map(Number);

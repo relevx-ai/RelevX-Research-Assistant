@@ -2,30 +2,27 @@
  * useProjects hook
  *
  * Provides real-time access to a user's projects and methods to manage them.
- *
- * @param userId - The user ID to fetch projects for
- * @param dbInstance - Optional Firebase Firestore instance (defaults to core's Firebase instance)
- * @param isAdminSDK - Optional flag indicating if using Admin SDK (defaults to core's default)
  */
 
 import { useState, useEffect, useCallback } from "react";
-import type { Project, NewProject, ProjectStatus } from "../models/project";
+import type { ProjectInfo, NewProject, ProjectStatus } from "../../../packages/core/src/models/project";
 import {
   subscribeToProjects,
   createProject as createProjectService,
   updateProject as updateProjectService,
   updateProjectStatus,
   deleteProject as deleteProjectService,
-} from "../services/projects";
+} from "../lib/projects";
+import { useAuth } from "../contexts/auth-context";
 
 interface UseProjectsResult {
-  projects: Project[];
+  projects: ProjectInfo[];
   loading: boolean;
   error: string | null;
-  createProject: (data: Omit<NewProject, "userId">) => Promise<Project | null>;
+  createProject: (data: Omit<NewProject, "userId">) => Promise<ProjectInfo | null>;
   updateProject: (
     projectId: string,
-    data: Partial<Omit<Project, "id" | "userId" | "createdAt">>
+    data: Partial<Omit<ProjectInfo, "updatedAt" | "createdAt">>
   ) => Promise<boolean>;
   toggleProjectActive: (
     projectId: string,
@@ -35,16 +32,14 @@ interface UseProjectsResult {
 }
 
 export function useProjects(
-  userId: string | undefined,
-  dbInstance?: any,
-  isAdminSDK?: boolean
 ): UseProjectsResult {
-  const [projects, setProjects] = useState<Project[]>([]);
+  const { user } = useAuth();
+  const [projects, setProjects] = useState<ProjectInfo[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!userId) {
+    if (!user?.uid) {
       setProjects([]);
       setLoading(false);
       return;
@@ -54,31 +49,25 @@ export function useProjects(
     setError(null);
 
     const unsubscribe = subscribeToProjects(
-      userId,
       (newProjects) => {
         setProjects(newProjects);
         setLoading(false);
       },
-      dbInstance,
-      isAdminSDK
     );
 
     return unsubscribe;
-  }, [userId, dbInstance, isAdminSDK]);
+  }, [user]);
 
   const createProject = useCallback(
-    async (data: Omit<NewProject, "userId">): Promise<Project | null> => {
-      if (!userId) {
+    async (data: Omit<NewProject, "userId">): Promise<ProjectInfo | null> => {
+      if (!user?.uid) {
         setError("User must be logged in to create a project");
         return null;
       }
 
       try {
         const newProject = await createProjectService(
-          userId,
           data,
-          dbInstance,
-          isAdminSDK
         );
         return newProject;
       } catch (err) {
@@ -88,26 +77,23 @@ export function useProjects(
         return null;
       }
     },
-    [userId, dbInstance, isAdminSDK]
+    [user]
   );
 
   const updateProject = useCallback(
     async (
-      projectId: string,
-      data: Partial<Omit<Project, "id" | "userId" | "createdAt">>
+      projectTitle: string,
+      data: Partial<Omit<ProjectInfo, "updatedAt" | "createdAt">>
     ): Promise<boolean> => {
-      if (!userId) {
+      if (!user?.uid) {
         setError("User must be logged in to update a project");
         return false;
       }
 
       try {
         await updateProjectService(
-          userId,
-          projectId,
+          projectTitle,
           data,
-          dbInstance,
-          isAdminSDK
         );
         return true;
       } catch (err) {
@@ -117,25 +103,22 @@ export function useProjects(
         return false;
       }
     },
-    [userId, dbInstance, isAdminSDK]
+    [user]
   );
 
   const toggleProjectActive = useCallback(
-    async (projectId: string, status: ProjectStatus): Promise<boolean> => {
-      if (!userId) {
+    async (projectTitle: string, status: ProjectStatus): Promise<boolean> => {
+      if (!user?.uid) {
         setError("User must be logged in to toggle project status");
         return false;
       }
 
       try {
-        await updateProjectStatus(
-          userId,
-          projectId,
+        const response = await updateProjectStatus(
+          projectTitle,
           status,
-          dbInstance,
-          isAdminSDK
         );
-        return true;
+        return response;
       } catch (err) {
         const errorMessage =
           err instanceof Error
@@ -145,18 +128,18 @@ export function useProjects(
         return false;
       }
     },
-    [userId, dbInstance, isAdminSDK]
+    [user]
   );
 
   const deleteProject = useCallback(
-    async (projectId: string): Promise<boolean> => {
-      if (!userId) {
+    async (projectTitle: string): Promise<boolean> => {
+      if (!user?.uid) {
         setError("User must be logged in to delete a project");
         return false;
       }
 
       try {
-        await deleteProjectService(userId, projectId, dbInstance, isAdminSDK);
+        await deleteProjectService(projectTitle);
         return true;
       } catch (err) {
         const errorMessage =
@@ -165,7 +148,7 @@ export function useProjects(
         return false;
       }
     },
-    [userId, dbInstance, isAdminSDK]
+    [user]
   );
 
   return {

@@ -5,8 +5,6 @@
  * and managing processed content history.
  */
 
-import type { ProcessedUrl } from "../models/search-history";
-
 /**
  * Normalize URL for consistent comparison
  * - Remove www prefix

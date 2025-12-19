@@ -1,10 +1,8 @@
 "use client";
 
 import React, { useState } from "react";
-import { useAuth } from "@/contexts/auth-context";
-import { useProjects } from "core";
-import { db } from "@/lib/firebase";
-import type { Project } from "@/lib/projects";
+import { useProjects } from "@/hooks/use-projects";
+import type { ProjectInfo } from "core";
 import {
   Card,
   CardHeader,
@@ -37,16 +35,11 @@ import { DeleteProjectDialog } from "./delete-project-dialog";
 import { EditProjectSettingsDialog } from "./edit-project-settings-dialog";
 
 interface ProjectCardProps {
-  project: Project;
+  project: ProjectInfo;
 }
 
 export function ProjectCard({ project }: ProjectCardProps) {
-  const { user } = useAuth();
-  const { toggleProjectActive, deleteProject } = useProjects(
-    user?.uid,
-    db,
-    false
-  );
+  const { toggleProjectActive, deleteProject } = useProjects();
 
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [settingsDialogOpen, setSettingsDialogOpen] = useState(false);
@@ -87,7 +80,7 @@ export function ProjectCard({ project }: ProjectCardProps) {
     setIsToggling(true);
     try {
       const newStatus = project.status === "active" ? "paused" : "active";
-      await toggleProjectActive(project.id, newStatus);
+      await toggleProjectActive(project.title, newStatus);
     } catch (err) {
       console.error("Failed to toggle project status:", err);
     } finally {
@@ -137,9 +130,8 @@ export function ProjectCard({ project }: ProjectCardProps) {
                   Settings
                 </DropdownMenuItem>
                 <DropdownMenuItem
-                  className={`gap-2 ${
-                    isToggling ? "opacity-50 pointer-events-none" : ""
-                  }`}
+                  className={`gap-2 ${isToggling ? "opacity-50 pointer-events-none" : ""
+                    }`}
                   onClick={isToggling ? undefined : handleToggleActive}
                 >
                   {project.status === "active" ? (

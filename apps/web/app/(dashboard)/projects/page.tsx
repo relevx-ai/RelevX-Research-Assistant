@@ -4,15 +4,14 @@ import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Plus, FolderOpen } from "lucide-react";
 import { useAuth } from "@/contexts/auth-context";
-import { useProjects } from "core";
-import { db } from "@/lib/firebase";
 import { Button } from "@/components/ui/button";
 import { ProjectCard } from "@/components/projects/project-card";
 import { CreateProjectDialog } from "@/components/projects/create-project-dialog";
+import { useProjects } from "@/hooks/use-projects";
 
 export default function ProjectsPage() {
-  const { user, userProfile } = useAuth();
-  const { projects, loading } = useProjects(user?.uid, db, false);
+  const { userProfile } = useAuth();
+  const { projects, loading } = useProjects();
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
 
   // Sort projects: active projects first, then paused projects
@@ -24,10 +23,6 @@ export default function ProjectsPage() {
   });
 
   const handleCreateProject = () => {
-    const hasValidPlanId = userProfile?.planId !== "";
-    if (!hasValidPlanId) {
-      return;
-    }
     setCreateDialogOpen(true);
   };
 
@@ -46,14 +41,20 @@ export default function ProjectsPage() {
             Manage your research projects and track ongoing investigations
           </p>
         </div>
-        <Button
-          size="lg"
-          className="gap-2"
-          onClick={() => handleCreateProject()}
+        <motion.div
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          transition={{ type: "spring", stiffness: 400, damping: 17 }}
         >
-          <Plus className="w-5 h-5" />
-          New Project
-        </Button>
+          <Button
+            size="lg"
+            className="gap-2 shadow-md hover:shadow-xl transition-shadow duration-300"
+            onClick={() => handleCreateProject()}
+          >
+            <Plus className="w-5 h-5" />
+            New Project
+          </Button>
+        </motion.div>
       </motion.div>
 
       {/* Loading State */}
@@ -78,10 +79,16 @@ export default function ProjectsPage() {
           <p className="text-muted-foreground mb-6">
             Create your first project to start tracking research topics
           </p>
-          <Button onClick={() => handleCreateProject()} className="gap-2">
-            <Plus className="w-4 h-4" />
-            Create Project
-          </Button>
+          <motion.div
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            transition={{ type: "spring", stiffness: 400, damping: 17 }}
+          >
+            <Button onClick={() => handleCreateProject()} className="gap-2 shadow-md hover:shadow-xl transition-shadow duration-300">
+              <Plus className="w-4 h-4" />
+              Create Project
+            </Button>
+          </motion.div>
         </motion.div>
       )}
 
@@ -96,7 +103,7 @@ export default function ProjectsPage() {
           <AnimatePresence mode="popLayout">
             {sortedProjects.map((project, index) => (
               <motion.div
-                key={project.id}
+                key={project.title}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95 }}

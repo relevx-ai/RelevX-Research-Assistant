@@ -91,9 +91,15 @@ export interface Project {
   researchStartedAt?: number; // Timestamp when current research started (for "running" status)
 
   // Timestamps
-  createdAt: number;
-  updatedAt: number;
+  createdAt: string;
+  updatedAt: string;
 }
+
+export interface ProjectInfo extends Omit<
+  Project,
+  | "id"
+  | "userId"
+> { }
 
 /**
  * Project data needed to create a new project
@@ -101,12 +107,29 @@ export interface Project {
  */
 export interface NewProject
   extends Omit<
-    Project,
-    | "id"
+    ProjectInfo,
     | "createdAt"
     | "updatedAt"
     | "status"
     | "lastRunAt"
     | "nextRunAt"
     | "lastError"
-  > {}
+  > { }
+
+export interface ListProjectsResponse {
+  projects: ProjectInfo[];
+}
+
+export interface CreateProjectRequest {
+  projectInfo: NewProject;
+}
+
+export interface CreateProjectResponse {
+  project: ProjectInfo;
+}
+
+export interface ToggleProjectStatusResponse {
+  errorCode?: string;
+  errorMessage?: string;
+  status: ProjectStatus;
+}

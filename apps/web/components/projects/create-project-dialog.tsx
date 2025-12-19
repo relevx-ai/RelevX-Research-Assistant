@@ -1,10 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { useAuth } from "@/contexts/auth-context";
-import { useProjects } from "core";
-import { db } from "@/lib/firebase";
-import type { Frequency, ResultsDestination } from "@/lib/projects";
+import { Frequency, ResultsDestination } from "core";
 import {
   Dialog,
   DialogContent,
@@ -20,6 +17,7 @@ import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { TimePicker } from "@/components/ui/time-picker";
 import { Sparkles } from "lucide-react";
+import { useProjects } from "@/hooks/use-projects";
 
 interface CreateProjectDialogProps {
   open: boolean;
@@ -30,8 +28,7 @@ export function CreateProjectDialog({
   open,
   onOpenChange,
 }: CreateProjectDialogProps) {
-  const { user, userProfile } = useAuth();
-  const { createProject } = useProjects(userProfile?.uid, db, false);
+  const { createProject } = useProjects();
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
