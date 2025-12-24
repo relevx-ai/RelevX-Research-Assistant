@@ -127,7 +127,7 @@ export async function executeResearchForProject(
     // 2. Validate frequency (prevent running too often)
     if (
       !options?.ignoreFrequencyCheck &&
-      !validateFrequency(project.frequency, project.lastRunAt)
+      !validateFrequency(/*project.frequency,*/ project.lastRunAt)
     ) {
       throw new Error(
         `Project cannot be run more than once per day. Last run: ${new Date(
@@ -244,14 +244,14 @@ export async function executeResearchForProject(
         }
       }
       const uniqueResults = Array.from(uniqueUrlsMap.values());
-      
+
       // 7.3.5 Pre-filter by keywords (if specified) to avoid unnecessary extraction
       // This saves bandwidth/scraping tokens by checking title/snippet first
       const requiredKeywords = project.searchParameters?.requiredKeywords || [];
       const excludedKeywords = project.searchParameters?.excludedKeywords || [];
-      
+
       let preFilteredResults = uniqueResults;
-      
+
       if (excludedKeywords.length > 0) {
         preFilteredResults = preFilteredResults.filter(result => {
           const contentText = `${result.title || ""} ${result.description || ""}`.toLowerCase();
@@ -261,11 +261,11 @@ export async function executeResearchForProject(
 
       // We don't filter strictly by required keywords here because they might appear in full content
       // but we can prioritize them if we need to limit the results
-      
+
       // 7.3.6 Limit total URLs to extract to avoid excessive processing
       // Take top 25 results max
       const limitedResults = preFilteredResults.slice(0, 25);
-      
+
       console.log(
         `Found ${uniqueResults.length} unique URLs. Filtered to ${limitedResults.length} for extraction.`
       );
@@ -280,11 +280,11 @@ export async function executeResearchForProject(
         const normalizedUrl = result.url.toLowerCase().replace(/\/$/, "");
         processedUrlsSet.add(normalizedUrl);
       }
-      
+
       // 7.4.a Filter results using LLM (Pre-fetch filtering)
       // This saves tokens/time by not fetching irrelevant pages
       let resultsToFetch = limitedResults;
-      
+
       if (llmProvider.filterSearchResults && limitedResults.length > 0) {
         console.log("Filtering search results with LLM...");
         const resultsForFilter = limitedResults.map(r => ({
@@ -295,10 +295,10 @@ export async function executeResearchForProject(
 
         try {
           const filtered = await llmProvider.filterSearchResults(
-            resultsForFilter, 
+            resultsForFilter,
             project.description
           );
-          
+
           const urlsToKeep = new Set(
             filtered.filter(f => f.keep).map(f => f.url)
           );
@@ -342,9 +342,8 @@ export async function executeResearchForProject(
         filteredContents = successfulContents.filter((content) => {
           // Check for excluded keywords first (case-insensitive)
           if (excludedKeywords.length > 0) {
-            const contentText = `${content.title || ""} ${content.snippet} ${
-              content.fullContent || ""
-            }`.toLowerCase();
+            const contentText = `${content.title || ""} ${content.snippet} ${content.fullContent || ""
+              }`.toLowerCase();
             const hasExcludedKeyword = excludedKeywords.some((keyword) =>
               contentText.includes(keyword.toLowerCase())
             );
@@ -355,9 +354,8 @@ export async function executeResearchForProject(
 
           // Check for required keywords (case-insensitive)
           if (requiredKeywords.length > 0) {
-            const contentText = `${content.title || ""} ${content.snippet} ${
-              content.fullContent || ""
-            }`.toLowerCase();
+            const contentText = `${content.title || ""} ${content.snippet} ${content.fullContent || ""
+              }`.toLowerCase();
             const hasRequiredKeyword = requiredKeywords.some((keyword) =>
               contentText.includes(keyword.toLowerCase())
             );
@@ -579,7 +577,7 @@ export async function executeResearchForProject(
             report,
             projectId
           );
-          
+
           if (emailResult.success) {
             console.log("Email sent successfully:", emailResult.id);
           } else {
@@ -613,7 +611,7 @@ export async function executeResearchForProject(
       project.frequency,
       project.deliveryTime,
       project.timezone,
-      startedAt
+      /*startedAt*/
     );
 
     // 13. Update project execution tracking

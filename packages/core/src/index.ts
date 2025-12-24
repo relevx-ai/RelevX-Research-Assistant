@@ -153,7 +153,3 @@ export {
   saveDeliveryLog,
   saveSearchResults,
 } from "./services/research-engine/result-storage";
-
-// Hooks
-export { useAuth } from "./hooks/useAuth";
-export { useProjects } from "../../../apps/web/hooks/use-projects";

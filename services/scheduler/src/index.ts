@@ -348,7 +348,7 @@ async function runResearchJob(): Promise<void> {
               project.frequency,
               project.deliveryTime,
               project.timezone,
-              Date.now()
+              // Date.now()
             );
 
             logger.info("Retry research succeeded", {
@@ -397,7 +397,7 @@ async function runResearchJob(): Promise<void> {
               project.frequency,
               project.deliveryTime,
               project.timezone,
-              Date.now()
+              // Date.now()
             );
 
             await db
@@ -520,7 +520,7 @@ async function runDeliveryJob(): Promise<void> {
           project.frequency,
           project.deliveryTime,
           project.timezone,
-          now
+          // now
         );
 
         // Update project

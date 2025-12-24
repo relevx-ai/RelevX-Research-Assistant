@@ -260,10 +260,10 @@ const routes: FastifyPluginAsync = async (app) => {
       }
 
       if (event.type === "checkout.session.completed") {
-        const session = event.data.object as Stripe.Checkout.Session;
+        // const session = event.data.object as Stripe.Checkout.Session;
 
-        const subscriptionId = session.subscription;
-        const customerId = session.customer;
+        // const subscriptionId = session.subscription;
+        // const customerId = session.customer;
 
         // ✅ Grant access in your DB here
       }
@@ -271,8 +271,6 @@ const routes: FastifyPluginAsync = async (app) => {
       return reply.send({ received: true });
     }
   );
-
-);
 
 };
 

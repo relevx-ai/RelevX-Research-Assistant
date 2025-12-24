@@ -2,25 +2,16 @@ import fp from "fastify-plugin";
 import { initializeApp, cert } from "firebase-admin/app";
 import { getAuth } from "firebase-admin/auth";
 import { getFirestore } from "firebase-admin/firestore";
-import { readFileSync } from "fs";
-import { join } from "path";
 
 export default fp(async (app: any) => {
-  // Read Firebase service account from file
-  const serviceAccountPath = join(process.cwd(), 'secrets', 'relevx-service-account.json');
-  let serviceAccountJson;
-
-  try {
-    const serviceAccountFile = readFileSync(serviceAccountPath, 'utf8');
-    serviceAccountJson = JSON.parse(serviceAccountFile);
-  } catch (error) {
-    throw new Error(`Failed to read Firebase service account from ${serviceAccountPath}: ${error instanceof Error ? error.message : String(error)}. Please ensure the file exists and contains valid JSON.`);
-  }
-
   // Initialize Firebase Admin with service account credentials
   const firebaseApp = initializeApp({
-    credential: cert(serviceAccountJson),
-    projectId: serviceAccountJson.project_id,
+    credential: cert({
+      projectId: process.env.FIREBASE_BACKEND_SERVICE_ACCOUNT_project_id,
+      privateKey: process.env.FIREBASE_BACKEND_SERVICE_ACCOUNT_private_key,
+      clientEmail: process.env.FIREBASE_BACKEND_SERVICE_ACCOUNT_client_email,
+    }),
+    projectId: process.env.FIREBASE_BACKEND_SERVICE_ACCOUNT_project_id,
   });
 
   const auth = getAuth(firebaseApp);
@@ -30,7 +21,7 @@ export default fp(async (app: any) => {
     throw new Error("Failed to initialize Firebase Admin");
   }
   else {
-    console.log("Firebase Admin initialized successfully");
+    app.log.info("Firebase Admin initialized successfully");
   }
 
   app.decorate("firebase", { auth, db });

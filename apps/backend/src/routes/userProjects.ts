@@ -1,5 +1,5 @@
 import type { FastifyPluginAsync } from "fastify";
-import type { ProjectInfo, ListProjectsResponse, CreateProjectRequest, CreateProjectResponse, ToggleProjectStatusResponse, ProjectStatus } from "core";
+import type { ProjectInfo, ListProjectsResponse, CreateProjectRequest, CreateProjectResponse } from "core";
 import { Frequency } from "core";
 import { set, isAfter, add } from "date-fns";
 import { toZonedTime, fromZonedTime } from "date-fns-tz";
