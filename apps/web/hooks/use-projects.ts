@@ -125,7 +125,7 @@ export function useProjects(
             ? err.message
             : "Failed to toggle project status";
         setError(errorMessage);
-        return false;
+        throw err;
       }
     },
     [user]

@@ -2,7 +2,7 @@ import type { FastifyPluginAsync } from "fastify";
 import type Stripe from "stripe";
 import type {
   ActivateFreeTrialRequest,
-  BillingIntentResponse,
+  BillingPortalLinkResponse,
   BillingPaymentLinkResponse,
   RelevxUserProfile,
   Plan,
@@ -18,57 +18,6 @@ const routes: FastifyPluginAsync = async (app) => {
   app.get("/healthz", async (_req, rep) => {
     return rep.send({ ok: true });
   });
-
-  app.get(
-    "/setup-intent",
-    { preHandler: [app.rlPerRoute(10)] },
-    async (req: any, rep) => {
-      try {
-        const userId = req.user?.uid;
-        if (!userId) {
-          return rep
-            .status(401)
-            .send({ error: { message: "Unauthenticated" } });
-        }
-
-        // Create or update user document in Firestore
-        const userRef = db.collection("users").doc(userId);
-        const userDoc = await userRef.get();
-
-        if (!userDoc.exists) {
-          return rep.status(404).send({ error: { message: "User not found" } });
-        }
-
-        const userData = userDoc.data() as RelevxUserProfile;
-        const setupIntent = await stripe.setupIntents.create({
-          customer: userData.billing.stripeCustomerId,
-          payment_method_types: ["card", "us_bank_account"], // or ['us_bank_account'] for ACH
-        });
-
-        if (!setupIntent) {
-          return rep
-            .status(500)
-            .send({ error: { message: "Failed to create setup intent" } });
-        }
-
-        return rep.status(200).send({
-          ok: true,
-          stripeSetupIntentClientSecret: setupIntent.client_secret,
-        } as BillingIntentResponse);
-      } catch (err: any) {
-        const isDev = process.env.NODE_ENV !== "production";
-        const detail = err instanceof Error ? err.message : String(err);
-        req.log?.error({ detail }, "/billing/setup-intent failed");
-        return rep.status(500).send({
-          error: {
-            code: "internal_error",
-            message: "Billing setup intent failed",
-            ...(isDev ? { detail } : {}),
-          },
-        });
-      }
-    }
-  );
 
   app.get(
     "/payment-link",
@@ -141,6 +90,61 @@ const routes: FastifyPluginAsync = async (app) => {
           error: {
             code: "internal_error",
             message: "Billing payment link failed",
+            ...(isDev ? { detail } : {}),
+          },
+        });
+      }
+    }
+  );
+
+  app.get(
+    "/portal",
+    { preHandler: [app.rlPerRoute(10)] },
+    async (req: any, rep) => {
+      try {
+        const userId = req.user?.uid;
+        if (!userId) {
+          return rep
+            .status(401)
+            .send({ error: { message: "Unauthenticated" } });
+        }
+
+        // Create or update user document in Firestore
+        const userRef = db.collection("users").doc(userId);
+        const userDoc = await userRef.get();
+
+        if (!userDoc.exists) {
+          return rep.status(404).send({ error: { message: "User not found" } });
+        }
+
+        const userData = userDoc.data() as RelevxUserProfile;
+        if (!userData.billing.stripeCustomerId) {
+          return rep.status(400).send({ error: { message: "User is not a stripe customer" } });
+        }
+
+        const session = await stripe.billingPortal.sessions.create({
+          customer: userData.billing.stripeCustomerId,
+          return_url: "https://relevx.ai/projects",
+        });
+
+        if (!session) {
+          return rep
+            .status(500)
+            .send({ error: { message: "Failed to create checkout session" } });
+        }
+
+        return rep.status(200).send({
+          ok: true,
+          stripeBillingPortalLink: session.url,
+        } as BillingPortalLinkResponse);
+      } catch (err: any) {
+        const isDev = process.env.NODE_ENV !== "production";
+        const detail = err instanceof Error ? err.message : String(err);
+        req.log?.error({ detail }, "/billing/portal failed");
+        return rep.status(500).send({
+          error: {
+            code: "internal_error",
+            message: "Billing portal link failed",
             ...(isDev ? { detail } : {}),
           },
         });

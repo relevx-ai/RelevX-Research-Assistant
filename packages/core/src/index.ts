@@ -27,6 +27,7 @@ export type {
   RelevxUserBilling,
   BillingIntentResponse,
   BillingPaymentLinkResponse,
+  BillingPortalLinkResponse,
   ActivateFreeTrialRequest,
   ActivateFreeTrialResponse,
 } from "./models/billing";

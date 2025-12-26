@@ -144,10 +144,17 @@ function PricingContent() {
                     </Button>
                   ) : (
                     <Button
-                      className="rounded-lg px-6 bg-gradient-to-r from-white-500 to-red-600 text-white shadow-md hover:shadow-lg hover:from-white-500 hover:to-green-700 hover:scale-105 transition-all duration-300 w-full"
-                      onClick={() => handleSelectPlanStart(plan.id)}
+                      className={`rounded-lg px-6 text-white shadow-md transition-all duration-300 w-full ${plan.infoPrice === 0 && userProfile?.freeTrailRedeemed
+                        ? "bg-gradient-to-r from-white-500 to-blue-600 cursor-not-allowed opacity-90 shadow-none"
+                        : "bg-gradient-to-r from-white-500 to-red-600 hover:shadow-lg hover:from-white-500 hover:to-green-700 hover:scale-105"
+                        }`}
+                      onClick={() => {
+                        if (plan.infoPrice === 0 && userProfile?.freeTrailRedeemed) return;
+                        handleSelectPlanStart(plan.id);
+                      }}
+                      disabled={plan.infoPrice === 0 && userProfile?.freeTrailRedeemed}
                     >
-                      Select Plan
+                      {plan.infoPrice === 0 && userProfile?.freeTrailRedeemed ? "Trial Redeemed" : "Select Plan"}
                     </Button>
                   )}
                 </div>

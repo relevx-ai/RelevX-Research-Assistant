@@ -12,6 +12,14 @@ import {
   CardFooter,
 } from "@/components/ui/card";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
   DropdownMenu,
   DropdownMenuTrigger,
   DropdownMenuContent,
@@ -44,6 +52,11 @@ export function ProjectCard({ project }: ProjectCardProps) {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [settingsDialogOpen, setSettingsDialogOpen] = useState(false);
   const [isToggling, setIsToggling] = useState(false);
+  const [errorDialog, setErrorDialog] = useState<{ open: boolean; title: string; message: string }>({
+    open: false,
+    title: "",
+    message: "",
+  });
 
   const frequencyLabels = {
     daily: "Daily",
@@ -81,8 +94,16 @@ export function ProjectCard({ project }: ProjectCardProps) {
     try {
       const newStatus = project.status === "active" ? "paused" : "active";
       await toggleProjectActive(project.title, newStatus);
-    } catch (err) {
+    } catch (err: any) {
       console.error("Failed to toggle project status:", err);
+      // Check if it's a ProjectError with custom code
+      if (err.errorCode) {
+        setErrorDialog({
+          open: true,
+          title: "Action Failed",
+          message: err.errorMessage || "An unexpected error occurred."
+        });
+      }
     } finally {
       setIsToggling(false);
     }
@@ -219,6 +240,25 @@ export function ProjectCard({ project }: ProjectCardProps) {
         open={settingsDialogOpen}
         onOpenChange={setSettingsDialogOpen}
       />
+
+      <Dialog open={errorDialog.open} onOpenChange={(open: boolean) => setErrorDialog(prev => ({ ...prev, open }))}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{errorDialog.title}</DialogTitle>
+            <DialogDescription>
+              {errorDialog.message}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              onClick={() => setErrorDialog(prev => ({ ...prev, open: false }))}
+              className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-md hover:shadow-xl hover:scale-105 transition-all duration-300"
+            >
+              OK
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

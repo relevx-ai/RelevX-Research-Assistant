@@ -17,6 +17,13 @@ export interface BillingPaymentLinkResponse {
   stripePaymentLink: string;
 }
 
+export interface BillingPortalLinkResponse {
+  //
+  ok: boolean;
+  // Stripe billing portal link
+  stripeBillingPortalLink: string;
+}
+
 export interface ActivateFreeTrialRequest {
   // --
   planId: string;

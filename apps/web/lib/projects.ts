@@ -143,6 +143,19 @@ export function subscribeToProjects(
   };
 }
 
+// Custom error class to propagate structured backend errors to the UI
+export class ProjectError extends Error {
+  errorCode?: string;
+  errorMessage?: string;
+
+  constructor(message: string, errorCode?: string, errorMessage?: string) {
+    super(message);
+    this.name = "ProjectError";
+    this.errorCode = errorCode;
+    this.errorMessage = errorMessage;
+  }
+}
+
 /**
  * Update project status
  */
@@ -159,9 +172,7 @@ export async function updateProjectStatus(
   }
 
   if (response.errorCode) {
-    if (response.errorCode === "invalid_subscription") {
-      throw new Error("Invalid subscription");
-    }
+    throw new ProjectError(response.errorMessage || "Error updating project", response.errorCode, response.errorMessage);
   }
 
   return response.status === status;

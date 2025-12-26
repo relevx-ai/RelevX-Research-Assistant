@@ -2,7 +2,9 @@
 
 import React from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/auth-context";
+import { usePlans } from "@/hooks/use-plans";
 import { signInWithGoogle, signOut } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import {
@@ -12,10 +14,14 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
-import { User, LogOut, Sparkles } from "lucide-react";
+import { User, LogOut, Sparkles, CreditCard, Receipt } from "lucide-react";
+import { relevx_api } from "@/lib/client";
+import { BillingPortalLinkResponse } from "core/models/billing";
 
 export function Navbar() {
-  const { user, loading } = useAuth();
+  const { user, userProfile, loading } = useAuth();
+  const { plans } = usePlans();
+  const router = useRouter();
 
   const handleSignIn = async () => {
     try {
@@ -32,6 +38,33 @@ export function Navbar() {
       console.error("Sign out failed:", error);
     }
   };
+
+  const getPlanStatus = () => {
+    if (!userProfile?.planId) return "Inactive";
+    const userPlan = plans.find((p) => p.id === userProfile.planId);
+    if (!userPlan) return "Inactive";
+    return userPlan.infoPrice === 0 ? "Free" : "Pro";
+  };
+
+  const handleUserBillingClicked = async () => {
+    // fetch a customer specific payment link..
+    const response = await relevx_api.get<BillingPortalLinkResponse>(
+      `/api/v1/user/billing/portal`
+    );
+    if (!response.ok) {
+      throw new Error("Failed to create or update user");
+    }
+
+    window.location.href = response.stripeBillingPortalLink;
+  };
+
+  const planStatus = getPlanStatus();
+  const statusColor =
+    planStatus === "Pro"
+      ? "bg-gradient-to-r from-blue-500 to-purple-600 border-none text-white"
+      : planStatus === "Free"
+        ? "bg-green-100 text-green-800 border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-800"
+        : "bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700";
 
   return (
     <nav className="sticky top-0 z-40 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -50,9 +83,9 @@ export function Navbar() {
             </span>
           </Link>
 
-          <Button 
-            variant="ghost" 
-            asChild 
+          <Button
+            variant="ghost"
+            asChild
             className="hidden sm:flex h-auto py-1.5 text-base font-medium transition-all duration-300 hover:scale-105 hover:bg-gradient-to-r hover:from-blue-500/10 hover:to-purple-600/10 hover:text-blue-600"
           >
             <Link href="/pricing">Pricing</Link>
@@ -66,43 +99,85 @@ export function Navbar() {
           ) : user ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="gap-2">
+                <Button variant="ghost" className="gap-2 relative">
                   {user.photoURL ? (
                     <img
                       src={user.photoURL}
                       alt={user.displayName || "User"}
-                      className="w-6 h-6 rounded-full"
+                      className="w-8 h-8 rounded-full border border-border"
                     />
                   ) : (
-                    <User className="w-4 h-4" />
+                    <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center border border-border">
+                      <User className="w-4 h-4" />
+                    </div>
                   )}
-                  <span className="hidden sm:inline">
-                    {user.displayName || user.email}
+                  <span className="hidden sm:inline font-medium">
+                    {user.displayName || user.email?.split('@')[0]}
                   </span>
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
-                <div className="flex items-center justify-start gap-2 p-2">
-                  <div className="flex flex-col space-y-1 leading-none">
+              <DropdownMenuContent align="end" className="w-60 p-2">
+                <div className="flex items-center justify-start gap-3 p-2 mb-1">
+                  {user.photoURL ? (
+                    <img
+                      src={user.photoURL}
+                      alt={user.displayName || "User"}
+                      className="w-10 h-10 rounded-full border border-border"
+                    />
+                  ) : (
+                    <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center border border-border">
+                      <User className="w-5 h-5" />
+                    </div>
+                  )}
+                  <div className="flex flex-col space-y-0.5 overflow-hidden">
                     {user.displayName && (
-                      <p className="font-medium text-sm">{user.displayName}</p>
+                      <p className="font-semibold text-sm truncate">{user.displayName}</p>
                     )}
                     {user.email && (
-                      <p className="text-xs text-muted-foreground">
+                      <p className="text-xs text-muted-foreground truncate">
                         {user.email}
                       </p>
                     )}
                   </div>
                 </div>
+
+                <div className="px-2 pb-2">
+                  <div className={`text-xs px-2 py-1 rounded-full w-fit font-medium flex items-center gap-1.5 ${statusColor}`}>
+                    <div className={`w-1.5 h-1.5 rounded-full ${planStatus === 'Pro' ? 'bg-white' : 'bg-current'}`} />
+                    {planStatus} Plan
+                  </div>
+                </div>
+
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleSignOut} className="gap-2">
+                <DropdownMenuItem
+                  onClick={() => router.push("/pricing")}
+                  className="gap-2 cursor-pointer focus:text-blue-600 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/10"
+                >
+                  <CreditCard className="w-4 h-4" />
+                  Pricing
+                </DropdownMenuItem>
+
+                <DropdownMenuItem
+                  onClick={handleUserBillingClicked}
+                  className="gap-2 cursor-pointer focus:text-blue-600 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/10"
+                >
+                  <Receipt className="w-4 h-4" />
+                  Billing
+                </DropdownMenuItem>
+
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleSignOut} className="gap-2 text-red-600 focus:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/10 cursor-pointer">
                   <LogOut className="w-4 h-4" />
                   Sign Out
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           ) : (
-            <Button onClick={handleSignIn} variant="default">
+            <Button
+              onClick={handleSignIn}
+              variant="default"
+              className="shadow-lg shadow-blue-500/20 transition-all duration-300 hover:scale-105 hover:shadow-blue-500/40"
+            >
               Sign In with Google
             </Button>
           )}

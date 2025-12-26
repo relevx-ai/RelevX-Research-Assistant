@@ -28,7 +28,7 @@ export function CreateProjectDialog({
   open,
   onOpenChange,
 }: CreateProjectDialogProps) {
-  const { createProject } = useProjects();
+  const { createProject, projects } = useProjects();
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -60,8 +60,14 @@ export function CreateProjectDialog({
     setError("");
 
     // Validation
-    if (!title.trim()) {
+    const trimmedTitle = title.trim();
+    if (!trimmedTitle) {
       setError("Please enter a project title");
+      return;
+    }
+
+    if (projects.some((p) => p.title.toLowerCase() === trimmedTitle.toLowerCase())) {
+      setError(`Project "${trimmedTitle}" already exists. Please choose a unique title.`);
       return;
     }
 
@@ -164,6 +170,13 @@ export function CreateProjectDialog({
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
+          {/* Error Message - Fixed at top */}
+          {error && (
+            <div className="mx-1 mt-4 mb-2 rounded-md bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 p-3">
+              <p className="text-sm text-red-600 dark:text-red-400 font-medium">{error}</p>
+            </div>
+          )}
+
           <div className="space-y-6 py-4 px-1 overflow-y-auto flex-1">
             {/* Title */}
             <div className="space-y-2">
@@ -358,12 +371,6 @@ export function CreateProjectDialog({
               </p>
             </div>
 
-            {/* Error Message */}
-            {error && (
-              <div className="rounded-md bg-destructive/10 border border-destructive/20 p-3">
-                <p className="text-sm text-destructive">{error}</p>
-              </div>
-            )}
           </div>
 
           <DialogFooter>
@@ -375,7 +382,11 @@ export function CreateProjectDialog({
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={isCreating}>
+            <Button
+              type="submit"
+              disabled={isCreating}
+              className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-md hover:shadow-xl hover:scale-105 transition-all duration-300"
+            >
               {isCreating ? "Creating..." : "Create Project"}
             </Button>
           </DialogFooter>
