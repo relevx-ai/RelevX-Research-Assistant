@@ -55,6 +55,24 @@ const routes: FastifyPluginAsync = async (app) => {
         }
 
         const userData = userDoc.data() as RelevxUserProfile;
+
+        // Check if user has an active subscription -- if so, return error
+        const active_subscriptions = await stripe.subscriptions.list({
+          customer: userData.billing.stripeCustomerId,
+          status: "active",
+        });
+
+        active_subscriptions.data = active_subscriptions.data.filter((s) => s.items.data.some((i) => i.price.id !== "price_1SdeOZ2HZ4FTsWfQlJwnnqM9"));
+
+        const hasActiveSubscription = active_subscriptions.data.find((s) => s.id === planData.infoStripeSubscriptionId) !== undefined;
+        if (hasActiveSubscription) {
+          return rep.status(404).send({ errorCode: "plan_already_active", error: { message: "User already has an active subscription to this plan" } });
+        }
+
+        if (active_subscriptions.data.length > 0) {
+          return rep.status(404).send({ errorCode: "plan_already_active", error: { message: "User already has an active subscription plan. Please unsubscribe to current to start a new plan." } });
+        }
+
         const session = await stripe.checkout.sessions.create({
           mode: "subscription",
           customer: userData.billing.stripeCustomerId,

@@ -24,7 +24,7 @@ interface UseProjectsResult {
     projectId: string,
     data: Partial<Omit<ProjectInfo, "updatedAt" | "createdAt">>
   ) => Promise<boolean>;
-  toggleProjectActive: (
+  toggleProjectStatus: (
     projectId: string,
     status: ProjectStatus
   ) => Promise<boolean>;
@@ -106,7 +106,7 @@ export function useProjects(
     [user]
   );
 
-  const toggleProjectActive = useCallback(
+  const toggleProjectStatus = useCallback(
     async (projectTitle: string, status: ProjectStatus): Promise<boolean> => {
       if (!user?.uid) {
         setError("User must be logged in to toggle project status");
@@ -157,7 +157,7 @@ export function useProjects(
     error,
     createProject,
     updateProject,
-    toggleProjectActive,
+    toggleProjectStatus,
     deleteProject,
   };
 }

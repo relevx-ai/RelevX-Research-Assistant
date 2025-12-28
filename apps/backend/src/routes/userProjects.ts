@@ -330,13 +330,14 @@ const routes: FastifyPluginAsync = async (app) => {
         const doc = await getProjectByTitle(userId, title);
         if (!doc) return rep.status(404).send({ error: { message: "Project not found" } });
 
-        let cStatus = doc.data().status;
-        if (cStatus === status) return rep.status(400).send({ error: { message: "Project status is already " + status } });
+        let nStatus: string = doc.data().status;
+        let cStatus: string = nStatus;
+        if (nStatus === status) return rep.status(400).send({ error: { message: "Project status is already " + status } });
 
         let errorCode = "";
         let errorMessage = "";
 
-        const allowToggle = (cStatus !== "running" && cStatus !== "error");
+        const allowToggle = (nStatus !== "running" && nStatus !== "error");
         if (!allowToggle) {
           errorCode = "invalid_status";
           errorMessage = "Invalid status";
@@ -350,26 +351,31 @@ const routes: FastifyPluginAsync = async (app) => {
             errorMessage = "User is not subscribed";
           }
           else {
-            console.log("User is subscribed");
+            app.log.info("User is subscribed");
             // @TODO: Make sure subscription plan allows for this project to be active based on its config.
-            cStatus = status;
+            nStatus = status;
           }
         }
 
-        if (cStatus !== status) {
+        if (status === "paused") {
+          nStatus = "paused";
+        }
+
+        if (nStatus !== cStatus) {
+          app.log.info("Updating project status to " + nStatus);
           await doc.ref.update({
-            status: cStatus,
+            status: nStatus,
             updatedAt: new Date().toISOString()
           });
         }
 
-        console.log({
-          status: cStatus,
+        app.log.info({
+          status: nStatus,
           errorCode,
           errorMessage
         });
         return rep.status(200).send({
-          status: cStatus,
+          status: nStatus,
           errorCode,
           errorMessage
         });

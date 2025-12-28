@@ -11,6 +11,8 @@
 import * as dotenv from "dotenv";
 import * as cron from "node-cron";
 import { logger } from "./logger";
+import { loadAwsSecrets } from "./plugins/aws";
+
 
 // Load environment variables
 dotenv.config();
@@ -588,6 +590,9 @@ async function runSchedulerJob(): Promise<void> {
  */
 async function startScheduler(): Promise<void> {
   logger.info("Starting Research Scheduler Service");
+
+  // Load secrets from AWS Secrets Manager if available
+  await loadAwsSecrets("relevx-backend-env");
 
   // Validate required environment variables
   const requiredEnvVars = [

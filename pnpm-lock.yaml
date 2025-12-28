@@ -253,6 +253,9 @@ importers:
 
   services/scheduler:
     dependencies:
+      '@aws-sdk/client-secrets-manager':
+        specifier: ^3.958.0
+        version: 3.958.0
       core:
         specifier: workspace:*
         version: link:../../packages/core

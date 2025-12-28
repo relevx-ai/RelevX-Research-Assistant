@@ -37,6 +37,8 @@ const routes: FastifyPluginAsync = async (app) => {
           })
         );
 
+        plans.sort((a, b) => b.precedence - a.precedence);
+
         return rep.status(200).send({
           ok: true,
           plans,

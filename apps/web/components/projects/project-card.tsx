@@ -47,7 +47,7 @@ interface ProjectCardProps {
 }
 
 export function ProjectCard({ project }: ProjectCardProps) {
-  const { toggleProjectActive, deleteProject } = useProjects();
+  const { toggleProjectStatus: toggleProjectStatus, deleteProject } = useProjects();
 
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [settingsDialogOpen, setSettingsDialogOpen] = useState(false);
@@ -93,7 +93,7 @@ export function ProjectCard({ project }: ProjectCardProps) {
     setIsToggling(true);
     try {
       const newStatus = project.status === "active" ? "paused" : "active";
-      await toggleProjectActive(project.title, newStatus);
+      await toggleProjectStatus(project.title, newStatus);
     } catch (err: any) {
       console.error("Failed to toggle project status:", err);
       // Check if it's a ProjectError with custom code

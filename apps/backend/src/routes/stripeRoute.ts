@@ -85,6 +85,11 @@ const routes: FastifyPluginAsync = async (app) => {
                 },
               };
 
+              // check to see if use has already subscribed to a different plan..
+              if (await isUserSubscribed(userData, stripe)) {
+
+              }
+
               if (!(await isUserSubscribed(newUserData as RelevxUserProfile, stripe))) {
                 app.log.error("User is not subscribed");
               }

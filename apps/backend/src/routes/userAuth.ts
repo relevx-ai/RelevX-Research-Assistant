@@ -1,7 +1,6 @@
 import type { FastifyPluginAsync } from "fastify";
 import type Stripe from "stripe";
-import type { RelevxUserProfile, CreateProfileResponse } from "core";
-import { isUserSubscribed } from "../utils/billing.js";
+import type { RelevxUserProfile, CreateProfileResponse, Plan } from "core";
 
 // API key management routes: create/list/revoke. All routes rely on the auth
 // plugin to populate req.userId and tenant authorization.
@@ -91,8 +90,36 @@ const routes: FastifyPluginAsync = async (app) => {
             updateFields["billing.stripeCustomerId"] = customer.id;
           }
 
-          // check to see if user is still subscribed
-          if (!isUserSubscribed(userData, stripe)) {
+          // check users subscriptions
+          const active_subscriptions = await stripe.subscriptions.list({
+            customer: userData.billing.stripeCustomerId,
+            status: "active",
+          });
+
+          if (active_subscriptions.data.length > 0) {
+            const plansRef = db.collection("plans");
+            const snapshot = await plansRef.get();
+
+            const plans: Plan[] = await Promise.all(
+              snapshot.docs.map(async (doc) => {
+                const data: Plan = doc.data() as Plan;
+                return data;
+              })
+            );
+
+            plans.sort((a, b) => b.precedence - a.precedence);
+            for (const plan of plans) {
+              const subscription = active_subscriptions.data.find(
+                (s) => s.items.data[0].price.id === plan.infoStripeSubscriptionId
+              );
+              if (subscription) {
+                updateFields.planId = plan.id;
+                updateFields["billing.stripeSubscriptionId"] = subscription.id;
+                break;
+              }
+            }
+          }
+          else {
             updateFields.planId = "";
             updateFields["billing.stripeSubscriptionId"] = "";
           }
