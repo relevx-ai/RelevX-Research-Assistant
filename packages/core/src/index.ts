@@ -69,6 +69,10 @@ export type {
   CreateProfileResponse,
 } from "./models/users";
 
+export type {
+  AnalyticsDocument,
+} from "./models/analytics";
+
 // Services
 export { auth, db } from "./services/firebase";
 export { signInWithGoogle, signOut } from "./services/auth";

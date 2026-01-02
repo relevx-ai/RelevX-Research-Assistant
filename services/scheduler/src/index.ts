@@ -463,6 +463,9 @@ async function runDeliveryJob(): Promise<void> {
     logger.debug("Running delivery job");
 
     // Query all users
+    // @TODO: Instead of using users to query projects, use projects collection altogether and then reference the user from the project
+    // @TODO: Use pagination to avoid loading all projects at once
+    // @TODO: Future update ^ - will become non-scalable 
     const usersSnapshot = await db.collection("users").get();
     let projectsToDeliver: Array<{ userId: string; project: Project }> = [];
 
