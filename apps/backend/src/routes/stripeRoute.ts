@@ -1,4 +1,4 @@
-import { RelevxUserProfile } from "core";
+import { Plan, RelevxUserProfile } from "core";
 import type { FastifyPluginAsync } from "fastify";
 import type Stripe from "stripe";
 import { isUserSubscribed } from "../utils/billing.js";
@@ -66,6 +66,11 @@ const routes: FastifyPluginAsync = async (app) => {
           const userRef = db.collection("users").doc(metadata.userId);
           const userDoc = await userRef.get();
 
+          const planData = planDoc.data() as Plan;
+          if (!planData) {
+            app.log.error("Plan not found in Stripe Session Event or does not exist in firestore");
+          }
+
           if (!userDoc.exists) {
             app.log.error("User not found in Stripe Session Event or does not exist in firestore");
           } else {
@@ -78,6 +83,7 @@ const routes: FastifyPluginAsync = async (app) => {
               const newUserData = {
                 ...userData,
                 planId: metadata.planId,
+                freeTrailRedeemed: userData.freeTrailRedeemed || planData.infoName === "Free Trial",
                 updatedAt: new Date().toISOString(),
                 billing: {
                   ...userData.billing,

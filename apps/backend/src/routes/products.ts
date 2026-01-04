@@ -29,9 +29,11 @@ const routes: FastifyPluginAsync = async (app) => {
             const price = await stripe.prices.retrieve(
               data.infoStripeSubscriptionId
             );
+
+            const unit_amount = data.infoName === "Free Trial" ? 0 : price?.unit_amount ?? 0;
             const newData: PlanInfo = {
               ...planData,
-              infoPrice: (price?.unit_amount ?? 0) / 100,
+              infoPrice: unit_amount / 100,
             };
             return newData;
           })

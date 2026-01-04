@@ -41,56 +41,20 @@ function PricingContent() {
     if (!plan) return;
 
     if (userProfile?.planId === planId) return;
-    if (plan.infoPrice === 0 && userProfile?.freeTrailRedeemed) {
-      alert("You have already redeemed the free trial");
-      return;
-    }
 
-    if (plan.infoPrice !== 0) {
-      // fetch a customer specific payment link..
-      const response = await relevx_api.get<BillingPaymentLinkResponse>(
-        `/api/v1/user/billing/payment-link`,
-        {
-          planId: planId,
-        }
-      );
-      if (!response.ok) {
-        throw new Error("Failed to create or update user");
+    // fetch a customer specific payment link..
+    const response = await relevx_api.get<BillingPaymentLinkResponse>(
+      `/api/v1/user/billing/payment-link`,
+      {
+        planId: planId,
       }
-
-      setPaymentLink(response.stripePaymentLink);
+    );
+    if (!response.ok) {
+      throw new Error("Failed to create or update user");
     }
+
+    setPaymentLink(response.stripePaymentLink);
     setSelectedPlan(plan);
-  };
-
-  const handleActivateFreePlan = async () => {
-    if (userLoading) return;
-    if (!user) {
-      signInWithGoogle();
-      return;
-    }
-    const plan = plans.find(p => p.infoPrice === 0);
-    if (!plan) return;
-
-    if (plan.infoPrice === 0) {
-      const request = {
-        planId: plan.id,
-      } as ActivateFreeTrialRequest;
-      // fetch a customer specific payment link..
-      const response = await relevx_api.post<{ ok: boolean }>(
-        `/api/v1/user/billing/activate-free-trial`,
-        {
-          ...request,
-        }
-      );
-      if (!response.ok) {
-        throw new Error("Failed to activate free plan");
-      }
-
-      await reloadUser();
-
-      setSelectedPlan(null);
-    }
   };
 
   if (loading) {
@@ -184,39 +148,23 @@ function PricingContent() {
               ) : (
                 <DialogTitle>Start your Free Trial</DialogTitle>
               )}
-              {(selectedPlan?.infoPrice ?? 0) > 0 && (
-                <DialogDescription>
-                  Complete your purchase securely with Stripe.
-                </DialogDescription>
-              )}
+              <DialogDescription>
+                Complete your purchase securely with Stripe.
+              </DialogDescription>
             </DialogHeader>
-            {(selectedPlan?.infoPrice ?? 0) > 0 && (
-              <div className="py-4 flex justify-center w-full">
-                <Button
-                  className="w-full bg-[#635BFF] hover:bg-[#5851E1] text-white font-semibold py-2 px-4 rounded shadow-sm transition-all"
-                  onClick={() => {
-                    if (paymentLink) {
-                      window.location.href = paymentLink;
-                    }
-                  }}
-                  disabled={!paymentLink}
-                >
-                  Subscribe to {selectedPlan?.infoName}
-                </Button>
-              </div>
-            )}
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setSelectedPlan(null)}>Cancel</Button>
-              {/* Button might not be needed if Buy Button handles it, or for free plan only */}
-              {(selectedPlan?.infoPrice ?? 0) === 0 && (
-                <Button
-                  className="bg-gradient-to-r from-green-500 to-green-700 text-white shadow-md hover:shadow-lg hover:from-green-600 hover:to-green-800 hover:scale-105 transition-all duration-300"
-                  onClick={() => handleActivateFreePlan()}
-                >
-                  Activate Free Plan
-                </Button>
-              )}
-            </DialogFooter>
+            <div className="py-4 flex justify-center w-full">
+              <Button
+                className="w-full bg-[#635BFF] hover:bg-[#5851E1] text-white font-semibold py-2 px-4 rounded shadow-sm transition-all"
+                onClick={() => {
+                  if (paymentLink) {
+                    window.location.href = paymentLink;
+                  }
+                }}
+                disabled={!paymentLink}
+              >
+                Subscribe to {selectedPlan?.infoName}
+              </Button>
+            </div>
           </DialogContent>
         </Dialog>
 
