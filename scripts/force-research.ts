@@ -4,11 +4,16 @@
  * Forces a research run on a project by ID, regardless of when it's scheduled to run.
  * Useful for testing research functionality and debugging issues.
  *
+ * The email is always sent immediately after research completes.
+ *
  * Usage:
  *   pnpm tsx scripts/force-research.ts <projectId> <userId>
  *
  * Example:
  *   pnpm tsx scripts/force-research.ts abc123 user_xyz789
+ *
+ * Options:
+ *   --iterations=N  Set max iterations (default: 3)
  *
  * Environment variables required:
  *   OPENAI_API_KEY
@@ -44,7 +49,6 @@ async function forceResearch(
   options?: {
     maxIterations?: number;
     skipScheduleCheck?: boolean;
-    markAsDelivered?: boolean;
   }
 ): Promise<void> {
   console.log("\n" + "=".repeat(60));
@@ -52,7 +56,6 @@ async function forceResearch(
   console.log("=".repeat(60) + "\n");
 
   const skipScheduleCheck = options?.skipScheduleCheck ?? true;
-  const markAsDelivered = options?.markAsDelivered ?? false;
   const maxIterations = options?.maxIterations ?? 3;
 
   console.log(`User ID:        ${userId}`);
@@ -61,9 +64,7 @@ async function forceResearch(
   console.log(
     `Skip Schedule:  ${skipScheduleCheck ? "Yes (force run now)" : "No"}`
   );
-  console.log(
-    `Mark Delivered: ${markAsDelivered ? "Yes (mark as success)" : "No (mark as pending)"}\n`
-  );
+  console.log(`Send Email:     Yes (immediately after research)\n`);
 
   const startTime = Date.now();
 
@@ -166,9 +167,7 @@ async function forceResearch(
     if (result.relevantResults.length > 0) {
       console.log("Top Results:");
       result.relevantResults.slice(0, 5).forEach((r, idx) => {
-        console.log(
-          `  ${idx + 1}. [${r.relevancyScore}] ${r.metadata.title}`
-        );
+        console.log(`  ${idx + 1}. [${r.relevancyScore}] ${r.metadata.title}`);
         console.log(`     ${r.url}`);
       });
       console.log();
@@ -184,33 +183,58 @@ async function forceResearch(
     if (result.deliveryLogId) {
       console.log(`Delivery Log ID: ${result.deliveryLogId}\n`);
 
-      // 4. Send email if configured and requested
-      // NOTE: executeResearchForProject now handles email sending internally, 
-      // so we don't need to send it again here.
-      
       const deliveryEmail = project.deliveryConfig?.email?.address || userEmail;
-      
-      if (result.report && !deliveryEmail) {
+
+      // 4. Send email immediately if we have a report and email address
+      if (result.report && deliveryEmail) {
+        console.log(`📧 Sending report email to ${deliveryEmail}...`);
+
+        const emailResult = await sendReportEmail(
+          deliveryEmail,
+          {
+            title: result.report.title,
+            markdown: result.report.markdown,
+          },
+          projectId,
+          {
+            summary: result.report.summary,
+            resultCount: result.relevantResults.length,
+            averageScore: Math.round(result.report.averageScore),
+          }
+        );
+
+        if (emailResult.success) {
+          console.log(`✓ Email sent successfully (ID: ${emailResult.id})\n`);
+
+          // Update delivery log status to success
+          const deliveryLogRef = projectRef
+            .collection("deliveryLogs")
+            .doc(result.deliveryLogId);
+
+          await deliveryLogRef.update({
+            status: "success",
+            deliveredAt: Date.now(),
+          });
+          console.log("✓ Delivery log marked as delivered\n");
+        } else {
+          console.error(`✗ Failed to send email: ${emailResult.error}\n`);
+
+          // Mark delivery log as failed
+          const deliveryLogRef = projectRef
+            .collection("deliveryLogs")
+            .doc(result.deliveryLogId);
+
+          await deliveryLogRef.update({
+            status: "failed",
+            lastError: emailResult.error?.message || "Email send failed",
+          });
+        }
+      } else if (result.report && !deliveryEmail) {
         console.log(
           `⚠️  Email not configured. Set deliveryConfig.email.address in project settings or ensure user profile has an email.\n`
         );
-      }
 
-
-      // 5. Update delivery log status if needed
-      if (markAsDelivered) {
-        console.log("📨 Marking delivery log as delivered...");
-        const deliveryLogRef = projectRef
-          .collection("deliveryLogs")
-          .doc(result.deliveryLogId);
-
-        await deliveryLogRef.update({
-          status: "success",
-          deliveredAt: Date.now(),
-        });
-        console.log("✓ Delivery log marked as delivered\n");
-      } else {
-        console.log("📋 Setting delivery log to pending status...");
+        // Mark as pending since we couldn't send
         const deliveryLogRef = projectRef
           .collection("deliveryLogs")
           .doc(result.deliveryLogId);
@@ -218,7 +242,6 @@ async function forceResearch(
         await deliveryLogRef.update({
           status: "pending",
           preparedAt: Date.now(),
-          deliveredAt: null,
         });
         console.log("✓ Delivery log marked as pending\n");
       }
@@ -233,11 +256,6 @@ async function forceResearch(
       updatedAt: Date.now(),
     };
 
-    if (!markAsDelivered && result.deliveryLogId) {
-      // Store prepared delivery log for later delivery
-      updates.preparedDeliveryLogId = result.deliveryLogId;
-    }
-
     await projectRef.update(updates);
     console.log("✓ Project status updated\n");
 
@@ -248,13 +266,6 @@ async function forceResearch(
     console.log(
       `Research completed successfully in ${duration}s with ${result.relevantResults.length} relevant results.`
     );
-    if (!markAsDelivered && result.deliveryLogId) {
-      console.log(
-        `Results are ready but marked as pending. They will be delivered at the scheduled time.`
-      );
-    } else if (markAsDelivered) {
-      console.log(`Results have been marked as delivered.`);
-    }
     console.log();
 
     if (result.error) {
@@ -304,19 +315,18 @@ async function main() {
       "  pnpm tsx scripts/force-research.ts <projectId> <userId>\n"
     );
     console.error("Example:");
-    console.error(
-      "  pnpm tsx scripts/force-research.ts abc123 user_xyz789\n"
-    );
+    console.error("  pnpm tsx scripts/force-research.ts abc123 user_xyz789\n");
     console.error("Options:");
-    console.error("  --delivered     Mark results as delivered immediately");
     console.error("  --iterations=N  Set max iterations (default: 3)\n");
+    console.error(
+      "Note: Email is always sent immediately after research completes.\n"
+    );
     process.exit(1);
   }
 
   const [projectId, userId] = args;
 
   // Parse options
-  const markAsDelivered = args.includes("--delivered");
   const iterationsArg = args.find((arg) => arg.startsWith("--iterations="));
   const maxIterations = iterationsArg
     ? parseInt(iterationsArg.split("=")[1], 10)
@@ -363,7 +373,6 @@ async function main() {
   try {
     await forceResearch(userId, projectId, {
       maxIterations,
-      markAsDelivered,
     });
 
     console.log("=".repeat(60));

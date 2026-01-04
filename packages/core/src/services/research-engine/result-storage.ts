@@ -111,6 +111,7 @@ export async function saveDeliveryLog(
     destinationAddress,
     reportMarkdown: report.markdown,
     reportTitle: report.title,
+    reportSummary: report.summary,
     stats,
     status, // Can be "pending" for pre-runs, "success" for immediate delivery
     retryCount: 0,

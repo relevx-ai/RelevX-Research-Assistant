@@ -8,11 +8,11 @@ import { buildQueryWithFilters } from "./filters";
 
 // Brave Search API configuration
 let braveApiKey: string | null = null;
-const BRAVE_SEARCH_API_URL = "https://api.search.brave.com/res/v1/web/search";
+const BRAVE_SEARCH_API_URL = "https://api.search.brave.com/res/v1/news/search";
 
 // Rate limiting state
 let lastRequestTime = 0;
-const MIN_REQUEST_INTERVAL = 1000; // 1 second between requests
+const MIN_REQUEST_INTERVAL = 2000; // 1 second between requests
 
 /**
  * Initialize Brave Search API
@@ -129,8 +129,8 @@ export async function searchWeb(
 
     const data: any = await response.json();
 
-    // Extract web results
-    const webResults = data.web?.results || [];
+    // Extract results - News API returns results directly, Web API uses data.web.results
+    const webResults = data.results || data.web?.results || [];
 
     return {
       query: modifiedQuery,
@@ -157,6 +157,15 @@ export async function searchWeb(
 }
 
 /**
+ * Check if an error is a rate limit error (429)
+ */
+function isRateLimitError(error: Error): boolean {
+  return (
+    error.message.includes("429") || error.message.includes("RATE_LIMITED")
+  );
+}
+
+/**
  * Search with retry logic
  */
 export async function searchWithRetry(
@@ -177,8 +186,16 @@ export async function searchWithRetry(
       );
 
       if (attempt < maxRetries) {
-        // Exponential backoff
-        const delay = Math.min(1000 * Math.pow(2, attempt - 1), 10000);
+        // Use longer delay for rate limit errors
+        let delay: number;
+        if (isRateLimitError(lastError)) {
+          // For rate limit errors, wait at least 2 seconds, then exponential backoff
+          delay = Math.min(2000 * Math.pow(2, attempt - 1), 15000);
+          console.log(`Rate limit hit, waiting ${delay}ms before retry...`);
+        } else {
+          // Standard exponential backoff for other errors
+          delay = Math.min(1000 * Math.pow(2, attempt - 1), 10000);
+        }
         await new Promise((resolve) => setTimeout(resolve, delay));
       }
     }
@@ -204,6 +221,13 @@ export async function searchMultipleQueries(
       results.set(query, response);
     } catch (error) {
       console.error(`Failed to search query "${query}":`, error);
+      // If we failed due to rate limiting, wait extra time before next query
+      if (error instanceof Error && isRateLimitError(error)) {
+        console.log(
+          "Adding extra delay after rate limit failure before next query..."
+        );
+        await new Promise((resolve) => setTimeout(resolve, 3000));
+      }
       // Continue with other queries even if one fails
     }
   }

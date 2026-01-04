@@ -13,7 +13,6 @@ import * as cron from "node-cron";
 import { logger } from "./logger";
 import { loadAwsSecrets } from "./plugins/aws";
 
-
 // Load environment variables
 dotenv.config();
 
@@ -395,7 +394,7 @@ async function runResearchJob(): Promise<void> {
             const nextRunAt = calculateNextRunAt(
               project.frequency,
               project.deliveryTime,
-              project.timezone,
+              project.timezone
               // Date.now()
             );
 
@@ -462,16 +461,19 @@ async function runDeliveryJob(): Promise<void> {
     // Query all users
     // @TODO: Instead of using users to query projects, use projects collection altogether and then reference the user from the project
     // @TODO: Use pagination to avoid loading all projects at once
-    // @TODO: Future update ^ - will become non-scalable 
+    // @TODO: Future update ^ - will become non-scalable
     const usersSnapshot = await db.collection("users").get();
-    let projectsToDeliver: Array<{ userId: string; userRef: any; project: Project, projectRef: any }> = [];
+    let projectsToDeliver: Array<{
+      userId: string;
+      userRef: any;
+      project: Project;
+      projectRef: any;
+    }> = [];
 
     for (const userDoc of usersSnapshot.docs) {
       const userId = userDoc.id;
 
-      const userRef = await db
-        .collection("users")
-        .doc(userId);
+      const userRef = await db.collection("users").doc(userId);
       // Query active projects where nextRunAt <= now AND preparedDeliveryLogId is not null
       const projectsSnapshot = await userRef
         .collection("projects")
@@ -487,7 +489,12 @@ async function runDeliveryJob(): Promise<void> {
 
         // Only include if has prepared delivery log
         if (project.preparedDeliveryLogId) {
-          projectsToDeliver.push({ userId, userRef, project, projectRef: projectDoc.ref });
+          projectsToDeliver.push({
+            userId,
+            userRef,
+            project,
+            projectRef: projectDoc.ref,
+          });
         }
       }
     }
@@ -511,10 +518,18 @@ async function runDeliveryJob(): Promise<void> {
   }
 }
 
-async function sendClientProjectReport(userId: string, userRef: any, project: Project, projectRef: any) {
+async function sendClientProjectReport(
+  userId: string,
+  userRef: any,
+  project: Project,
+  projectRef: any
+) {
   const now = Date.now();
   try {
-    const deliveryLogSnapshot = await projectRef.collection("deliveryLogs").where("status", "==", "pending").get();
+    const deliveryLogSnapshot = await projectRef
+      .collection("deliveryLogs")
+      .where("status", "==", "pending")
+      .get();
     if (deliveryLogSnapshot.docs.length === 0) {
       logger.warn("Project has no pending delivery log (s)", {
         userId,
@@ -538,21 +553,30 @@ async function sendClientProjectReport(userId: string, userRef: any, project: Pr
     // Send email if configured
     const deliveryEmail = project.deliveryConfig?.email?.address || userEmail;
 
-    if (
-      project.resultsDestination === "email" &&
-      deliveryEmail
-    ) {
+    if (project.resultsDestination === "email" && deliveryEmail) {
       logger.info(`Sending report (s) email to ${deliveryEmail}...`);
 
       for (const deliveryLogDoc of deliveryLogSnapshot.docs) {
-        const deliveryLogRef = await projectRef.collection("deliveryLogs").doc(deliveryLogDoc.id);
+        const deliveryLogRef = await projectRef
+          .collection("deliveryLogs")
+          .doc(deliveryLogDoc.id);
         const deliveryLog = deliveryLogDoc.data() as NewDeliveryLog;
 
         try {
           const emailResult = await sendReportEmail(
             deliveryEmail,
-            { title: deliveryLog.reportTitle, markdown: deliveryLog.reportMarkdown },
-            project.id
+            {
+              title: deliveryLog.reportTitle,
+              markdown: deliveryLog.reportMarkdown,
+            },
+            project.id,
+            {
+              summary: deliveryLog.reportSummary,
+              resultCount: deliveryLog.stats?.includedResults,
+              averageScore: deliveryLog.stats?.averageRelevancyScore
+                ? Math.round(deliveryLog.stats.averageRelevancyScore)
+                : undefined,
+            }
           );
 
           if (emailResult.success) {
@@ -568,18 +592,17 @@ async function sendClientProjectReport(userId: string, userRef: any, project: Pr
             const nextRunAt = calculateNextRunAt(
               project.frequency,
               project.deliveryTime,
-              project.timezone,
+              project.timezone
               // now
             );
 
             // Update project
-            await projectRef
-              .update({
-                lastRunAt: now,
-                nextRunAt,
-                preparedDeliveryLogId: null,
-                updatedAt: Date.now(),
-              });
+            await projectRef.update({
+              lastRunAt: now,
+              nextRunAt,
+              preparedDeliveryLogId: null,
+              updatedAt: Date.now(),
+            });
 
             logger.info("Results delivered successfully", {
               userId,
