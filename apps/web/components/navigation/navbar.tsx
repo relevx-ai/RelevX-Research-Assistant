@@ -86,8 +86,8 @@ export function Navbar() {
     planStatus === "Pro"
       ? "bg-gradient-to-r from-blue-500 to-purple-600 border-none text-white"
       : planStatus === "Free"
-      ? "bg-green-100 text-green-800 border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-800"
-      : "bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700";
+        ? "bg-green-100 text-green-800 border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-800"
+        : "bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700";
 
   return (
     <>
@@ -104,7 +104,7 @@ export function Navbar() {
               </span>
             </Link>
 
-            {planStatus === "Inactive" && (
+            {(planStatus === "Inactive" || planStatus === "") && (
               <Button
                 variant="ghost"
                 asChild
@@ -181,9 +181,8 @@ export function Navbar() {
                       className={`text-xs px-2 py-1 rounded-full w-fit font-medium flex items-center gap-1.5 ${statusColor}`}
                     >
                       <div
-                        className={`w-1.5 h-1.5 rounded-full ${
-                          planStatus === "Pro" ? "bg-white" : "bg-current"
-                        }`}
+                        className={`w-1.5 h-1.5 rounded-full ${planStatus === "Pro" ? "bg-white" : "bg-current"
+                          }`}
                       />
                       {planStatus} Plan
                     </div>
