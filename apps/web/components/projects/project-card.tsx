@@ -46,12 +46,17 @@ interface ProjectCardProps {
 }
 
 export function ProjectCard({ project }: ProjectCardProps) {
-  const { toggleProjectStatus: toggleProjectStatus, deleteProject } = useProjects();
+  const { toggleProjectStatus: toggleProjectStatus, deleteProject } =
+    useProjects();
 
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [settingsDialogOpen, setSettingsDialogOpen] = useState(false);
   const [isToggling, setIsToggling] = useState(false);
-  const [errorDialog, setErrorDialog] = useState<{ open: boolean; title: string; message: string }>({
+  const [errorDialog, setErrorDialog] = useState<{
+    open: boolean;
+    title: string;
+    message: string;
+  }>({
     open: false,
     title: "",
     message: "",
@@ -100,7 +105,7 @@ export function ProjectCard({ project }: ProjectCardProps) {
         setErrorDialog({
           open: true,
           title: "Action Failed",
-          message: err.errorMessage || "An unexpected error occurred."
+          message: err.errorMessage || "An unexpected error occurred.",
         });
       }
     } finally {
@@ -115,6 +120,11 @@ export function ProjectCard({ project }: ProjectCardProps) {
           <div className="flex items-start justify-between gap-2">
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-2">
+                <Switch
+                  checked={project.status === "active"}
+                  onCheckedChange={handleToggleActive}
+                  disabled={isToggling}
+                />
                 {project.status === "active" ? (
                   <CheckCircle2 className="w-4 h-4 text-green-500 flex-shrink-0" />
                 ) : (
@@ -199,18 +209,11 @@ export function ProjectCard({ project }: ProjectCardProps) {
         </CardContent>
 
         <CardFooter className="border-t border-border/50 pt-4">
-          <div className="flex items-center justify-between w-full">
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <Calendar className="w-3 h-3" />
-              <span>
-                Created {new Date(project.createdAt).toLocaleDateString()}
-              </span>
-            </div>
-            <Switch
-              checked={project.status === "active"}
-              onCheckedChange={handleToggleActive}
-              disabled={isToggling}
-            />
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <Calendar className="w-3 h-3" />
+            <span>
+              Created {new Date(project.createdAt).toLocaleDateString()}
+            </span>
           </div>
         </CardFooter>
       </Card>
@@ -230,17 +233,22 @@ export function ProjectCard({ project }: ProjectCardProps) {
         onOpenChange={setSettingsDialogOpen}
       />
 
-      <Dialog open={errorDialog.open} onOpenChange={(open: boolean) => setErrorDialog(prev => ({ ...prev, open }))}>
+      <Dialog
+        open={errorDialog.open}
+        onOpenChange={(open: boolean) =>
+          setErrorDialog((prev) => ({ ...prev, open }))
+        }
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>{errorDialog.title}</DialogTitle>
-            <DialogDescription>
-              {errorDialog.message}
-            </DialogDescription>
+            <DialogDescription>{errorDialog.message}</DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button
-              onClick={() => setErrorDialog(prev => ({ ...prev, open: false }))}
+              onClick={() =>
+                setErrorDialog((prev) => ({ ...prev, open: false }))
+              }
               className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-md hover:shadow-xl hover:scale-105 transition-all duration-300"
             >
               OK
