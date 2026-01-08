@@ -5,8 +5,18 @@ import type { PlanInfo, Plan } from "core";
 // plugin to populate req.userId and tenant authorization.
 const routes: FastifyPluginAsync = async (app) => {
   const firebase = app.firebase;
-  const db = firebase.db;
   const stripe = app.stripe;
+  const remoteConfig = firebase.remoteConfig;
+
+  async function getRemoteConfigParam(key: string) {
+    try {
+      const param = (await remoteConfig.getTemplate()).parameters[key];
+      return param;
+    } catch (error) {
+      console.error("Error fetching remote config:", error);
+    }
+    return null;
+  }
 
   app.get("/healthz", async (_req, rep) => {
     return rep.send({ ok: true });
@@ -17,33 +27,46 @@ const routes: FastifyPluginAsync = async (app) => {
     { preHandler: [app.rlPerRoute(10)] },
     async (req: any, rep) => {
       try {
-        // Create or update user document in Firestore
-        const plansRef = db.collection("plans");
-        const snapshot = await plansRef.get();
+        const config = await getRemoteConfigParam("plans");
+        const plansRaw = config?.defaultValue?.value;
+        if (plansRaw) {
+          const parsed = JSON.parse(plansRaw);
+          const plansArray: Plan[] = Array.isArray(parsed)
+            ? parsed
+            : Object.values(parsed);
 
-        const plans: PlanInfo[] = await Promise.all(
-          snapshot.docs.map(async (doc) => {
-            const data: Plan = doc.data() as Plan;
-            // eslint-disable-next-line @typescript-eslint/no-unused-vars
-            const { infoStripeSubscriptionId, ...planData } = data;
-            const price = await stripe.prices.retrieve(
-              data.infoStripeSubscriptionId
-            );
+          if (!Array.isArray(plansArray)) {
+            throw new Error("Parsed plans is not an array or valid object");
+          }
 
-            const unit_amount = data.infoName === "Free Trial" ? 0 : price?.unit_amount ?? 0;
-            const newData: PlanInfo = {
-              ...planData,
-              infoPrice: unit_amount / 100,
-            };
-            return newData;
-          })
-        );
+          const plans: PlanInfo[] = await Promise.all(
+            plansArray.map(async (plan) => {
+              const data: Plan = plan;
+              const { infoStripeSubscriptionId, ...planData } = data;
+              const price = await stripe.prices.retrieve(
+                infoStripeSubscriptionId
+              );
 
-        plans.sort((a, b) => b.precedence - a.precedence);
+              const unit_amount =
+                data.infoName === "Free Trial" ? 0 : price?.unit_amount ?? 0;
+              const newData: PlanInfo = {
+                ...planData,
+                infoPrice: unit_amount / 100,
+              };
+              return newData;
+            })
+          );
+
+          plans.sort((a, b) => a.precedence - b.precedence);
+          return rep.status(200).send({
+            ok: true,
+            plans,
+          });
+        }
 
         return rep.status(200).send({
-          ok: true,
-          plans,
+          ok: false,
+          plans: [],
         });
       } catch (err: any) {
         const isDev = process.env.NODE_ENV !== "production";

@@ -12,14 +12,16 @@ declare module "fastify" {
       auth: import("firebase-admin/auth").Auth;
       db: import("firebase-admin/firestore").Firestore;
       app: import("firebase-admin/app").App;
+      remoteConfig: any;
     };
     // Verify Firebase ID token and enrich with optional user/plan
     introspectIdToken: (idToken: string) => Promise<{
       user?: {
-        uid: string; email?: string; emailVerified?: boolean; plan?: Plan;
+        uid: string;
+        email?: string;
+        emailVerified?: boolean;
+        plan?: Plan;
       };
     }>;
   }
 }
-
-
