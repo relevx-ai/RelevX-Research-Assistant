@@ -5,7 +5,6 @@ import type { ProjectInfo } from "core";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import {
-  X,
   LayoutDashboard,
   Settings,
   History,
@@ -89,13 +88,6 @@ export function ProjectDetailModal({
                 </div>
               </div>
             </div>
-            <button
-              className="rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
-              onClick={() => onOpenChange(false)}
-            >
-              <X className="h-5 w-5" />
-              <span className="sr-only">Close</span>
-            </button>
           </div>
 
           {/* Tab Navigation */}
