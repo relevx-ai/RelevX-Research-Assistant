@@ -7,7 +7,7 @@ export default fp(async (app: any) => {
   // Initialize Firebase Admin with service account credentials
   const firebaseApp = initializeApp(
     {
-      credential: cert("apps/backend/relevx-service-account.json"),
+      credential: cert("relevx-service-account.json"),
     }
     //   {
     //   credential: cert({

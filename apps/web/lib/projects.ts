@@ -6,15 +6,25 @@
  * Works with both Admin SDK (server) and Client SDK (browser)
  */
 
-import type { NewProject, ProjectStatus, ListProjectsResponse, ProjectInfo, CreateProjectResponse, CreateProjectRequest, ToggleProjectStatusResponse } from "../../../packages/core/src/models/project";
+import type {
+  NewProject,
+  ProjectStatus,
+  ListProjectsResponse,
+  ProjectInfo,
+  CreateProjectResponse,
+  CreateProjectRequest,
+  ToggleProjectStatusResponse,
+} from "../../../packages/core/src/models/project";
+import type {
+  ProjectDeliveryLogResponse,
+  RelevxDeliveryLog,
+} from "../../../packages/core/src/models/delivery-log";
 import { relevx_api } from "@/lib/client";
 
 /**
  * Create a new project for a user
  */
-export async function createProject(
-  data: NewProject,
-): Promise<ProjectInfo> {
+export async function createProject(data: NewProject): Promise<ProjectInfo> {
   try {
     // Set default settings if not provided
     const settings = data.settings || {
@@ -36,7 +46,7 @@ export async function createProject(
     };
     const request: CreateProjectRequest = {
       projectInfo: projectData,
-    }
+    };
 
     const response = await relevx_api.post<CreateProjectResponse>(
       `/api/v1/user/projects/create`,
@@ -49,7 +59,6 @@ export async function createProject(
     }
 
     return response.project;
-
   } catch (error) {
     console.error("Error creating project:", error);
     throw error;
@@ -75,7 +84,7 @@ export async function listProjects(): Promise<ProjectInfo[]> {
  * Returns an unsubscribe function
  */
 export function subscribeToProjects(
-  callback: (projects: ProjectInfo[]) => void,
+  callback: (projects: ProjectInfo[]) => void
 ): () => void {
   // We use the backend WebSocket for real-time updates
   // Authentication is handled by passing the token in the query or first message
@@ -93,8 +102,10 @@ export function subscribeToProjects(
       const idToken = await auth.currentUser?.getIdToken(true);
 
       // Get base URL from environment or fallback
-      const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8080";
-      const wsUrl = baseUrl.replace(/^http/, "ws") + "/api/v1/user/projects/subscribe";
+      const baseUrl =
+        process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8080";
+      const wsUrl =
+        baseUrl.replace(/^http/, "ws") + "/api/v1/user/projects/subscribe";
 
       // Fastify-websocket expects the token. We'll send it as a protocol or query param
       // or just rely on the session if cookies are used. But here we use Bearer.
@@ -107,8 +118,7 @@ export function subscribeToProjects(
           const data = JSON.parse(event.data);
           if (data.connected) {
             console.log("WebSocket connected");
-          }
-          else if (data.projects) {
+          } else if (data.projects) {
             callback(data.projects);
           } else if (data.error) {
             console.error("WebSocket error message:", data.error);
@@ -161,18 +171,25 @@ export class ProjectError extends Error {
  */
 export async function updateProjectStatus(
   projectTitle: string,
-  status: ProjectStatus,
+  status: ProjectStatus
 ): Promise<boolean> {
-  const response = await relevx_api.post<ToggleProjectStatusResponse>("/api/v1/user/projects/toggle-status", {
-    title: projectTitle,
-    status,
-  });
+  const response = await relevx_api.post<ToggleProjectStatusResponse>(
+    "/api/v1/user/projects/toggle-status",
+    {
+      title: projectTitle,
+      status,
+    }
+  );
   if (!response) {
     throw new Error("Failed to update project status");
   }
 
   if (response.errorCode) {
-    throw new ProjectError(response.errorMessage || "Error updating project", response.errorCode, response.errorMessage);
+    throw new ProjectError(
+      response.errorMessage || "Error updating project",
+      response.errorCode,
+      response.errorMessage
+    );
   }
 
   return response.status === status;
@@ -215,7 +232,7 @@ export async function updateProjectStatus(
  */
 export async function updateProject(
   projectTitle: string,
-  data: Partial<Omit<ProjectInfo, "createdAt" | "updatedAt">>,
+  data: Partial<Omit<ProjectInfo, "createdAt" | "updatedAt">>
 ): Promise<void> {
   const title = projectTitle;
   const response = await relevx_api.post("/api/v1/user/projects/update", {
@@ -230,14 +247,36 @@ export async function updateProject(
 /**
  * Delete a project
  */
-export async function deleteProject(
-  projectTitle: string
-): Promise<void> {
+export async function deleteProject(projectTitle: string): Promise<void> {
   const title = projectTitle;
   const response = await relevx_api.post("/api/v1/user/projects/delete", {
     title,
   });
   if (!response) {
     throw new Error("Failed to delete project");
+  }
+}
+
+/**
+ * Get delivery logs for a project
+ */
+export async function getProjectDeliveryLogs(
+  projectTitle: string
+): Promise<RelevxDeliveryLog[]> {
+  try {
+    const response = await relevx_api.get<ProjectDeliveryLogResponse>(
+      `/api/v1/user/projects/delivery-logs`,
+      { projectId: projectTitle }
+    );
+    if (!response) {
+      throw new Error("Failed to fetch delivery logs");
+    }
+    return response.logs;
+  } catch (error: any) {
+    // Return empty array for 404 (no logs yet)
+    if (error?.status === 404) {
+      return [];
+    }
+    throw error;
   }
 }

@@ -44,7 +44,7 @@ services:
 
     # Health check
     healthcheck:
-      test: [ "CMD", "node", "-e", "console.log('healthy')" ]
+      test: ["CMD", "node", "-e", "console.log('healthy')"]
       interval: 60s
       timeout: 10s
       retries: 3
@@ -64,5 +64,7 @@ services:
       - ./secrets:/app/secrets:ro
     env_file:
       - .env
+    environment:
+      - PORT=8080
     networks:
       - internal

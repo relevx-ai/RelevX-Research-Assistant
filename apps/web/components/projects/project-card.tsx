@@ -40,6 +40,7 @@ import {
 } from "lucide-react";
 import { DeleteProjectDialog } from "./delete-project-dialog";
 import { EditProjectSettingsDialog } from "./edit-project-settings-dialog";
+import { ProjectDetailModal } from "./project-detail-modal";
 
 interface ProjectCardProps {
   project: ProjectInfo;
@@ -51,6 +52,7 @@ export function ProjectCard({ project }: ProjectCardProps) {
 
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [settingsDialogOpen, setSettingsDialogOpen] = useState(false);
+  const [detailModalOpen, setDetailModalOpen] = useState(false);
   const [isToggling, setIsToggling] = useState(false);
   const [errorDialog, setErrorDialog] = useState<{
     open: boolean;
@@ -113,9 +115,26 @@ export function ProjectCard({ project }: ProjectCardProps) {
     }
   };
 
+  const handleCardClick = (e: React.MouseEvent) => {
+    // Don't open modal if clicking on interactive elements
+    const target = e.target as HTMLElement;
+    if (
+      target.closest("button") ||
+      target.closest('[role="switch"]') ||
+      target.closest('[role="menu"]') ||
+      target.closest("[data-radix-collection-item]")
+    ) {
+      return;
+    }
+    setDetailModalOpen(true);
+  };
+
   return (
     <>
-      <Card className="group hover:shadow-lg transition-all duration-300 glass-dark h-full flex flex-col">
+      <Card
+        className="group hover:shadow-xl hover:shadow-primary/10 hover:scale-[1.02] transition-all duration-300 glass-dark h-full flex flex-col cursor-pointer"
+        onClick={handleCardClick}
+      >
         <CardHeader>
           <div className="flex items-start justify-between gap-2">
             <div className="flex-1 min-w-0">
@@ -231,6 +250,13 @@ export function ProjectCard({ project }: ProjectCardProps) {
         project={project}
         open={settingsDialogOpen}
         onOpenChange={setSettingsDialogOpen}
+      />
+
+      {/* Project Detail Modal */}
+      <ProjectDetailModal
+        project={project}
+        open={detailModalOpen}
+        onOpenChange={setDetailModalOpen}
       />
 
       <Dialog
