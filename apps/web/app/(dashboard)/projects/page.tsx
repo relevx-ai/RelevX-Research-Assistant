@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Plus, FolderOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -11,14 +11,6 @@ import { useProjects } from "@/hooks/use-projects";
 export default function ProjectsPage() {
   const { projects, loading } = useProjects();
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
-
-  // Sort projects: active projects first, then paused projects
-  const sortedProjects = [...projects].sort((a, b) => {
-    // If both have same status, maintain original order (by createdAt)
-    if (a.status === b.status) return 0;
-    // Active projects come first
-    return a.status === "active" ? -1 : 1;
-  });
 
   const handleCreateProject = () => {
     setCreateDialogOpen(true);
@@ -99,7 +91,7 @@ export default function ProjectsPage() {
           className="grid md:grid-cols-2 lg:grid-cols-3 gap-6"
         >
           <AnimatePresence mode="popLayout">
-            {sortedProjects.map((project, index) => (
+            {projects.map((project, index) => (
               <motion.div
                 key={project.title}
                 initial={{ opacity: 0, y: 20 }}

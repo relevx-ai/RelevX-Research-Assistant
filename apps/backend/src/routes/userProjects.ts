@@ -16,17 +16,14 @@ import { set, isAfter, add } from "date-fns";
 import { toZonedTime, fromZonedTime } from "date-fns-tz";
 import { isUserSubscribed } from "../utils/billing.js";
 import { getUserData } from "../utils/user.js";
-import Redis from "ioredis";
+import { Redis } from "ioredis";
 
 const REDIS_EXPIRE_TIME_IN_SECONDS = 60 * 5;
 const listeners = new Map<string, () => void>();
 
 // 1. Create a dedicated subscriber connection
 // We don't use the main fastify.redis because it's busy with GET/SET
-const subscriber = new Redis({
-  host: "127.0.0.1",
-  port: 6379,
-});
+const subscriber = new Redis({ host: "127.0.0.1", port: 6379 });
 
 // 2. Enable Notifications (Safety check)
 // This ensures the Docker container is actually emitting events
@@ -128,7 +125,7 @@ const routes: FastifyPluginAsync = async (app) => {
       app
         .introspectIdToken(idToken)
         .then(async (res) => {
-          if (!res?.user?.uid) {
+          if (!res || !res?.user?.uid) {
             connection.send(JSON.stringify({ error: "Unauthenticated" }));
             connection.close();
             return;
@@ -137,15 +134,18 @@ const routes: FastifyPluginAsync = async (app) => {
           connection.send(JSON.stringify({ connected: true }));
 
           // check redis to see if user has cached data
-          const valid = await app.redis.get(userId);
+          let valid = await app.redis.get(userId);
           if (valid) {
-            const result = await app.redis.persist(userId);
+            await app.redis.persist(userId);
 
-            if (result !== 1) {
-              console.log(
-                "Failed: The key " +
-                  userId +
-                  " didn't have a TTL or doesn't exist in redis."
+            // retrieve again for safe-fail
+            valid = await app.redis.get(userId);
+            if (valid) {
+              // Send the deduplicated array of values
+              connection?.send(
+                JSON.stringify({
+                  projects: JSON.parse(valid),
+                })
               );
             }
           }
@@ -164,13 +164,14 @@ const routes: FastifyPluginAsync = async (app) => {
                 ...data,
               };
             });
-            projects.sort((a: any, b: any) => {
-              return (
-                b.createdAt - a.createdAt ||
-                (b.status === "active" ? 1 : 0) -
-                  (a.status === "active" ? 1 : 0)
-              );
-            });
+            // sort projects on client side
+            // projects.sort((a: any, b: any) => {
+            //   return (
+            //     b.createdAt - a.createdAt ||
+            //     (b.status === "active" ? 1 : 0) -
+            //       (a.status === "active" ? 1 : 0)
+            //   );
+            // });
             await app.redis.set(userId, JSON.stringify(projects));
 
             // Set up Firestore listener
@@ -199,32 +200,30 @@ const routes: FastifyPluginAsync = async (app) => {
                       ...data,
                     };
                   });
-                  projects.sort((a: any, b: any) => {
-                    return (
-                      b.createdAt - a.createdAt ||
-                      (b.status === "active" ? 1 : 0) -
-                        (a.status === "active" ? 1 : 0)
-                    );
+                  // sort projects on client side
+                  // projects.sort((a: any, b: any) => {
+                  //   return (
+                  //     b.createdAt - a.createdAt ||
+                  //     (b.status === "active" ? 1 : 0) -
+                  //       (a.status === "active" ? 1 : 0)
+                  //   );
+                  // });
+
+                  const uniqueProjects = new Map<string, any>();
+                  cachedProjects.forEach((project: any) => {
+                    // Use a Map to store the key (title) and value (project object)
+                    uniqueProjects.set(project.title, project);
                   });
 
-                  // projects will always be of low length
-                  // cachedProjects will always be of high length
-                  let numProjectsUpdated = 0;
-                  for (let cproject of cachedProjects) {
-                    for (const p of projects) {
-                      if (cproject.title === p.title) {
-                        cproject = p;
-                        numProjectsUpdated++;
-                      }
-                    }
-                    // early exit
-                    if (numProjectsUpdated === projects.length) {
-                      break;
-                    }
-                  }
-
-                  await app.redis.set(userId, JSON.stringify(cachedProjects));
-                  connection?.send(JSON.stringify({ projects }));
+                  await app.redis.set(
+                    userId,
+                    JSON.stringify(Array.from(uniqueProjects.values()))
+                  );
+                  connection?.send(
+                    JSON.stringify({
+                      projects,
+                    })
+                  );
                 },
                 (err: any) => {
                   app.log.error(err, "Firestore onSnapshot error");

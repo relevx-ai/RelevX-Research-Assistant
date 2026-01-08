@@ -37,6 +37,10 @@ export default fp(async (app: any) => {
 
   // ID token introspection
   app.decorate("introspectIdToken", async (token: string) => {
+    if (!token) {
+      app.log.error("Missing token");
+      return null;
+    }
     try {
       const authToken = token.startsWith("Bearer ")
         ? token.slice(7).trim()

@@ -46,8 +46,7 @@ interface ProjectCardProps {
 }
 
 export function ProjectCard({ project }: ProjectCardProps) {
-  const { toggleProjectStatus: toggleProjectStatus, deleteProject } =
-    useProjects();
+  const { toggleProjectStatus, deleteProject } = useProjects({ subscribe: false });
 
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [settingsDialogOpen, setSettingsDialogOpen] = useState(false);

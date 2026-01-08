@@ -29,7 +29,7 @@ export function EditProjectSettingsDialog({
   open,
   onOpenChange,
 }: EditProjectSettingsDialogProps) {
-  const { updateProject } = useProjects();
+  const { updateProject } = useProjects({ subscribe: false });
 
   const [title, setTitle] = useState(project.title);
   const [description, setDescription] = useState(project.description);

@@ -22,7 +22,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [userProfile, setUserProfile] = useState<RelevxUser | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const reloadUser = async () => {
+  const reloadUser = React.useCallback(async () => {
     try {
       const currentUser = auth.currentUser;
       if (!currentUser) {
@@ -39,7 +39,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch (error) {
       console.error("Error creating/updating user document:", error);
     }
-  };
+  }, []);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (newUser) => {
@@ -68,8 +68,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return unsubscribe;
   }, []);
 
+  const value = React.useMemo(
+    () => ({ user, userProfile, loading, reloadUser }),
+    [user, userProfile, loading, reloadUser]
+  );
+
   return (
-    <AuthContext.Provider value={{ user, userProfile, loading, reloadUser }}>
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );

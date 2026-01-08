@@ -5,7 +5,11 @@
  */
 
 import { useState, useEffect, useCallback } from "react";
-import type { ProjectInfo, NewProject, ProjectStatus } from "../../../packages/core/src/models/project";
+import type {
+  ProjectInfo,
+  NewProject,
+  ProjectStatus,
+} from "../../../packages/core/src/models/project";
 import {
   subscribeToProjects,
   createProject as createProjectService,
@@ -19,7 +23,9 @@ interface UseProjectsResult {
   projects: ProjectInfo[];
   loading: boolean;
   error: string | null;
-  createProject: (data: Omit<NewProject, "userId">) => Promise<ProjectInfo | null>;
+  createProject: (
+    data: Omit<NewProject, "userId">
+  ) => Promise<ProjectInfo | null>;
   updateProject: (
     projectId: string,
     data: Partial<Omit<ProjectInfo, "updatedAt" | "createdAt">>
@@ -31,14 +37,24 @@ interface UseProjectsResult {
   deleteProject: (projectId: string) => Promise<boolean>;
 }
 
+interface UseProjectsOptions {
+  subscribe?: boolean;
+}
+
 export function useProjects(
+  options: UseProjectsOptions = { subscribe: true }
 ): UseProjectsResult {
   const { user } = useAuth();
-  const [projects, setProjects] = useState<ProjectInfo[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [projects, setProjects] = useState<Array<ProjectInfo>>([]);
+  const [loading, setLoading] = useState(options.subscribe ?? true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (options.subscribe === false) {
+      setLoading(false);
+      return;
+    }
+
     if (!user?.uid) {
       setProjects([]);
       setLoading(false);
@@ -48,15 +64,13 @@ export function useProjects(
     setLoading(true);
     setError(null);
 
-    const unsubscribe = subscribeToProjects(
-      (newProjects) => {
-        setProjects(newProjects);
-        setLoading(false);
-      },
-    );
+    const unsubscribe = subscribeToProjects((newProjects) => {
+      setProjects(newProjects);
+      setLoading(false);
+    });
 
     return unsubscribe;
-  }, [user]);
+  }, [user?.uid, options.subscribe]);
 
   const createProject = useCallback(
     async (data: Omit<NewProject, "userId">): Promise<ProjectInfo | null> => {
@@ -66,9 +80,7 @@ export function useProjects(
       }
 
       try {
-        const newProject = await createProjectService(
-          data,
-        );
+        const newProject = await createProjectService(data);
         return newProject;
       } catch (err) {
         const errorMessage =
@@ -91,10 +103,7 @@ export function useProjects(
       }
 
       try {
-        await updateProjectService(
-          projectTitle,
-          data,
-        );
+        await updateProjectService(projectTitle, data);
         return true;
       } catch (err) {
         const errorMessage =
@@ -114,10 +123,7 @@ export function useProjects(
       }
 
       try {
-        const response = await updateProjectStatus(
-          projectTitle,
-          status,
-        );
+        const response = await updateProjectStatus(projectTitle, status);
         return response;
       } catch (err) {
         const errorMessage =

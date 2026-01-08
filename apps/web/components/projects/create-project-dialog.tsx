@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Frequency, ResultsDestination } from "core";
+import { ProjectInfo, Frequency, ResultsDestination } from "core";
 import {
   Dialog,
   DialogContent,
@@ -22,13 +22,15 @@ import { useProjects } from "@/hooks/use-projects";
 interface CreateProjectDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  projects?: ProjectInfo[];
 }
 
 export function CreateProjectDialog({
   open,
   onOpenChange,
+  projects = [],
 }: CreateProjectDialogProps) {
-  const { createProject, projects } = useProjects();
+  const { createProject } = useProjects({ subscribe: false });
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");

@@ -1,4 +1,5 @@
 # To build run: docker build -f apps/backend/Dockerfile -t relevx-backend . 
+#: redis: docker run -d --name redis-server -p 127.0.0.1:6379:6379 --restart always redis:alpine
 
 FROM node:20-slim AS builder
 WORKDIR /app

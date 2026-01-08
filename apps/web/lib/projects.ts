@@ -15,11 +15,11 @@ import type {
   CreateProjectRequest,
   ToggleProjectStatusResponse,
 } from "../../../packages/core/src/models/project";
-import type {
-  ProjectDeliveryLogResponse,
-  RelevxDeliveryLog,
-} from "../../../packages/core/src/models/delivery-log";
+import type { ProjectDeliveryLogResponse } from "../../../packages/core/src/models/delivery-log";
 import { relevx_api } from "@/lib/client";
+
+let socket_connection_statis: "connecting" | "connected" | "disconnected" =
+  "disconnected";
 
 /**
  * Create a new project for a user
@@ -88,13 +88,14 @@ export function subscribeToProjects(
 ): () => void {
   // We use the backend WebSocket for real-time updates
   // Authentication is handled by passing the token in the query or first message
-  // Since we are in core, we need to know the API base URL.
-  // We'll assume the same base URL as relevx_api but with ws/wss protocol.
+
+  if (socket_connection_statis !== "disconnected") return () => {};
 
   let socket: WebSocket | null = null;
   let isClosed = false;
 
   const connect = async () => {
+    socket_connection_statis = "connecting";
     try {
       if (isClosed) return;
 
@@ -103,7 +104,7 @@ export function subscribeToProjects(
 
       // Get base URL from environment or fallback
       const baseUrl =
-        process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8080";
+        process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:3000";
       const wsUrl =
         baseUrl.replace(/^http/, "ws") + "/api/v1/user/projects/subscribe";
 
@@ -117,9 +118,19 @@ export function subscribeToProjects(
         try {
           const data = JSON.parse(event.data);
           if (data.connected) {
+            socket_connection_statis = "connected";
             console.log("WebSocket connected");
           } else if (data.projects) {
-            callback(data.projects);
+            console.log("WebSocket projects:", data.projects);
+            let projects = data.projects;
+            if (typeof projects === "string") {
+              try {
+                projects = JSON.parse(projects);
+              } catch (e) {
+                console.error("Error parsing projects string:", e);
+              }
+            }
+            callback(projects);
           } else if (data.error) {
             console.error("WebSocket error message:", data.error);
           }
@@ -129,17 +140,19 @@ export function subscribeToProjects(
       };
 
       socket.onclose = () => {
+        socket_connection_statis = "disconnected";
         if (!isClosed) {
-          // Reconnect with exponential backoff could be added here
           setTimeout(connect, 3000);
         }
       };
 
       socket.onerror = (err) => {
+        socket_connection_statis = "disconnected";
         console.error("WebSocket error:", err);
         socket?.close();
       };
     } catch (err) {
+      socket_connection_statis = "disconnected";
       console.error("Failed to connect to WebSocket:", err);
       setTimeout(connect, 5000);
     }
