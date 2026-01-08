@@ -16,6 +16,24 @@ import { set, isAfter, add } from "date-fns";
 import { toZonedTime, fromZonedTime } from "date-fns-tz";
 import { isUserSubscribed } from "../utils/billing.js";
 import { getUserData } from "../utils/user.js";
+import Redis from "ioredis";
+
+const REDIS_EXPIRE_TIME_IN_SECONDS = 60 * 5;
+const listeners = new Map<string, () => void>();
+
+// 1. Create a dedicated subscriber connection
+// We don't use the main fastify.redis because it's busy with GET/SET
+const subscriber = new Redis({
+  host: "127.0.0.1",
+  port: 6379,
+});
+
+// 2. Enable Notifications (Safety check)
+// This ensures the Docker container is actually emitting events
+await subscriber.config("SET", "notify-keyspace-events", "Ex");
+
+// 3. Subscribe to the expiration channel
+await subscriber.subscribe("__keyevent@0__:expired");
 
 /**
  * Add one frequency period to a date
@@ -90,6 +108,18 @@ const routes: FastifyPluginAsync = async (app) => {
     return rep.send({ ok: true });
   });
 
+  // 4. Handle the event
+  subscriber.on("message", async (_channel: any, key: any) => {
+    console.log(`Redis: Item with key "${key}" has expired!`);
+    const unsubscribe = listeners.get(key);
+    unsubscribe?.();
+    listeners.delete(key);
+  });
+
+  app.addHook("onClose", async () => {
+    await subscriber.quit();
+  });
+
   // Secure project subscription via WebSockets
   app.get("/subscribe", { websocket: true }, (connection, req: any) => {
     try {
@@ -97,43 +127,118 @@ const routes: FastifyPluginAsync = async (app) => {
       const idToken = req.query?.["token"] as string;
       app
         .introspectIdToken(idToken)
-        .then((res) => {
+        .then(async (res) => {
           if (!res?.user?.uid) {
             connection.send(JSON.stringify({ error: "Unauthenticated" }));
             connection.close();
             return;
           }
           const userId = res.user.uid;
-
           connection.send(JSON.stringify({ connected: true }));
 
-          // Set up Firestore listener
-          const unsubscribe = db
-            .collection("users")
-            .doc(userId)
-            .collection("projects")
-            .orderBy("createdAt", "desc")
-            .onSnapshot(
-              (snapshot: any) => {
-                const projects = snapshot.docs.map((doc: any) => {
-                  const { userId: _userId, id: _id, ...data } = doc.data();
-                  return {
-                    ...data,
-                  };
-                });
-                connection?.send(JSON.stringify({ projects }));
-              },
-              (err: any) => {
-                app.log.error(err, "Firestore onSnapshot error");
-                connection?.send(
-                  JSON.stringify({ error: "Internal server error" })
-                );
-              }
-            );
+          // check redis to see if user has cached data
+          const valid = await app.redis.get(userId);
+          if (valid) {
+            const result = await app.redis.persist(userId);
 
-          connection?.on("close", () => {
+            if (result !== 1) {
+              console.log(
+                "Failed: The key " +
+                  userId +
+                  " didn't have a TTL or doesn't exist in redis."
+              );
+            }
+          }
+
+          if (!valid) {
+            // set redis key
+            const projectSnapshot = await db
+              .collection("users")
+              .doc(userId)
+              .collection("projects")
+              .get();
+
+            const projects = projectSnapshot.docs.map((doc: any) => {
+              const { userId: _userId, id: _id, ...data } = doc.data();
+              return {
+                ...data,
+              };
+            });
+            projects.sort((a: any, b: any) => {
+              return (
+                b.createdAt - a.createdAt ||
+                (b.status === "active" ? 1 : 0) -
+                  (a.status === "active" ? 1 : 0)
+              );
+            });
+            await app.redis.set(userId, JSON.stringify(projects));
+
+            // Set up Firestore listener
+            const unsubscribe = db
+              .collection("users")
+              .doc(userId)
+              .collection("projects")
+              .onSnapshot(
+                async (snapshot: any) => {
+                  const cachedProjectString = await app.redis.get(userId);
+                  if (!cachedProjectString) {
+                    // projects
+                    app.log.error(
+                      "Redis key has not yet been set before setting up listener for user " +
+                        userId
+                    );
+                    return;
+                  }
+                  const cachedProjects: ProjectInfo[] =
+                    JSON.parse(cachedProjectString);
+
+                  // get projects from snapshot
+                  const projects = snapshot.docs.map((doc: any) => {
+                    const { userId: _userId, id: _id, ...data } = doc.data();
+                    return {
+                      ...data,
+                    };
+                  });
+                  projects.sort((a: any, b: any) => {
+                    return (
+                      b.createdAt - a.createdAt ||
+                      (b.status === "active" ? 1 : 0) -
+                        (a.status === "active" ? 1 : 0)
+                    );
+                  });
+
+                  // projects will always be of low length
+                  // cachedProjects will always be of high length
+                  let numProjectsUpdated = 0;
+                  for (let cproject of cachedProjects) {
+                    for (const p of projects) {
+                      if (cproject.title === p.title) {
+                        cproject = p;
+                        numProjectsUpdated++;
+                      }
+                    }
+                    // early exit
+                    if (numProjectsUpdated === projects.length) {
+                      break;
+                    }
+                  }
+
+                  await app.redis.set(userId, JSON.stringify(cachedProjects));
+                  connection?.send(JSON.stringify({ projects }));
+                },
+                (err: any) => {
+                  app.log.error(err, "Firestore onSnapshot error");
+                  connection?.send(
+                    JSON.stringify({ error: "Internal server error" })
+                  );
+                }
+              );
+            listeners.set(userId, unsubscribe);
+          }
+
+          connection?.on("close", async () => {
             console.log("WebSocket closed");
-            unsubscribe();
+            await app.redis.expire(userId, REDIS_EXPIRE_TIME_IN_SECONDS);
           });
         })
         .catch((err) => {

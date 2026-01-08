@@ -3,14 +3,12 @@
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Plus, FolderOpen } from "lucide-react";
-import { useAuth } from "@/contexts/auth-context";
 import { Button } from "@/components/ui/button";
 import { ProjectCard } from "@/components/projects/project-card";
 import { CreateProjectDialog } from "@/components/projects/create-project-dialog";
 import { useProjects } from "@/hooks/use-projects";
 
 export default function ProjectsPage() {
-  const { userProfile } = useAuth();
   const { projects, loading } = useProjects();
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
 

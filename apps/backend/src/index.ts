@@ -15,12 +15,7 @@ import rawBody from "fastify-raw-body";
 import fastifyCompress from "@fastify/compress";
 import aws from "./plugins/aws.js";
 import stripeRoute from "./routes/stripeRoute.js";
-// import dotenv from "dotenv";
-
-// Load .env file from the secrets directory or root
-// This will load environment variables before AWS Secrets Manager
-// dotenv.config({ path: "apps/backend/.env" });
-// dotenv.config(); // Also try loading from default .env location
+import fastifyRedis from "@fastify/redis";
 
 // Fastify app with structured logging enabled. We redact sensitive fields by
 // default to avoid leaking destinations/PII in application logs.
@@ -34,20 +29,6 @@ const app = Fastify({
   },
   bodyLimit: 1048576,
 });
-
-// app.addContentTypeParser('application/json', { parseAs: 'string' }, (req, body, done) => {
-//   try {
-//     // Attach the raw body to the request object for later use
-//     req.rawBody = body;
-
-//     // Parse the body as usual for req.body
-//     const json = JSON.parse(body as string);
-//     done(null, json);
-//   } catch (err: any) {
-//     err.statusCode = 400; // Handle parsing errors
-//     done(err, undefined);
-//   }
-// })
 
 await app.register(fastifyCors, {
   origin: (origin, cb) => {
@@ -86,6 +67,20 @@ await app.register(rawBody, {
   runFirst: true,
 });
 await app.register(errors);
+
+// Redis
+app.register(fastifyRedis, {
+  host: "127.0.0.1", // Docker container port mapped to host
+  port: 6379,
+});
+app.get("/ping-redis", async (request, reply) => {
+  const { redis } = app;
+  await redis.set("last_ping", Date.now());
+  const val = await redis.get("last_ping");
+
+  return { redis_status: "Connected", last_ping: val };
+});
+
 await app.register(aws);
 await app.register(fastifyCompress);
 
