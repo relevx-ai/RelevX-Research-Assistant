@@ -14,8 +14,21 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { User, LogOut, Sparkles, CreditCard, Receipt, Loader2 } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  User,
+  LogOut,
+  Sparkles,
+  CreditCard,
+  Receipt,
+  Loader2,
+} from "lucide-react";
 import { relevx_api } from "@/lib/client";
 import { BillingPortalLinkResponse } from "core/models/billing";
 
@@ -73,8 +86,8 @@ export function Navbar() {
     planStatus === "Pro"
       ? "bg-gradient-to-r from-blue-500 to-purple-600 border-none text-white"
       : planStatus === "Free"
-        ? "bg-green-100 text-green-800 border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-800"
-        : "bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700";
+      ? "bg-green-100 text-green-800 border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-800"
+      : "bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700";
 
   return (
     <>
@@ -82,10 +95,7 @@ export function Navbar() {
         <div className="container-wide flex h-16 items-center justify-between">
           {/* Logo / Brand */}
           <div className="flex items-center gap-6">
-            <Link
-              href="/"
-              className="flex items-center gap-2 group"
-            >
+            <Link href="/" className="flex items-center gap-2 group">
               <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600">
                 <Sparkles className="w-5 h-5 text-white" />
               </div>
@@ -104,13 +114,15 @@ export function Navbar() {
               </Button>
             )}
 
-            <Button
-              variant="ghost"
-              asChild
-              className="hidden sm:flex h-auto py-1.5 text-base font-medium transition-all duration-300 hover:scale-105 hover:bg-gradient-to-r hover:from-blue-500/10 hover:to-purple-600/10 hover:text-blue-600"
-            >
-              <Link href="/projects">Projects</Link>
-            </Button>
+            {user && (
+              <Button
+                variant="ghost"
+                asChild
+                className="hidden sm:flex h-auto py-1.5 text-base font-medium transition-all duration-300 hover:scale-105 hover:bg-gradient-to-r hover:from-blue-500/10 hover:to-purple-600/10 hover:text-blue-600"
+              >
+                <Link href="/projects">Projects</Link>
+              </Button>
+            )}
           </div>
 
           {/* Navigation Links & Auth */}
@@ -133,7 +145,7 @@ export function Navbar() {
                       </div>
                     )}
                     <span className="hidden sm:inline font-medium">
-                      {user.displayName || user.email?.split('@')[0]}
+                      {user.displayName || user.email?.split("@")[0]}
                     </span>
                   </Button>
                 </DropdownMenuTrigger>
@@ -152,7 +164,9 @@ export function Navbar() {
                     )}
                     <div className="flex flex-col space-y-0.5 overflow-hidden">
                       {user.displayName && (
-                        <p className="font-semibold text-sm truncate">{user.displayName}</p>
+                        <p className="font-semibold text-sm truncate">
+                          {user.displayName}
+                        </p>
                       )}
                       {user.email && (
                         <p className="text-xs text-muted-foreground truncate">
@@ -163,8 +177,14 @@ export function Navbar() {
                   </div>
 
                   <div className="px-2 pb-2">
-                    <div className={`text-xs px-2 py-1 rounded-full w-fit font-medium flex items-center gap-1.5 ${statusColor}`}>
-                      <div className={`w-1.5 h-1.5 rounded-full ${planStatus === 'Pro' ? 'bg-white' : 'bg-current'}`} />
+                    <div
+                      className={`text-xs px-2 py-1 rounded-full w-fit font-medium flex items-center gap-1.5 ${statusColor}`}
+                    >
+                      <div
+                        className={`w-1.5 h-1.5 rounded-full ${
+                          planStatus === "Pro" ? "bg-white" : "bg-current"
+                        }`}
+                      />
                       {planStatus} Plan
                     </div>
                   </div>
@@ -187,7 +207,10 @@ export function Navbar() {
                   </DropdownMenuItem>
 
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={handleSignOut} className="gap-2 text-red-600 focus:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/10 cursor-pointer">
+                  <DropdownMenuItem
+                    onClick={handleSignOut}
+                    className="gap-2 text-red-600 focus:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/10 cursor-pointer"
+                  >
                     <LogOut className="w-4 h-4" />
                     Sign Out
                   </DropdownMenuItem>
@@ -209,7 +232,9 @@ export function Navbar() {
         <DialogContent className="sm:max-w-[425px] flex flex-col items-center justify-center py-10">
           <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
           <DialogHeader className="items-center space-y-2">
-            <DialogTitle className="text-center">Redirecting to Billing</DialogTitle>
+            <DialogTitle className="text-center">
+              Redirecting to Billing
+            </DialogTitle>
             <DialogDescription className="text-center">
               Preparing secure billing portal...
             </DialogDescription>
