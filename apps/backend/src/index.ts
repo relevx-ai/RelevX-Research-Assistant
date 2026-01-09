@@ -31,18 +31,13 @@ const app = Fastify({
 });
 
 await app.register(fastifyCors, {
-  origin: (origin, cb) => {
-    const allowedOrigins = [
-      "https://relevx.ai",
-      "http://localhost:3000",
-      "http://localhost:3001",
-    ];
-    if (!origin || allowedOrigins.includes(origin)) {
-      cb(null, true);
-    } else {
-      cb(new Error("Not allowed"), false);
-    }
-  },
+  origin: [
+    "https://relevx.ai",
+    "https://www.relevx.ai",
+    "https://api.relevx.ai",
+    "http://localhost:3000",
+    "http://localhost:3001",
+  ],
   credentials: true,
   allowedHeaders: [
     "Content-Type",
@@ -54,7 +49,7 @@ await app.register(fastifyCors, {
     "projectId",
     "token",
   ],
-  methods: ["GET", "POST", "DELETE", "OPTIONS"],
+  methods: ["GET", "POST", "DELETE", "OPTIONS", "PUT", "PATCH"],
 });
 
 // Core platform plugins. Registration order matters for dependencies:
@@ -73,7 +68,7 @@ app.register(fastifyRedis, {
   host: "127.0.0.1", // Docker container port mapped to host
   port: 6379,
 });
-app.get("/ping-redis", async (request, reply) => {
+app.get("/ping-redis", async (_request, _reply) => {
   const { redis } = app;
   await redis.set("last_ping", Date.now());
   const val = await redis.get("last_ping");
