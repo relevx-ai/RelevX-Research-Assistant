@@ -61,8 +61,22 @@ services:
       - "3000:3000"
     volumes:
       - ./scripts:/app/scripts:ro
-      # - ./secrets:/app/secrets:ro
     environment:
-      - PORT=3000
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - AWS_REGION=us-east-1 
+    depends_on:
+      - redis-server
     networks:
       - internal
+
+  redis-server:
+    image: redis:alpine
+    container_name: redis-server
+    restart: always
+    ports:
+      - "127.0.0.1:6379:6379"
+    networks:
+      - internal
+
+      
