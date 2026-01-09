@@ -64,10 +64,7 @@ await app.register(rawBody, {
 await app.register(errors);
 
 // Redis
-app.register(fastifyRedis, {
-  host: "127.0.0.1", // Docker container port mapped to host
-  port: 6379,
-});
+app.register(fastifyRedis, { url: process.env.REDIS_URL || "" });
 app.get("/ping-redis", async (_request, _reply) => {
   const { redis } = app;
   await redis.set("last_ping", Date.now());

@@ -23,7 +23,9 @@ const listeners = new Map<string, () => void>();
 
 // 1. Create a dedicated subscriber connection
 // We don't use the main fastify.redis because it's busy with GET/SET
-const subscriber = new Redis({ host: "127.0.0.1", port: 6379 });
+const subscriber = new Redis(process.env.REDIS_URL || "");
+
+subscriber.on("error", (err) => console.log("Redis Client Error", err));
 
 // 2. Enable Notifications (Safety check)
 // This ensures the Docker container is actually emitting events
