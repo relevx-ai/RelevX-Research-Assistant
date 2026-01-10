@@ -8,15 +8,11 @@
  * 2. Delivery Job - Marks prepared results as delivered when delivery time arrives
  */
 
-import * as dotenv from "dotenv";
 import * as cron from "node-cron";
 import { logger } from "./logger";
 import { Filter } from "firebase-admin/firestore";
 import { loadAwsSecrets } from "./plugins/aws";
 import { Queue } from "elegant-queue";
-
-// Load environment variables
-dotenv.config();
 
 // Import types from core package
 import type { NewDeliveryLog, Project, RelevxUserProfile } from "core";
@@ -594,7 +590,7 @@ async function sendClientProjectReport(
 // for now we can only handle 2 emails a second before we hit rate limits
 async function runDeliveryQueue() {
   const now = Date.now();
-  for (let i = 0; i < 2; i++) {
+  for (let i = 0; i < 2 && gDeliveryQueue.isEmpty() === false; i++) {
     const deliveryItem = gDeliveryQueue.dequeue();
     const { userId, userRef, project, projectRef, deliveryLogDoc } =
       deliveryItem;

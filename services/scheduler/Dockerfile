@@ -27,9 +27,7 @@ COPY services/scheduler/src ./services/scheduler/src
 ENV CI=true
 RUN pnpm install --frozen-lockfile && \
     pnpm --filter core run build && \
-    pnpm --filter scheduler run build && \
-    pnpm prune --prod && \
-    pnpm store prune
+    pnpm --filter scheduler run build
 
 # Stage 2: Production stage
 FROM node:20-alpine
