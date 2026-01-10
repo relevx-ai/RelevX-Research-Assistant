@@ -2,12 +2,15 @@ import { NextResponse } from "next/server";
 
 // Resolve the API base URL for the Render-hosted service (or local dev).
 export function functionsBaseUrl(): string {
-  const base = process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8080";
+  const base = process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:3000";
   return base.replace(/\/$/, "");
 }
 
 // Minimal proxy that forwards auth header to the external API and returns JSON responses.
-export async function foward_req_to_relevx_api(fnPath: string, req: RequestInit): Promise<Response> {
+export async function foward_req_to_relevx_api(
+  fnPath: string,
+  req: RequestInit
+): Promise<Response> {
   try {
     const base = functionsBaseUrl();
     const url = `${base}${fnPath}`;

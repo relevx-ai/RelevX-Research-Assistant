@@ -2,7 +2,14 @@
 
 import React, { useState } from "react";
 import type { ProjectInfo } from "core";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import {
   LayoutDashboard,
@@ -104,10 +111,11 @@ export function ProjectDetailModal({
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 rounded-t-lg transition-all duration-200 ${activeTab === tab.id
-                    ? "border-primary text-primary bg-primary/5"
-                    : "border-transparent text-muted-foreground hover:border-border hover:bg-accent hover:text-accent-foreground"
-                    }`}
+                  className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 rounded-t-lg transition-all duration-200 ${
+                    activeTab === tab.id
+                      ? "border-primary text-primary bg-primary/5"
+                      : "border-transparent text-muted-foreground hover:border-border hover:bg-accent hover:text-accent-foreground"
+                  }`}
                 >
                   {tab.icon}
                   {tab.label}
@@ -283,8 +291,6 @@ function OverviewTab({ project }: { project: ProjectInfo }) {
   );
 }
 
-
-
 // Delivery History Tab Component
 function DeliveryHistoryTab({ projectTitle }: { projectTitle: string }) {
   const { logs, loading, error, pagination, page, goToNextPage, goToPrevPage } =
@@ -402,12 +408,13 @@ function DeliveryHistoryTab({ projectTitle }: { projectTitle: string }) {
               </div>
               <div className="flex items-center gap-3">
                 <span
-                  className={`text-xs px-2 py-1 rounded-full ${log.status === "success"
-                    ? "bg-green-500/10 text-green-500"
-                    : log.status === "failed"
+                  className={`text-xs px-2 py-1 rounded-full ${
+                    log.status === "success"
+                      ? "bg-green-500/10 text-green-500"
+                      : log.status === "failed"
                       ? "bg-red-500/10 text-red-500"
                       : "bg-yellow-500/10 text-yellow-500"
-                    }`}
+                  }`}
                 >
                   {getStatusLabel(log.status)}
                 </span>
@@ -421,45 +428,127 @@ function DeliveryHistoryTab({ projectTitle }: { projectTitle: string }) {
 
             {/* Expanded Content */}
             {expandedLogIndex === index && (
-              <div className="border-t border-border/50 p-4 bg-muted/20">
-                {/* Summary */}
-                {log.reportSummary && (
-                  <div className="mb-4">
-                    <h4 className="text-sm font-medium mb-2">Summary</h4>
-                    <p className="text-sm text-muted-foreground">
-                      {log.reportSummary}
-                    </p>
-                  </div>
-                )}
-
+              <div className="border-t border-border/50 bg-muted/20">
                 {/* Error Message */}
                 {log.error && (
-                  <div className="mb-4 p-3 rounded-lg bg-destructive/10 border border-destructive/20">
+                  <div className="mx-4 mt-4 p-3 rounded-lg bg-destructive/10 border border-destructive/20">
                     <p className="text-sm text-destructive">{log.error}</p>
                   </div>
                 )}
 
                 {/* Report Content */}
                 {log.reportMarkdown && (
-                  <div className="mb-4">
-                    <h4 className="text-sm font-medium mb-2">Report</h4>
-                    <div className="max-h-[400px] overflow-y-auto p-4 rounded-lg bg-background border border-border/50">
-                      <div className="prose prose-sm dark:prose-invert max-w-none">
-                        <ReactMarkdown>{log.reportMarkdown}</ReactMarkdown>
-                      </div>
-                    </div>
+                  <div className="report-content max-h-[500px] overflow-y-auto p-6">
+                    <ReactMarkdown
+                      components={{
+                        h1: ({ children }: { children?: React.ReactNode }) => (
+                          <h1 className="text-2xl font-bold text-foreground mb-5 leading-tight">
+                            {children}
+                          </h1>
+                        ),
+                        h2: ({ children }: { children?: React.ReactNode }) => (
+                          <h2 className="text-lg font-bold text-foreground mt-8 mb-4 pb-2 border-b border-border/50">
+                            {children}
+                          </h2>
+                        ),
+                        h3: ({ children }: { children?: React.ReactNode }) => (
+                          <h3 className="text-base font-semibold text-foreground/90 mt-6 mb-3">
+                            {children}
+                          </h3>
+                        ),
+                        p: ({ children }: { children?: React.ReactNode }) => (
+                          <p className="text-[15px] text-muted-foreground leading-relaxed mb-4">
+                            {children}
+                          </p>
+                        ),
+                        a: ({
+                          href,
+                          children,
+                        }: {
+                          href?: string;
+                          children?: React.ReactNode;
+                        }) => (
+                          <a
+                            href={href}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-cyan-400 hover:text-cyan-300 border-b border-cyan-400/30 hover:border-cyan-300 transition-colors"
+                          >
+                            {children}
+                          </a>
+                        ),
+                        ul: ({ children }: { children?: React.ReactNode }) => (
+                          <ul className="mb-5 pl-6 space-y-2 text-muted-foreground">
+                            {children}
+                          </ul>
+                        ),
+                        ol: ({ children }: { children?: React.ReactNode }) => (
+                          <ol className="mb-5 pl-6 space-y-2 text-muted-foreground list-decimal">
+                            {children}
+                          </ol>
+                        ),
+                        li: ({ children }: { children?: React.ReactNode }) => (
+                          <li className="text-[15px] leading-relaxed">
+                            {children}
+                          </li>
+                        ),
+                        strong: ({
+                          children,
+                        }: {
+                          children?: React.ReactNode;
+                        }) => (
+                          <strong className="text-foreground font-semibold">
+                            {children}
+                          </strong>
+                        ),
+                        blockquote: ({
+                          children,
+                        }: {
+                          children?: React.ReactNode;
+                        }) => (
+                          <blockquote className="my-5 py-4 px-5 bg-muted/50 border-l-4 border-cyan-500 rounded-r-lg italic text-muted-foreground">
+                            {children}
+                          </blockquote>
+                        ),
+                        code: ({
+                          children,
+                          className,
+                        }: {
+                          children?: React.ReactNode;
+                          className?: string;
+                        }) => {
+                          const isInline = !className;
+                          return isInline ? (
+                            <code className="bg-muted px-1.5 py-0.5 rounded text-[13px] font-mono text-foreground">
+                              {children}
+                            </code>
+                          ) : (
+                            <code className="text-[13px] font-mono text-cyan-200">
+                              {children}
+                            </code>
+                          );
+                        },
+                        pre: ({ children }: { children?: React.ReactNode }) => (
+                          <pre className="bg-background/80 border border-border/50 p-5 rounded-lg overflow-x-auto my-5">
+                            {children}
+                          </pre>
+                        ),
+                      }}
+                    >
+                      {log.reportMarkdown}
+                    </ReactMarkdown>
                   </div>
                 )}
 
                 {/* Metadata */}
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div>
+                <div className="grid grid-cols-2 gap-4 text-sm p-4 pt-0 border-t border-border/30 mt-4">
+                  <div className="pt-4">
                     <span className="text-muted-foreground">
                       Research Started:
                     </span>
                     <p>{formatDate(log.researchStartedAt)}</p>
                   </div>
-                  <div>
+                  <div className="pt-4">
                     <span className="text-muted-foreground">Completed:</span>
                     <p>{formatDate(log.researchCompletedAt)}</p>
                   </div>
