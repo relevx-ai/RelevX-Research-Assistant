@@ -16,7 +16,13 @@ import type {
   ContentToAnalyze,
   ResultForReport,
   CompiledReport,
+  TopicCluster,
 } from "../../interfaces/llm-provider";
+import { clusterArticlesByTopic } from "../llm/topic-clustering";
+import {
+  compileClusteredReport,
+  generateReportSummaryWithRetry,
+} from "../llm/report-compilation";
 import type {
   SearchProvider,
   SearchFilters,
@@ -571,7 +577,6 @@ export async function executeResearchForProject(
     );
 
     // 9. Compile report (if we have results)
-    // 9. Compile report (if we have results)
     let report: CompiledReport | undefined;
     if (sortedResults.length > 0) {
       console.log("Compiling report...");
@@ -587,21 +592,59 @@ export async function executeResearchForProject(
         imageAlt: r.metadata.imageAlt,
       }));
 
-      const compiledReport = await llmProvider.compileReport(
-        project.description,
-        resultsForReport,
-        {
-          tone: "professional",
-          maxLength: 5000,
-          projectTitle: project.title,
-          frequency: project.frequency,
-        }
+      // 9.1 Cluster articles by semantic similarity
+      console.log("Clustering articles by topic...");
+      const clusters = await clusterArticlesByTopic(resultsForReport, {
+        similarityThreshold: 0.85,
+      });
+
+      console.log(
+        `Created ${clusters.length} topic clusters from ${resultsForReport.length} articles`
       );
+
+      // 9.2 Compile report using clusters if we have any multi-article clusters
+      const hasMultiArticleClusters = clusters.some(
+        (c) => c.relatedArticles.length > 0
+      );
+
+      let compiledReport: CompiledReport;
+
+      if (hasMultiArticleClusters) {
+        // Use clustered report compilation for better consolidation
+        console.log("Using clustered report compilation...");
+        compiledReport = await compileClusteredReport({
+          clusters,
+          projectTitle: project.title,
+          projectDescription: project.description,
+          frequency: project.frequency,
+        });
+      } else {
+        // No clustering needed, use standard compilation
+        console.log("No multi-article clusters, using standard compilation...");
+        compiledReport = await llmProvider.compileReport(
+          project.description,
+          resultsForReport,
+          {
+            tone: "professional",
+            maxLength: 5000,
+            projectTitle: project.title,
+            frequency: project.frequency,
+          }
+        );
+      }
+
+      // 9.3 Generate executive summary from the compiled report
+      console.log("Generating executive summary...");
+      const executiveSummary = await generateReportSummaryWithRetry({
+        reportMarkdown: compiledReport.markdown,
+        projectTitle: project.title,
+        projectDescription: project.description,
+      });
 
       report = {
         markdown: compiledReport.markdown,
         title: compiledReport.title,
-        summary: compiledReport.summary,
+        summary: executiveSummary || compiledReport.summary,
         averageScore: compiledReport.averageScore,
         resultCount: compiledReport.resultCount,
       };

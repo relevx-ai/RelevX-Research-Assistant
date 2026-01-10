@@ -81,6 +81,28 @@ export interface CompiledReport {
 }
 
 /**
+ * Source attribution for clustered articles
+ */
+export interface ArticleSource {
+  name: string;
+  url: string;
+  publishedDate?: string;
+}
+
+/**
+ * A cluster of semantically similar articles
+ */
+export interface TopicCluster {
+  id: string;
+  topic: string;
+  primaryArticle: ResultForReport;
+  relatedArticles: ResultForReport[];
+  allSources: ArticleSource[];
+  combinedKeyPoints: string[];
+  averageScore: number;
+}
+
+/**
  * LLM Provider interface
  * All LLM providers must implement these methods
  */
@@ -123,6 +145,32 @@ export interface LLMProvider {
   compileReport(
     projectDescription: string,
     results: ResultForReport[],
+    options?: {
+      tone?: "professional" | "casual" | "technical";
+      maxLength?: number;
+      projectTitle?: string;
+      frequency?: "daily" | "weekly" | "monthly";
+    }
+  ): Promise<CompiledReport>;
+
+  /**
+   * Cluster articles by semantic similarity (optional)
+   * Groups similar articles together for consolidated reporting
+   */
+  clusterByTopic?(
+    results: ResultForReport[],
+    options?: {
+      similarityThreshold?: number;
+    }
+  ): Promise<TopicCluster[]>;
+
+  /**
+   * Compile a report from clustered results (optional)
+   * Uses topic clusters for consolidated multi-source sections
+   */
+  compileClusteredReport?(
+    projectDescription: string,
+    clusters: TopicCluster[],
     options?: {
       tone?: "professional" | "casual" | "technical";
       maxLength?: number;

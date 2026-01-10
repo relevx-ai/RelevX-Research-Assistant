@@ -214,6 +214,130 @@ Return ONLY a JSON object:
 };
 
 /**
+ * Prompt templates for clustered report compilation
+ * Used when articles have been grouped by semantic similarity
+ */
+export const CLUSTERED_REPORT_COMPILATION_PROMPTS: PromptConfig = {
+  model: "gpt-4o-mini",
+  responseFormat: "json_object",
+  temperature: 0.3,
+  system: `You are a research assistant delivering factual, data-rich reports in a vertical newsletter format.
+
+**IMPORTANT: You are receiving TOPIC CLUSTERS - groups of articles covering the same story/event from different sources.**
+
+For each cluster, synthesize information from ALL sources into ONE comprehensive section. Do NOT create separate sections for each source within a cluster.
+
+**Report Structure:**
+Present each topic cluster in a vertical reading flow:
+
+**Bold Title Here (no link)**
+
+One sentence summary synthesizing the key takeaway from all sources.
+
+[Details section - combine facts from ALL sources in the cluster]
+
+*Sources: [Pub1](url1) | Date1 | [Pub2](url2) | Date2*
+
+---
+
+**Details Section Formatting:**
+Choose the best format based on the combined content:
+
+- **Prose paragraph**: For narrative news, context, or analysis. Write dense, fact-packed sentences.
+- **Bullet points**: For multiple distinct facts, features, or updates. Combine unique points from all sources.
+- **Table**: For structured data like specs, pricing, comparisons, release dates.
+- **Mixed**: Combine formats when appropriate.
+
+**Core Principles:**
+1. **Title**: Bold text only, NO hyperlink on title. Create a comprehensive title that covers the topic.
+2. **One-Line Summary**: Synthesize the key takeaway from ALL sources in the cluster.
+3. **Merge Information**: Combine unique facts from all sources. Don't repeat the same fact from different sources.
+4. **Multiple Sources**: List ALL sources at the end, formatted as: *Sources: [Name1](url1) | Date1 | [Name2](url2) | Date2*
+5. **No Filler**: Remove "It is worth noting", "Interestingly", "This highlights".
+6. **Complete Data**: NEVER use "etc.", "and more", "among others". List ALL items.
+7. **Specific Dates**: Always use exact dates (e.g., "January 8, 2026"), never "recently" or "this week".
+
+**Do NOT:**
+- Create separate sections for articles in the same cluster
+- Include summary/conclusion section at the end
+- Include relevancy scores
+- Put links on titles
+
+**Tone:** Direct, factual, scannable.`,
+  user: `Project: {{projectTitle}}
+Description: {{projectDescription}}
+Report Frequency: {{frequency}}
+Report Date: {{reportDate}}
+
+Synthesize these TOPIC CLUSTERS into a newsletter-style report. Each cluster contains related articles about the same topic - combine them into ONE section per cluster:
+
+{{clustersFormatted}}
+
+**Format each CLUSTER as ONE section:**
+
+**Bold Title Text** (synthesize a title covering the whole topic)
+
+One sentence summary combining insights from all sources.
+
+[Details - merge unique facts from ALL sources in the cluster:
+ - Prose for narrative/context
+ - Bullets for distinct facts
+ - Tables for structured/comparative data
+ - Or mix formats as needed]
+
+*Sources: [Pub1](url1) | Date1 | [Pub2](url2) | Date2*
+
+---
+
+**Requirements:**
+- ONE section per cluster (NOT one per article)
+- Title is bold text only (NO hyperlink)
+- Synthesize information from all sources in each cluster
+- List ALL sources at the end of each section
+- Pack in specific facts - numbers, dates, names, amounts, specs
+- NO summary section at end of report
+- NO filler words or vague statements
+
+Return ONLY a JSON object:
+{
+  "markdown": "the full markdown report in vertical newsletter format",
+  "title": "Descriptive title",
+  "summary": "2-3 factual sentences with key takeaways"
+}`,
+};
+
+/**
+ * Prompt for generating executive summary from completed report
+ * Called as a separate step after report compilation
+ */
+export const REPORT_SUMMARY_PROMPTS: PromptConfig = {
+  model: "gpt-4o-mini",
+  responseFormat: "json_object",
+  temperature: 0.2, // Low for consistent, factual output
+  system: `You are an expert at writing concise executive summaries. Given a research report, extract the 2-3 most important findings and write a brief, fact-dense summary.
+
+**Guidelines:**
+- Focus on the most significant or impactful news items
+- Include specific facts: names, numbers, dates, amounts
+- Be direct and concise - no filler words
+- Write in complete sentences
+- Do NOT start with "This report covers..." or similar meta-statements
+- Jump straight into the key findings`,
+  user: `Write a 2-3 sentence executive summary for this research report:
+
+Project: {{projectTitle}}
+Description: {{projectDescription}}
+
+Report Content:
+{{reportMarkdown}}
+
+Return ONLY a JSON object:
+{
+  "summary": "2-3 factual sentences highlighting the most important findings"
+}`,
+};
+
+/**
  * Helper function to replace template placeholders
  */
 export function renderPrompt(
