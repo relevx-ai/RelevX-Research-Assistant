@@ -50,28 +50,8 @@ export default fp(async (app: any) => {
       const email = decodedToken.email;
       const emailVerified = decodedToken.email_verified || false;
 
-      let plan: any;
-      try {
-        const userDoc = await db.collection("users").doc(uid).get();
-        if (userDoc.exists) {
-          const userData = userDoc.data();
-          if (userData?.plan_id) {
-            const planDoc = await db
-              .collection("plans")
-              .doc(userData.plan_id)
-              .get();
-            if (planDoc.exists) plan = planDoc.data();
-          }
-        }
-      } catch (error) {
-        app.log.warn(
-          { error, uid },
-          "Failed to fetch user data from Firestore"
-        );
-      }
-
       return {
-        user: { uid, email, emailVerified, plan },
+        user: { uid, email, emailVerified },
       };
     } catch (error) {
       throw new Error(

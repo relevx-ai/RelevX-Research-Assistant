@@ -20,7 +20,6 @@ declare module "fastify" {
         uid: string;
         email?: string;
         emailVerified?: boolean;
-        plan?: Plan;
       };
     }>;
   }
