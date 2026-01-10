@@ -339,6 +339,18 @@ async function runResearchJob(): Promise<void> {
     return projectsToRun;
   };
 
+  // Marks all polled projects as running
+  const markPolledProjectsAsRunning = async (
+    polledProjects: Array<PolledProject>
+  ) => {
+    for (const polledProject of polledProjects) {
+      await polledProject.projectRef.update({
+        status: "running",
+        updatedAt: Date.now(),
+      });
+    }
+  };
+
   // executes research for a single project
   const executeResearchForProject = async (polledProject: PolledProject) => {
     const { userId, project, isRetry, projectRef } = polledProject;
@@ -428,6 +440,9 @@ async function runResearchJob(): Promise<void> {
       logger.info("No projects need research");
       return;
     }
+
+    // avoid race conditions if a project takes longer than a minute to run...
+    markPolledProjectsAsRunning(projectsToRun);
 
     const prerunCount = projectsToRun.filter((p) => !p.isRetry).length;
     const retryCount = projectsToRun.filter((p) => p.isRetry).length;
