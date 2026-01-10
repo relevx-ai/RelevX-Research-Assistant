@@ -29,7 +29,7 @@ const routes: FastifyPluginAsync = async (app) => {
             .status(401)
             .send({ error: { message: "Unauthenticated" } });
         }
-        const planId = (req.headers as any).planId;
+        const planId = (req.headers as any).planid;
         if (!planId) {
           return rep
             .status(400)

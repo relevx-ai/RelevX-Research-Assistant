@@ -41,16 +41,18 @@ export async function relevx_api_fetch<T>(
 ): Promise<T> {
   const idToken = await getIdToken();
 
+  const headers: any = {
+    ...(init ? init.headers : {}),
+    "content-type": "application/json",
+    authorization: `Bearer ${idToken}`,
+  };
+
   const req: RequestInit = {
     ...init,
-    headers: {
-      ...(init?.headers || {}),
-      "content-type": "application/json",
-      authorization: `Bearer ${idToken}`,
-    },
+    headers,
     cache: "no-store",
   };
-  console.log("🔑 request: ", JSON.stringify(req, null, 2));
+  // console.log("🔑 request: ", JSON.stringify(req, null, 2));
   const res = await foward_req_to_relevx_api(reqPath, req);
   const text = await res.text();
   let data: unknown = undefined;
