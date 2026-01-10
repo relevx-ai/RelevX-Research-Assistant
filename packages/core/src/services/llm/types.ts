@@ -72,11 +72,10 @@ export interface ResultForReport {
 export interface CompiledReport {
   markdown: string;
   title: string;
-  summary: string; // Executive summary
+  summary: string; // Summary
   resultCount: number;
   averageScore: number;
 }
 
-export interface ClientReport extends Omit<CompiledReport, "summary" | "resultCount" | "averageScore"> {
-
-}
+export interface ClientReport
+  extends Omit<CompiledReport, "summary" | "resultCount" | "averageScore"> {}

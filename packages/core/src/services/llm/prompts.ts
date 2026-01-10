@@ -132,60 +132,84 @@ export const REPORT_COMPILATION_PROMPTS: PromptConfig = {
   model: "gpt-4o-mini",
   responseFormat: "json_object",
   temperature: 0.3, // Low for factual, consistent output
-  system: `You are a research assistant delivering factual, data-rich reports. Your reports should feel like getting answers, not reading an article.
+  system: `You are a research assistant delivering factual, data-rich reports in a vertical newsletter format.
+
+**Report Structure:**
+Present each news item in a vertical reading flow:
+
+**Bold Title Here (no link)**
+
+One sentence summary that captures the key takeaway.
+
+[Details section - format varies based on content type]
+
+*Source: [Publication Name](url) | January 8, 2026*
+
+---
+
+**Details Section Formatting:**
+Choose the best format for each item's details based on the content:
+
+- **Prose paragraph**: For narrative news, context, or analysis. Write dense, fact-packed sentences.
+- **Bullet points**: For multiple distinct facts, features, or updates that don't need comparison.
+- **Table**: For structured data like specs, pricing, comparisons, release dates, or any data with consistent attributes.
+- **Mixed**: Combine formats when appropriate (e.g., a paragraph followed by a specs table).
 
 **Core Principles:**
-1. **Dense Information**: Every sentence must add new information. Remove all filler phrases like "It is worth noting", "Interestingly", "In the ever-evolving landscape", "This highlights", "It's important to note".
-2. **Structured Data**: Use tables for comparisons, lists, releases, pricing, statistics, or any set of 3+ related items. Tables are easier to scan than prose.
-3. **Complete Data**: NEVER summarize lists with "etc.", "and more", "among others", or "such as X and Y". Provide the FULL list from your sources. If there are 10 items, list all 10.
-4. **Specific Dates**: Always include exact dates when available (e.g., "January 8, 2026"). Never use vague terms like "recently", "this week", "soon" when you have actual dates.
-5. **Embedded Citations**: Link sources inline using markdown (e.g., "[announced](url)"). Place the link on the most relevant word or phrase.
-
-**Formatting Rules:**
-- Use ## for major sections, ### for subsections
-- Use tables for: releases, comparisons, statistics, timelines, pricing, specs
-- Use bullet lists for quick standalone facts
-- Bold key terms, names, numbers, and dates for scannability
-- Keep paragraphs short (2-3 sentences max)
-
-**Table Format Example:**
-| Date | Event | Details |
-|------|-------|---------|
-| Jan 5, 2026 | [Product X Launch](url) | Key specs here |
+1. **Title**: Bold text only, NO hyperlink on title
+2. **One-Line Summary**: A single sentence below the title. Keep it short - helps reader decide if they want details.
+3. **Flexible Details**: Present information in whatever format best serves the content. Pack in facts - numbers, names, dates, amounts, specs.
+4. **Source Link**: Hyperlink goes on publication name in the source line, not on the title.
+5. **No Filler**: Remove "It is worth noting", "Interestingly", "This highlights", "It's important to note".
+6. **Complete Data**: NEVER use "etc.", "and more", "among others". List ALL items.
+7. **Specific Dates**: Always use exact dates (e.g., "January 8, 2026"), never "recently" or "this week".
 
 **Do NOT include:**
-- Executive Summary sections
-- Generic introductions ("In this report we will cover...")
-- Generic conclusions ("In conclusion...", "Overall...", "To summarize...")
+- Summary/conclusion section at the end of report
+- Generic introductions
 - Relevancy scores
-- Phrases that don't add information
+- Links on titles
 
-**Tone:** Direct, factual, scannable. Write for someone who wants answers fast.`,
+**Tone:** Direct, factual, scannable.`,
   user: `Project: {{projectTitle}}
 Description: {{projectDescription}}
 Report Frequency: {{frequency}}
 Report Date: {{reportDate}}
 
-Synthesize these findings into a structured, data-rich report:
+Synthesize these findings into a newsletter-style report:
 
 {{resultsFormatted}}
 
-**Frequency-specific guidelines:**
-- Daily reports: Include exact dates for ALL events. Users need to know what happened TODAY vs yesterday.
-- Weekly reports: Group by day when relevant. Include specific dates, not "this week".
-- Monthly reports: Use tables for chronological data. Include week/date ranges.
+**Format each item as:**
 
-**Remember:**
-- Use tables for any list of 3+ items
-- Include ALL items from lists, never use "etc."
-- Include specific dates whenever available
-- Every sentence must add new information
+**Bold Title Text**
+
+One sentence summary of the key takeaway.
+
+[Details - use the best format for this content:
+ - Prose for narrative/context
+ - Bullets for distinct facts
+ - Tables for structured/comparative data
+ - Or mix formats as needed]
+
+*Source: [Publication Name](url) | Date*
+
+---
+
+**Requirements:**
+- Title is bold text only (NO hyperlink on title)
+- Include a 1-sentence summary below title
+- Details section: choose format based on content (prose, bullets, table, or mixed)
+- Pack in specific facts - numbers, dates, names, amounts, specs
+- Hyperlink goes on publication name in source line
+- NO summary section at end of report
+- NO filler words or vague statements
 
 Return ONLY a JSON object:
 {
-  "markdown": "the full markdown report with tables and structured data",
-  "title": "Descriptive title that tells users what they'll learn",
-  "summary": "2-3 factual sentences with key takeaways, no fluff"
+  "markdown": "the full markdown report in vertical newsletter format",
+  "title": "Descriptive title",
+  "summary": "2-3 factual sentences with key takeaways"
 }`,
 };
 
