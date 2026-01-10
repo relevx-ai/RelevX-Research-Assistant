@@ -16,6 +16,7 @@ import {
   updateProject as updateProjectService,
   updateProjectStatus,
   deleteProject as deleteProjectService,
+  listProjects,
 } from "../lib/projects";
 import { useAuth } from "../contexts/auth-context";
 
@@ -35,6 +36,7 @@ interface UseProjectsResult {
     status: ProjectStatus
   ) => Promise<boolean>;
   deleteProject: (projectId: string) => Promise<boolean>;
+  refresh: () => Promise<void>;
 }
 
 interface UseProjectsOptions {
@@ -157,6 +159,19 @@ export function useProjects(
     [user]
   );
 
+  const refresh = useCallback(async () => {
+    if (!user?.uid) return;
+    setLoading(true);
+    try {
+      const fetchedProjects = await listProjects();
+      setProjects(fetchedProjects);
+    } catch (err) {
+      setError("Failed to refresh projects");
+    } finally {
+      setLoading(false);
+    }
+  }, [user]);
+
   return {
     projects,
     loading,
@@ -165,5 +180,6 @@ export function useProjects(
     updateProject,
     toggleProjectStatus,
     deleteProject,
+    refresh,
   };
 }

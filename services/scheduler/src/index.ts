@@ -13,6 +13,7 @@ import * as cron from "node-cron";
 import { logger } from "./logger";
 import { Filter } from "firebase-admin/firestore";
 import { loadAwsSecrets } from "./plugins/aws";
+import { Queue } from "elegant-queue";
 
 // Load environment variables
 dotenv.config();
@@ -457,6 +458,15 @@ async function runResearchJob(): Promise<void> {
   }
 }
 
+const gDeliveryQueue = new Queue<DeliveryItem>();
+interface DeliveryItem {
+  userId: string;
+  userRef: any;
+  project: Project;
+  projectRef: any;
+  deliveryLogDoc: any;
+}
+
 /**
  * Delivery Job
  * Check for projects ready to deliver (have preparedDeliveryLogId)
@@ -534,7 +544,6 @@ async function sendClientProjectReport(
   project: Project,
   projectRef: any
 ) {
-  const now = Date.now();
   try {
     const deliveryLogSnapshot = await projectRef
       .collection("deliveryLogs")
@@ -547,30 +556,54 @@ async function sendClientProjectReport(
       });
       return;
     }
-    // Load user (for email fallback)
-    const userDoc = await userRef.get();
-    if (!userDoc.exists) {
-      logger.error("User not found", {
-        userId,
-        projectId: project.id,
-        deliveryLogId: project.preparedDeliveryLogId,
-      });
-      return;
-    }
-    const userData = userDoc.data() as RelevxUserProfile;
-    const userEmail = userData.email;
-
-    // Send email if configured
-    const deliveryEmail = project.deliveryConfig?.email?.address || userEmail;
-
-    if (project.resultsDestination === "email" && deliveryEmail) {
-      logger.info(`Sending report (s) email to ${deliveryEmail}...`);
-
+    if (project.resultsDestination === "email") {
       for (const deliveryLogDoc of deliveryLogSnapshot.docs) {
-        const deliveryLogRef = await projectRef
-          .collection("deliveryLogs")
-          .doc(deliveryLogDoc.id);
+        gDeliveryQueue.enqueue({
+          userId,
+          userRef,
+          project,
+          projectRef,
+          deliveryLogDoc,
+        });
+      }
+    }
+  } catch (error: any) {
+    logger.error("Delivery failed", {
+      userId,
+      projectId: project.id,
+      error: error.message,
+    });
+  }
+}
+
+// for now we can only handle 2 emails a second before we hit rate limits
+async function runDeliveryQueue() {
+  const now = Date.now();
+  for (let i = 0; i < 2; i++) {
+    const deliveryItem = gDeliveryQueue.dequeue();
+    const { userId, userRef, project, projectRef, deliveryLogDoc } =
+      deliveryItem;
+    try {
+      // Load user (for email fallback)
+      const userDoc = await userRef.get();
+      if (!userDoc.exists) {
+        logger.error("User not found", {
+          userId,
+          projectId: project.id,
+          deliveryLogId: project.preparedDeliveryLogId,
+        });
+        return;
+      }
+      const userData = userDoc.data() as RelevxUserProfile;
+      const userEmail = userData.email;
+
+      // Send email if configured
+      const deliveryEmail = project.deliveryConfig?.email?.address || userEmail;
+
+      if (project.resultsDestination === "email" && deliveryEmail) {
+        logger.info(`Sending report email to ${deliveryEmail}...`);
         const deliveryLog = deliveryLogDoc.data() as NewDeliveryLog;
+        const deliveryLogRef = deliveryLogDoc.ref;
 
         try {
           const emailResult = await sendReportEmail(
@@ -627,13 +660,13 @@ async function sendClientProjectReport(
           logger.error("Exception sending email:", emailError);
         }
       }
+    } catch (error: any) {
+      logger.error("Delivery failed", {
+        userId,
+        projectId: project.id,
+        error: error.message,
+      });
     }
-  } catch (error: any) {
-    logger.error("Delivery failed", {
-      userId,
-      projectId: project.id,
-      error: error.message,
-    });
   }
 }
 
@@ -731,6 +764,9 @@ async function startScheduler(): Promise<void> {
   // this can cause race conditions.
   cron.schedule(cronExpression, async () => {
     await runSchedulerJob();
+  });
+  cron.schedule("1 * * * * *", async () => {
+    await runDeliveryQueue();
   });
 
   logger.info("Scheduler service started successfully", {

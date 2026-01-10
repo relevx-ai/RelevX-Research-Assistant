@@ -112,29 +112,6 @@ const routes: FastifyPluginAsync = async (app) => {
       await app.redis.del(userId);
     };
 
-    // const warmUserProjectsCache = async (userId: string) => {
-    //   // set redis key -- cache the value
-    //   const projectSnapshot = await db
-    //     .collection("users")
-    //     .doc(userId)
-    //     .collection("projects")
-    //     .where("status", "!=", "deleted")
-    //     .get();
-
-    //   const initialProjectsCache = await projectSnapshot.docs.map(
-    //     (doc: any) => {
-    //       const { userId: _userId, id: _id, ...data } = doc.data();
-    //       return {
-    //         ...data,
-    //       };
-    //     }
-    //   );
-    //   await app.redis.set(userId, JSON.stringify(initialProjectsCache));
-    //   return initialProjectsCache.filter(
-    //     (project: any) => project.status !== "deleted"
-    //   );
-    // };
-
     if (!connection) {
       req.reply.status(500).send({ error: "Connection failed" });
       return;
@@ -157,9 +134,6 @@ const routes: FastifyPluginAsync = async (app) => {
           if (listeners.has(userId)) {
             await onConnectedClosed(userId);
           }
-
-          // const projects = await warmUserProjectsCache(userId);
-          // connection.send(JSON.stringify({ projects }));
 
           app.log.info("Setting up listener for user " + userId);
           // Set up Firestore listener
@@ -223,12 +197,23 @@ const routes: FastifyPluginAsync = async (app) => {
             .send({ error: { message: "Unauthenticated" } });
         }
 
+        // check cache.. 99% of the time this will be hit
+        const cachedProjects = await app.redis.get(userId);
+        if (cachedProjects) {
+          const projects = JSON.parse(cachedProjects).filter(
+            (project: any) => project.status !== "deleted"
+          );
+          return rep.status(200).send({
+            projects,
+          } as ListProjectsResponse);
+        }
+
         // Create or update user document in Firestore
         const projectsSnapshot = await db
           .collection("users")
           .doc(userId)
           .collection("projects")
-          .orderBy("createdAt", "desc")
+          .where("status", "!=", "deleted")
           .get();
         if (projectsSnapshot.empty) {
           return rep
@@ -524,6 +509,7 @@ const routes: FastifyPluginAsync = async (app) => {
 
         // update cache after deletion
         await doc.ref.update({
+          title: `[DELETED]:${title}`,
           status: "deleted",
           updatedAt: new Date().toISOString(),
         });

@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import type { ProjectInfo } from "core";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import {
   LayoutDashboard,
@@ -39,6 +39,17 @@ export function ProjectDetailModal({
 }: ProjectDetailModalProps) {
   const [activeTab, setActiveTab] = useState<TabId>("overview");
   const [settingsDialogOpen, setSettingsDialogOpen] = useState(false);
+
+  /* New state for error dialog */
+  const [errorDialog, setErrorDialog] = useState<{
+    open: boolean;
+    title: string;
+    message: string;
+  }>({
+    open: false,
+    title: "",
+    message: "",
+  });
 
   const tabs: { id: TabId; label: string; icon: React.ReactNode }[] = [
     {
@@ -107,7 +118,18 @@ export function ProjectDetailModal({
               variant="ghost"
               size="icon"
               className="h-8 w-8 text-muted-foreground hover:text-foreground transition-all duration-300 hover:rotate-90"
-              onClick={() => setSettingsDialogOpen(true)}
+              onClick={() => {
+                if (project.status === "running") {
+                  setErrorDialog({
+                    open: true,
+                    title: "Edit Restricted",
+                    message:
+                      "The project is currently being processed, edit is not allowed while a research is in progress.",
+                  });
+                  return;
+                }
+                setSettingsDialogOpen(true);
+              }}
             >
               <Settings className="w-4 h-4" />
             </Button>
@@ -130,6 +152,31 @@ export function ProjectDetailModal({
         open={settingsDialogOpen}
         onOpenChange={setSettingsDialogOpen}
       />
+
+      {/* Error Dialog */}
+      <Dialog
+        open={errorDialog.open}
+        onOpenChange={(open: boolean) =>
+          setErrorDialog((prev) => ({ ...prev, open }))
+        }
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{errorDialog.title}</DialogTitle>
+            <DialogDescription>{errorDialog.message}</DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              onClick={() =>
+                setErrorDialog((prev) => ({ ...prev, open: false }))
+              }
+              className="bg-primary text-primary-foreground hover:bg-primary/90"
+            >
+              OK
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

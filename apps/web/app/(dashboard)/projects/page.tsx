@@ -2,14 +2,14 @@
 
 import React, { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, FolderOpen } from "lucide-react";
+import { Plus, FolderOpen, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ProjectCard } from "@/components/projects/project-card";
 import { CreateProjectDialog } from "@/components/projects/create-project-dialog";
 import { useProjects } from "@/hooks/use-projects";
 
 export default function ProjectsPage() {
-  const { projects, loading } = useProjects();
+  const { projects, loading, refresh } = useProjects();
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
 
   const sortedProjects = useMemo(() => {
@@ -54,20 +54,39 @@ export default function ProjectsPage() {
             Manage your research projects and track ongoing investigations
           </p>
         </div>
-        <motion.div
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          transition={{ type: "spring", stiffness: 400, damping: 17 }}
-        >
-          <Button
-            size="lg"
-            className="gap-2 shadow-md hover:shadow-xl transition-shadow duration-300"
-            onClick={() => handleCreateProject()}
+        <div className="flex items-center gap-3">
+          <motion.div
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            transition={{ type: "spring", stiffness: 400, damping: 17 }}
           >
-            <Plus className="w-5 h-5" />
-            New Project
-          </Button>
-        </motion.div>
+            <Button
+              size="lg"
+              className="gap-2 shadow-md hover:shadow-xl transition-shadow duration-300"
+              onClick={() => handleCreateProject()}
+            >
+              <Plus className="w-5 h-5" />
+              New Project
+            </Button>
+          </motion.div>
+
+          <motion.div
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            transition={{ type: "spring", stiffness: 400, damping: 17 }}
+          >
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-10 w-10 shadow-sm hover:shadow-md transition-shadow duration-300"
+              onClick={() => refresh()}
+            >
+              <RefreshCw
+                className={`w-4 h-4 ${loading ? "animate-spin" : ""}`}
+              />
+            </Button>
+          </motion.div>
+        </div>
       </motion.div>
 
       {/* Loading State */}

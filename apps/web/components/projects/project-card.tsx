@@ -97,7 +97,9 @@ export function ProjectCard({ project }: ProjectCardProps) {
     setIsToggling(true);
     try {
       const newStatus = project.status === "active" ? "paused" : "active";
-      await toggleProjectStatus(project.title, newStatus);
+      if (newStatus !== project.status) {
+        await toggleProjectStatus(project.title, newStatus);
+      }
     } catch (err: any) {
       console.error("Failed to toggle project status:", err);
       // Check if it's a ProjectError with custom code
@@ -130,7 +132,8 @@ export function ProjectCard({ project }: ProjectCardProps) {
   return (
     <>
       <Card
-        className="group hover:shadow-xl hover:shadow-primary/10 hover:scale-[1.02] transition-all duration-300 glass-dark h-full flex flex-col cursor-pointer"
+        className={`group hover:shadow-xl hover:shadow-primary/10 hover:scale-[1.02] transition-all duration-300 glass-dark h-full flex flex-col cursor-pointer ${project.status === "running" ? "!border-red-500 !border-2" : ""
+          }`}
         onClick={handleCardClick}
       >
         <CardHeader>
@@ -165,6 +168,15 @@ export function ProjectCard({ project }: ProjectCardProps) {
                   className="gap-2"
                   onClick={(e) => {
                     e.stopPropagation();
+                    if (project.status === "running") {
+                      setErrorDialog({
+                        open: true,
+                        title: "Edit Restricted",
+                        message:
+                          "The project is currently being processed, edit is not allowed while a research is in progress.",
+                      });
+                      return;
+                    }
                     setSettingsDialogOpen(true);
                   }}
                 >

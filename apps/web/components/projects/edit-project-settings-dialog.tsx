@@ -179,6 +179,8 @@ export function EditProjectSettingsDialog({
     }
   };
 
+
+
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-[750px] max-h-[90vh] flex flex-col">
