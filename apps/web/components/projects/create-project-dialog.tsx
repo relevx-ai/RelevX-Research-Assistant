@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { ProjectInfo, Frequency, ResultsDestination } from "core";
+import { ProjectInfo, Frequency } from "core";
 import {
   Dialog,
   DialogContent,
@@ -39,8 +39,6 @@ export function CreateProjectDialog({
   const [frequency, setFrequency] = useState<Frequency>("daily");
   const [dayOfWeek, setDayOfWeek] = useState<number>(1); // Monday
   const [dayOfMonth, setDayOfMonth] = useState<number>(1); // 1st of month
-  const [resultsDestination, setResultsDestination] =
-    useState<ResultsDestination>("email");
   const [deliveryTime, setDeliveryTime] = useState("09:00");
   const [timezone, setTimezone] = useState(
     Intl.DateTimeFormat().resolvedOptions().timeZone
@@ -112,7 +110,7 @@ export function CreateProjectDialog({
         title: title.trim(),
         description: description.trim(),
         frequency,
-        resultsDestination,
+        resultsDestination: "email",
         deliveryTime,
         timezone,
         ...(frequency === "weekly" && { dayOfWeek }),
@@ -131,7 +129,6 @@ export function CreateProjectDialog({
       setFrequency("daily");
       setDayOfWeek(1);
       setDayOfMonth(1);
-      setResultsDestination("email");
       setDeliveryTime("09:00");
       setTimezone(Intl.DateTimeFormat().resolvedOptions().timeZone);
       setPriorityDomains("");
@@ -157,7 +154,6 @@ export function CreateProjectDialog({
         setFrequency("daily");
         setDayOfWeek(1);
         setDayOfMonth(1);
-        setResultsDestination("email");
         setDeliveryTime("09:00");
         setTimezone(Intl.DateTimeFormat().resolvedOptions().timeZone);
         setPriorityDomains("");
@@ -332,27 +328,6 @@ export function CreateProjectDialog({
                   </Select>
                 </div>
               </div>
-            </div>
-
-            {/* Results Destination */}
-            <div className="space-y-2">
-              <Label htmlFor="destination">Delivery Method</Label>
-              <Select
-                id="destination"
-                value={resultsDestination}
-                onChange={(e) =>
-                  setResultsDestination(e.target.value as ResultsDestination)
-                }
-                disabled={isCreating}
-              >
-                <option value="email">Email</option>
-                {/* <option value="slack">Slack</option>
-                <option value="sms">SMS</option> */}
-                <option value="none">In-App Only</option>
-              </Select>
-              <p className="text-xs text-muted-foreground">
-                Where should we send your research updates?
-              </p>
             </div>
 
             {/* Priority Domains */}

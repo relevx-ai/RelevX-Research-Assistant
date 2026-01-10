@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import type { ProjectInfo, Frequency, ResultsDestination } from "core";
+import type { ProjectInfo, Frequency } from "core";
 import {
   Dialog,
   DialogContent,
@@ -39,8 +39,6 @@ export function EditProjectSettingsDialog({
   const [frequency, setFrequency] = useState<Frequency>(project.frequency);
   const [dayOfWeek, setDayOfWeek] = useState<number>(project.dayOfWeek ?? 1); // Monday
   const [dayOfMonth, setDayOfMonth] = useState<number>(project.dayOfMonth ?? 1); // 1st of month
-  const [resultsDestination, setResultsDestination] =
-    useState<ResultsDestination>(project.resultsDestination);
   const [deliveryTime, setDeliveryTime] = useState(
     project.deliveryTime || "09:00"
   );
@@ -76,7 +74,6 @@ export function EditProjectSettingsDialog({
       setFrequency(project.frequency);
       setDayOfWeek(project.dayOfWeek ?? 1);
       setDayOfMonth(project.dayOfMonth ?? 1);
-      setResultsDestination(project.resultsDestination);
       setDeliveryTime(project.deliveryTime || "09:00");
       setTimezone(
         project.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone
@@ -152,7 +149,7 @@ export function EditProjectSettingsDialog({
         title: title.trim(),
         description: description.trim(),
         frequency,
-        resultsDestination,
+        resultsDestination: "email",
         deliveryTime,
         timezone,
         ...(frequency === "weekly" && { dayOfWeek }),
@@ -346,27 +343,6 @@ export function EditProjectSettingsDialog({
                   </Select>
                 </div>
               </div>
-            </div>
-
-            {/* Results Destination */}
-            <div className="space-y-2">
-              <Label htmlFor="edit-destination">Delivery Method</Label>
-              <Select
-                id="edit-destination"
-                value={resultsDestination}
-                onChange={(e) =>
-                  setResultsDestination(e.target.value as ResultsDestination)
-                }
-                disabled={isUpdating}
-              >
-                <option value="email">Email</option>
-                {/* <option value="slack">Slack</option>
-                <option value="sms">SMS</option> */}
-                <option value="none">In-App Only</option>
-              </Select>
-              <p className="text-xs text-muted-foreground">
-                Where should we send your research updates?
-              </p>
             </div>
 
             {/* Priority Domains */}

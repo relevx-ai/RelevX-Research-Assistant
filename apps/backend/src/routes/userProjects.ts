@@ -441,6 +441,7 @@ const routes: FastifyPluginAsync = async (app) => {
         const projectData = {
           ...request.projectInfo,
           userId,
+          resultsDestination: "email", // Force email as the only delivery method
           status: "draft", // New projects start as draft
           nextRunAt: calculateNextRunAt(
             request.projectInfo.frequency,
@@ -530,10 +531,14 @@ const routes: FastifyPluginAsync = async (app) => {
             .status(404)
             .send({ error: { message: "Project not found" } });
 
-        await doc.ref.update({
+        // Force email as the only delivery method
+        const updateData = {
           ...data,
+          resultsDestination: "email",
           updatedAt: new Date().toISOString(),
-        });
+        };
+
+        await doc.ref.update(updateData);
 
         return rep.status(200).send({ ok: true });
       } catch (err: any) {
