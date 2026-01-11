@@ -124,11 +124,13 @@ async function testMockResearch() {
       keyPoints: r.keyPoints,
     }));
 
-    const report = await compileReportWithRetry(
-      resultsForReport,
-      "Web Development Research",
-      "Latest developments in web development frameworks and best practices"
-    );
+    const report = await compileReportWithRetry({
+      results: resultsForReport,
+      projectTitle: "Web Development Research",
+      projectDescription:
+        "Latest developments in web development frameworks and best practices",
+      frequency: "weekly",
+    });
 
     console.log(`   ✓ Report compiled successfully\n`);
     console.log(`\n${"=".repeat(60)}`);
