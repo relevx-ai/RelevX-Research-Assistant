@@ -771,19 +771,8 @@ async function startScheduler(): Promise<void> {
   const requiredEnvVars = [
     "OPENAI_API_KEY",
     "BRAVE_SEARCH_API_KEY",
-    "FIREBASE_PROJECT_ID",
+    "FIREBASE_SERVICE_ACCOUNT_JSON",
   ];
-
-  // Add Admin SDK credential requirement
-  if (
-    !process.env.FIREBASE_ADMIN_CLIENT_EMAIL &&
-    !process.env.FIREBASE_SERVICE_ACCOUNT_PATH
-  ) {
-    logger.error(
-      "Missing Firebase Admin credentials. Set either FIREBASE_SERVICE_ACCOUNT_PATH or FIREBASE_ADMIN_CLIENT_EMAIL + FIREBASE_ADMIN_PRIVATE_KEY"
-    );
-    process.exit(1);
-  }
 
   const missingVars = requiredEnvVars.filter((v) => !process.env[v]);
   if (missingVars.length > 0) {

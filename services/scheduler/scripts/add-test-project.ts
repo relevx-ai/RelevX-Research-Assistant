@@ -65,35 +65,19 @@ function initializeFirebase(): admin.firestore.Firestore {
   }
 
   try {
-    if (
-      process.env.FIREBASE_ADMIN_CLIENT_EMAIL &&
-      process.env.FIREBASE_ADMIN_PRIVATE_KEY
-    ) {
+    const certObject =
+      process.env.FIREBASE_SERVICE_ACCOUNT_JSON &&
+      JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_JSON);
+    if (certObject) {
       admin.initializeApp({
-        credential: admin.credential.cert({
-          projectId: process.env.FIREBASE_PROJECT_ID,
-          clientEmail: process.env.FIREBASE_ADMIN_CLIENT_EMAIL,
-          privateKey: process.env.FIREBASE_ADMIN_PRIVATE_KEY.replace(
-            /\\n/g,
-            "\n"
-          ),
-        }),
-        projectId: process.env.FIREBASE_PROJECT_ID,
+        credential: admin.credential.cert(certObject),
+        projectId: certObject.project_id,
       });
 
       console.log("✓ Firebase Admin initialized with environment variables");
-    } else if (process.env.FIREBASE_SERVICE_ACCOUNT_PATH) {
-      const serviceAccount = require(process.env.FIREBASE_SERVICE_ACCOUNT_PATH);
-
-      admin.initializeApp({
-        credential: admin.credential.cert(serviceAccount),
-        projectId: process.env.FIREBASE_PROJECT_ID,
-      });
-
-      console.log("✓ Firebase Admin initialized with service account file");
     } else {
       throw new Error(
-        "Missing Firebase Admin credentials. Set either FIREBASE_SERVICE_ACCOUNT_PATH or FIREBASE_ADMIN_CLIENT_EMAIL + FIREBASE_ADMIN_PRIVATE_KEY"
+        "Missing Firebase Admin credentials. Set FIREBASE_SERVICE_ACCOUNT_JSON"
       );
     }
 
@@ -271,24 +255,13 @@ async function main() {
   console.log("Usage: pnpm tsx scripts/add-test-project.ts [userId] [--now]\n");
 
   // Validate required environment variables
-  const requiredEnvVars = ["FIREBASE_PROJECT_ID"];
+  const requiredEnvVars = ["FIREBASE_SERVICE_ACCOUNT_JSON"];
   const missingVars = requiredEnvVars.filter((v) => !process.env[v]);
 
   if (missingVars.length > 0) {
     console.error("✗ Missing required environment variables:");
     missingVars.forEach((v) => console.error(`  - ${v}`));
     console.error("\nMake sure you have a .env file in services/scheduler/");
-    process.exit(1);
-  }
-
-  if (
-    !process.env.FIREBASE_ADMIN_CLIENT_EMAIL &&
-    !process.env.FIREBASE_SERVICE_ACCOUNT_PATH
-  ) {
-    console.error("✗ Missing Firebase Admin credentials");
-    console.error(
-      "  Set either FIREBASE_SERVICE_ACCOUNT_PATH or FIREBASE_ADMIN_CLIENT_EMAIL + FIREBASE_ADMIN_PRIVATE_KEY"
-    );
     process.exit(1);
   }
 

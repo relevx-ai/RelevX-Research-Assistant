@@ -18,9 +18,7 @@
  * Environment variables required:
  *   OPENAI_API_KEY
  *   BRAVE_SEARCH_API_KEY
- *   FIREBASE_PROJECT_ID
- *   FIREBASE_ADMIN_CLIENT_EMAIL (or FIREBASE_SERVICE_ACCOUNT_PATH)
- *   FIREBASE_ADMIN_PRIVATE_KEY (or FIREBASE_SERVICE_ACCOUNT_PATH)
+ *   FIREBASE_SERVICE_ACCOUNT_JSON
  *   RESEND_API_KEY (for email delivery)
  *   RESEND_FROM_EMAIL (for email delivery)
  */
@@ -336,7 +334,7 @@ async function main() {
   const requiredEnvVars = [
     "OPENAI_API_KEY",
     "BRAVE_SEARCH_API_KEY",
-    "FIREBASE_PROJECT_ID",
+    "FIREBASE_SERVICE_ACCOUNT_JSON",
   ];
 
   const missingVars = requiredEnvVars.filter((v) => !process.env[v]);
@@ -345,18 +343,6 @@ async function main() {
     console.error("Missing:");
     missingVars.forEach((v) => console.error(`  - ${v}`));
     console.error("\nPlease set these in your .env file.\n");
-    process.exit(1);
-  }
-
-  // Check Firebase Admin credentials
-  if (
-    !process.env.FIREBASE_ADMIN_CLIENT_EMAIL &&
-    !process.env.FIREBASE_SERVICE_ACCOUNT_PATH
-  ) {
-    console.error("\n✗ Error: Missing Firebase Admin credentials\n");
-    console.error(
-      "Set either FIREBASE_SERVICE_ACCOUNT_PATH or FIREBASE_ADMIN_CLIENT_EMAIL + FIREBASE_ADMIN_PRIVATE_KEY\n"
-    );
     process.exit(1);
   }
 

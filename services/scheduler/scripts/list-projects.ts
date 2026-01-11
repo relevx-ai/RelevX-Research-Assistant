@@ -24,35 +24,19 @@ function initializeFirebase(): admin.firestore.Firestore {
   }
 
   try {
-    if (
-      process.env.FIREBASE_ADMIN_CLIENT_EMAIL &&
-      process.env.FIREBASE_ADMIN_PRIVATE_KEY
-    ) {
+    const certObject =
+      process.env.FIREBASE_SERVICE_ACCOUNT_JSON &&
+      JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_JSON);
+    if (certObject) {
       admin.initializeApp({
-        credential: admin.credential.cert({
-          projectId: process.env.FIREBASE_PROJECT_ID,
-          clientEmail: process.env.FIREBASE_ADMIN_CLIENT_EMAIL,
-          privateKey: process.env.FIREBASE_ADMIN_PRIVATE_KEY.replace(
-            /\\n/g,
-            "\n"
-          ),
-        }),
-        projectId: process.env.FIREBASE_PROJECT_ID,
+        credential: admin.credential.cert(certObject),
+        projectId: certObject.project_id,
       });
 
       console.log("✓ Firebase Admin initialized with environment variables");
-    } else if (process.env.FIREBASE_SERVICE_ACCOUNT_PATH) {
-      const serviceAccount = require(process.env.FIREBASE_SERVICE_ACCOUNT_PATH);
-
-      admin.initializeApp({
-        credential: admin.credential.cert(serviceAccount),
-        projectId: process.env.FIREBASE_PROJECT_ID,
-      });
-
-      console.log("✓ Firebase Admin initialized with service account file");
     } else {
       throw new Error(
-        "Missing Firebase Admin credentials. Set either FIREBASE_SERVICE_ACCOUNT_PATH or FIREBASE_ADMIN_CLIENT_EMAIL + FIREBASE_ADMIN_PRIVATE_KEY"
+        "Missing Firebase Admin credentials. Set FIREBASE_SERVICE_ACCOUNT_JSON"
       );
     }
 

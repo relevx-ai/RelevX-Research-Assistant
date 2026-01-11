@@ -10,7 +10,7 @@
  * Environment variables required:
  *   OPENAI_API_KEY
  *   BRAVE_SEARCH_API_KEY
- *   FIREBASE_PROJECT_ID (optional for mock mode)
+ *   FIREBASE_SERVICE_ACCOUNT_JSON (optional for mock mode)
  */
 
 // Load environment variables from .env file
@@ -31,7 +31,9 @@ async function testMockResearch() {
 
   // Test 1: Query Generation
   console.log("1. Testing Query Generation...");
-  const { generateSearchQueriesWithRetry } = await import("../packages/core/src/services/llm");
+  const { generateSearchQueriesWithRetry } = await import(
+    "../packages/core/src/services/llm"
+  );
 
   const queries = await generateSearchQueriesWithRetry(
     "Latest developments in web development frameworks and best practices",
@@ -45,7 +47,9 @@ async function testMockResearch() {
 
   // Test 2: Search Execution
   console.log("2. Testing Search Execution...");
-  const { searchMultipleQueries } = await import("../packages/core/src/services/brave-search");
+  const { searchMultipleQueries } = await import(
+    "../packages/core/src/services/brave-search"
+  );
 
   const searchResults = await searchMultipleQueries(
     queries.slice(0, 2).map((q) => q.query),
@@ -84,7 +88,9 @@ async function testMockResearch() {
 
   // Test 4: Relevancy Analysis
   console.log("4. Testing Relevancy Analysis...");
-  const { analyzeRelevancyWithRetry } = await import("../packages/core/src/services/llm");
+  const { analyzeRelevancyWithRetry } = await import(
+    "../packages/core/src/services/llm"
+  );
 
   const contentsToAnalyze = successfulExtractions.map((c) => ({
     url: c.url,
@@ -106,7 +112,9 @@ async function testMockResearch() {
   // Test 5: Report Compilation
   if (relevantResults.length > 0) {
     console.log("5. Testing Report Compilation...");
-    const { compileReportWithRetry } = await import("../packages/core/src/services/llm");
+    const { compileReportWithRetry } = await import(
+      "../packages/core/src/services/llm"
+    );
 
     const resultsForReport = relevantResults.map((r) => ({
       url: r.url,

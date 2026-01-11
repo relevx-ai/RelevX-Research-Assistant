@@ -13,6 +13,7 @@
 
 // Load environment variables from .env file (for test scripts)
 import * as dotenv from "dotenv";
+import { cert } from "firebase-admin/app";
 import * as path from "path";
 dotenv.config({ path: path.resolve(__dirname, "../../.env") });
 
@@ -45,10 +46,11 @@ function initializeFirebase(): void {
 
   initialized = true;
 
-  const hasAdminCredentials =
-    process.env.FIREBASE_BACKEND_SERVICE_ACCOUNT_client_email;
+  const certObject =
+    process.env.FIREBASE_SERVICE_ACCOUNT_JSON &&
+    JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_JSON);
 
-  useAdminSDK = !!(isNode && hasAdminCredentials);
+  useAdminSDK = !!(isNode && certObject);
 
   if (useAdminSDK) {
     // ============================================================================
@@ -64,17 +66,8 @@ function initializeFirebase(): void {
       if (admin.apps.length === 0) {
         // Load from environment variables
         admin.initializeApp({
-          credential: admin.credential.cert({
-            projectId: process.env.FIREBASE_BACKEND_SERVICE_ACCOUNT_project_id,
-            privateKey:
-              process.env.FIREBASE_BACKEND_SERVICE_ACCOUNT_private_key?.replace(
-                /\\n/g,
-                "\n"
-              ),
-            clientEmail:
-              process.env.FIREBASE_BACKEND_SERVICE_ACCOUNT_client_email,
-          }),
-          projectId: process.env.FIREBASE_BACKEND_SERVICE_ACCOUNT_project_id,
+          credential: cert(certObject),
+          projectId: certObject.project_id,
         });
       }
 
