@@ -16,7 +16,6 @@ import {
   Settings,
   History,
   Clock,
-  Mail,
   Calendar,
   CheckCircle2,
   Circle,
@@ -25,7 +24,6 @@ import {
   ChevronUp,
   ChevronLeft,
   ChevronRight,
-  ExternalLink,
 } from "lucide-react";
 import { useDeliveryLogs } from "@/hooks/use-delivery-logs";
 import { EditProjectSettingsDialog } from "./edit-project-settings-dialog";
@@ -113,7 +111,7 @@ export function ProjectDetailModal({
                   onClick={() => setActiveTab(tab.id)}
                   className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 rounded-t-lg transition-all duration-200 ${
                     activeTab === tab.id
-                      ? "border-primary text-primary bg-primary/5"
+                      ? "border-cyan-500 text-cyan-400 bg-cyan-500/5"
                       : "border-transparent text-muted-foreground hover:border-border hover:bg-accent hover:text-accent-foreground"
                   }`}
                 >
@@ -197,11 +195,37 @@ function OverviewTab({ project }: { project: ProjectInfo }) {
     monthly: "Monthly",
   };
 
-  const destinationLabels = {
-    email: "Email",
-    slack: "Slack",
-    sms: "SMS",
-    none: "In-App Only",
+  const dayOfWeekLabels = [
+    "Sunday",
+    "Monday",
+    "Tuesday",
+    "Wednesday",
+    "Thursday",
+    "Friday",
+    "Saturday",
+  ];
+
+  const formatDayOfMonth = (day: number) => {
+    const suffix =
+      day === 1 || day === 21 || day === 31
+        ? "st"
+        : day === 2 || day === 22
+        ? "nd"
+        : day === 3 || day === 23
+        ? "rd"
+        : "th";
+    return `${day}${suffix}`;
+  };
+
+  const getFrequencyDisplay = () => {
+    const baseLabel = frequencyLabels[project.frequency];
+    if (project.frequency === "weekly" && project.dayOfWeek !== undefined) {
+      return `${baseLabel} (${dayOfWeekLabels[project.dayOfWeek]})`;
+    }
+    if (project.frequency === "monthly" && project.dayOfMonth !== undefined) {
+      return `${baseLabel} (${formatDayOfMonth(project.dayOfMonth)})`;
+    }
+    return baseLabel;
   };
 
   const formatTime12Hour = (time24: string) => {
@@ -209,6 +233,22 @@ function OverviewTab({ project }: { project: ProjectInfo }) {
     const period = hours >= 12 ? "PM" : "AM";
     const hours12 = hours === 0 ? 12 : hours > 12 ? hours - 12 : hours;
     return `${hours12}:${String(minutes).padStart(2, "0")} ${period}`;
+  };
+
+  const formatTimezone = (tz: string) => {
+    // Convert IANA timezone to a more readable format
+    // e.g., "America/New_York" -> "EST" or "EDT" based on current date
+    try {
+      const formatter = new Intl.DateTimeFormat("en-US", {
+        timeZone: tz,
+        timeZoneName: "short",
+      });
+      const parts = formatter.formatToParts(new Date());
+      const tzPart = parts.find((p) => p.type === "timeZoneName");
+      return tzPart?.value || tz;
+    } catch {
+      return tz;
+    }
   };
 
   const formatNextRun = (timestamp: number | undefined) => {
@@ -224,68 +264,83 @@ function OverviewTab({ project }: { project: ProjectInfo }) {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* Description */}
       <div>
-        <h3 className="text-sm font-medium text-muted-foreground mb-2">
+        <h3 className="text-sm font-semibold text-foreground/70 uppercase tracking-wide mb-3">
           Research Topic
         </h3>
-        <p className="text-foreground">{project.description}</p>
+        <div className="p-4 rounded-lg border border-border/50 bg-muted/20">
+          <p className="text-foreground/80 leading-relaxed">
+            {project.description}
+          </p>
+        </div>
       </div>
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="p-4 rounded-lg bg-muted/50">
-          <div className="flex items-center gap-2 mb-2">
-            <Clock className="w-4 h-4 text-muted-foreground" />
-            <span className="text-sm text-muted-foreground">Frequency</span>
+      {/* Schedule Settings */}
+      <div>
+        <h3 className="text-sm font-semibold text-foreground/70 uppercase tracking-wide mb-3">
+          Schedule Settings
+        </h3>
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+          <div className="p-4 rounded-lg border border-border/50 bg-muted/20 hover:bg-muted/30 transition-colors">
+            <div className="flex items-center gap-2 mb-2">
+              <Clock className="w-4 h-4 text-cyan-400" />
+              <span className="text-xs text-muted-foreground">Frequency</span>
+            </div>
+            <p className="font-semibold text-foreground">
+              {getFrequencyDisplay()}
+            </p>
           </div>
-          <p className="font-semibold">{frequencyLabels[project.frequency]}</p>
-        </div>
 
-        <div className="p-4 rounded-lg bg-muted/50">
-          <div className="flex items-center gap-2 mb-2">
-            <Clock className="w-4 h-4 text-muted-foreground" />
-            <span className="text-sm text-muted-foreground">Delivery Time</span>
+          <div className="p-4 rounded-lg border border-border/50 bg-muted/20 hover:bg-muted/30 transition-colors">
+            <div className="flex items-center gap-2 mb-2">
+              <Clock className="w-4 h-4 text-cyan-400" />
+              <span className="text-xs text-muted-foreground">
+                Delivery Time
+              </span>
+            </div>
+            <p className="font-semibold text-foreground">
+              {project.deliveryTime
+                ? `${formatTime12Hour(project.deliveryTime)} ${formatTimezone(
+                    project.timezone
+                  )}`
+                : "Not set"}
+            </p>
           </div>
-          <p className="font-semibold">
-            {project.deliveryTime
-              ? formatTime12Hour(project.deliveryTime)
-              : "Not set"}
-          </p>
-        </div>
 
-        <div className="p-4 rounded-lg bg-muted/50">
-          <div className="flex items-center gap-2 mb-2">
-            <Mail className="w-4 h-4 text-muted-foreground" />
-            <span className="text-sm text-muted-foreground">
-              Delivery Method
-            </span>
+          <div className="p-4 rounded-lg border border-border/50 bg-muted/20 hover:bg-muted/30 transition-colors">
+            <div className="flex items-center gap-2 mb-2">
+              <Calendar className="w-4 h-4 text-cyan-400" />
+              <span className="text-xs text-muted-foreground">Next Run</span>
+            </div>
+            <p className="font-semibold text-foreground text-sm">
+              {formatNextRun(project.nextRunAt)}
+            </p>
           </div>
-          <p className="font-semibold">
-            {destinationLabels[project.resultsDestination]}
-          </p>
-        </div>
-
-        <div className="p-4 rounded-lg bg-muted/50">
-          <div className="flex items-center gap-2 mb-2">
-            <Calendar className="w-4 h-4 text-muted-foreground" />
-            <span className="text-sm text-muted-foreground">Next Run</span>
-          </div>
-          <p className="font-semibold text-sm">
-            {formatNextRun(project.nextRunAt)}
-          </p>
         </div>
       </div>
 
       {/* Created/Updated Info */}
-      <div className="flex items-center gap-6 text-sm text-muted-foreground">
-        <span>Created: {new Date(project.createdAt).toLocaleDateString()}</span>
-        {project.updatedAt && (
-          <span>
-            Last updated: {new Date(project.updatedAt).toLocaleDateString()}
-          </span>
-        )}
+      <div className="pt-4 border-t border-border/30">
+        <div className="flex items-center gap-6 text-sm">
+          <div className="flex items-center gap-2">
+            <Calendar className="w-3.5 h-3.5 text-muted-foreground" />
+            <span className="text-muted-foreground">Created:</span>
+            <span className="text-foreground/80">
+              {new Date(project.createdAt).toLocaleDateString()}
+            </span>
+          </div>
+          {project.updatedAt && (
+            <div className="flex items-center gap-2">
+              <Clock className="w-3.5 h-3.5 text-muted-foreground" />
+              <span className="text-muted-foreground">Last updated:</span>
+              <span className="text-foreground/80">
+                {new Date(project.updatedAt).toLocaleDateString()}
+              </span>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -378,7 +433,9 @@ function DeliveryHistoryTab({ projectTitle }: { projectTitle: string }) {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold">Past Deliveries</h3>
+        <h3 className="text-sm font-semibold text-foreground/70 uppercase tracking-wide">
+          Past Deliveries
+        </h3>
         <span className="text-sm text-muted-foreground">
           {pagination
             ? `${pagination.total} total`
@@ -439,104 +496,162 @@ function DeliveryHistoryTab({ projectTitle }: { projectTitle: string }) {
                 {/* Report Content */}
                 {log.reportMarkdown && (
                   <div className="report-content max-h-[500px] overflow-y-auto p-6">
-                    <ReactMarkdown
-                      components={{
-                        h1: ({ children }: { children?: React.ReactNode }) => (
-                          <h1 className="text-2xl font-bold text-foreground mb-5 leading-tight">
-                            {children}
-                          </h1>
-                        ),
-                        h2: ({ children }: { children?: React.ReactNode }) => (
-                          <h2 className="text-lg font-bold text-foreground mt-8 mb-4 pb-2 border-b border-border/50">
-                            {children}
-                          </h2>
-                        ),
-                        h3: ({ children }: { children?: React.ReactNode }) => (
-                          <h3 className="text-base font-semibold text-foreground/90 mt-6 mb-3">
-                            {children}
-                          </h3>
-                        ),
-                        p: ({ children }: { children?: React.ReactNode }) => (
-                          <p className="text-[15px] text-muted-foreground leading-relaxed mb-4">
-                            {children}
-                          </p>
-                        ),
-                        a: ({
-                          href,
-                          children,
-                        }: {
-                          href?: string;
-                          children?: React.ReactNode;
-                        }) => (
-                          <a
-                            href={href}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-cyan-400 hover:text-cyan-300 border-b border-cyan-400/30 hover:border-cyan-300 transition-colors"
-                          >
-                            {children}
-                          </a>
-                        ),
-                        ul: ({ children }: { children?: React.ReactNode }) => (
-                          <ul className="mb-5 pl-6 space-y-2 text-muted-foreground">
-                            {children}
-                          </ul>
-                        ),
-                        ol: ({ children }: { children?: React.ReactNode }) => (
-                          <ol className="mb-5 pl-6 space-y-2 text-muted-foreground list-decimal">
-                            {children}
-                          </ol>
-                        ),
-                        li: ({ children }: { children?: React.ReactNode }) => (
-                          <li className="text-[15px] leading-relaxed">
-                            {children}
-                          </li>
-                        ),
-                        strong: ({
-                          children,
-                        }: {
-                          children?: React.ReactNode;
-                        }) => (
-                          <strong className="text-foreground font-semibold">
-                            {children}
-                          </strong>
-                        ),
-                        blockquote: ({
-                          children,
-                        }: {
-                          children?: React.ReactNode;
-                        }) => (
-                          <blockquote className="my-5 py-4 px-5 bg-muted/50 border-l-4 border-cyan-500 rounded-r-lg italic text-muted-foreground">
-                            {children}
-                          </blockquote>
-                        ),
-                        code: ({
-                          children,
-                          className,
-                        }: {
-                          children?: React.ReactNode;
-                          className?: string;
-                        }) => {
-                          const isInline = !className;
-                          return isInline ? (
-                            <code className="bg-muted px-1.5 py-0.5 rounded text-[13px] font-mono text-foreground">
+                    <div className="max-w-3xl">
+                      <ReactMarkdown
+                        components={{
+                          h1: ({
+                            children,
+                          }: {
+                            children?: React.ReactNode;
+                          }) => (
+                            <h1 className="text-2xl font-bold text-foreground mb-6 leading-tight">
                               {children}
-                            </code>
-                          ) : (
-                            <code className="text-[13px] font-mono text-cyan-200">
+                            </h1>
+                          ),
+                          h2: ({
+                            children,
+                          }: {
+                            children?: React.ReactNode;
+                          }) => (
+                            <h2 className="text-xl font-bold text-foreground mt-10 mb-4 pb-2 border-b border-cyan-500/30">
                               {children}
-                            </code>
-                          );
-                        },
-                        pre: ({ children }: { children?: React.ReactNode }) => (
-                          <pre className="bg-background/80 border border-border/50 p-5 rounded-lg overflow-x-auto my-5">
-                            {children}
-                          </pre>
-                        ),
-                      }}
-                    >
-                      {log.reportMarkdown}
-                    </ReactMarkdown>
+                            </h2>
+                          ),
+                          h3: ({
+                            children,
+                          }: {
+                            children?: React.ReactNode;
+                          }) => (
+                            <h3 className="text-lg font-semibold text-foreground mt-8 mb-3">
+                              {children}
+                            </h3>
+                          ),
+                          p: ({ children }: { children?: React.ReactNode }) => (
+                            <p className="text-base text-foreground/80 leading-7 mb-6">
+                              {children}
+                            </p>
+                          ),
+                          a: ({
+                            href,
+                            children,
+                          }: {
+                            href?: string;
+                            children?: React.ReactNode;
+                          }) => (
+                            <a
+                              href={href}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-cyan-400 hover:text-cyan-300 border-b border-cyan-400/30 hover:border-cyan-300 transition-colors"
+                            >
+                              {children}
+                            </a>
+                          ),
+                          ul: ({
+                            children,
+                          }: {
+                            children?: React.ReactNode;
+                          }) => (
+                            <ul className="mb-6 space-y-3 text-foreground/80">
+                              {children}
+                            </ul>
+                          ),
+                          ol: ({
+                            children,
+                          }: {
+                            children?: React.ReactNode;
+                          }) => (
+                            <ol className="mb-6 pl-6 space-y-3 text-foreground/80 list-decimal marker:text-cyan-400">
+                              {children}
+                            </ol>
+                          ),
+                          li: ({
+                            children,
+                            ...props
+                          }: {
+                            children?: React.ReactNode;
+                            ordered?: boolean;
+                          }) => {
+                            // Check if parent is ol (ordered) by checking if there's an index prop
+                            const isOrdered = props.ordered;
+                            if (isOrdered) {
+                              return (
+                                <li className="text-base leading-7 pl-2">
+                                  {children}
+                                </li>
+                              );
+                            }
+                            return (
+                              <li className="text-base leading-7 flex gap-3">
+                                <span className="text-cyan-400 mt-0.5 shrink-0">
+                                  •
+                                </span>
+                                <span>{children}</span>
+                              </li>
+                            );
+                          },
+                          strong: ({
+                            children,
+                          }: {
+                            children?: React.ReactNode;
+                          }) => (
+                            <strong className="text-foreground font-semibold">
+                              {children}
+                            </strong>
+                          ),
+                          em: ({
+                            children,
+                          }: {
+                            children?: React.ReactNode;
+                          }) => (
+                            <em className="text-foreground/90 bg-cyan-500/10 px-1 rounded not-italic">
+                              {children}
+                            </em>
+                          ),
+                          blockquote: ({
+                            children,
+                          }: {
+                            children?: React.ReactNode;
+                          }) => (
+                            <blockquote className="my-6 py-4 px-5 bg-muted/50 border-l-4 border-cyan-500 rounded-r-lg text-foreground/70">
+                              {children}
+                            </blockquote>
+                          ),
+                          code: ({
+                            children,
+                            className,
+                          }: {
+                            children?: React.ReactNode;
+                            className?: string;
+                          }) => {
+                            const isInline = !className;
+                            return isInline ? (
+                              <code className="bg-muted px-1.5 py-0.5 rounded text-sm font-mono text-foreground">
+                                {children}
+                              </code>
+                            ) : (
+                              <code className="text-sm font-mono text-cyan-200">
+                                {children}
+                              </code>
+                            );
+                          },
+                          pre: ({
+                            children,
+                          }: {
+                            children?: React.ReactNode;
+                          }) => (
+                            <pre className="bg-background/80 border border-border/50 p-5 rounded-lg overflow-x-auto my-6">
+                              {children}
+                            </pre>
+                          ),
+                          hr: () => (
+                            <hr className="my-8 border-none h-px bg-gradient-to-r from-transparent via-cyan-500/30 to-transparent" />
+                          ),
+                        }}
+                      >
+                        {log.reportMarkdown}
+                      </ReactMarkdown>
+                    </div>
                   </div>
                 )}
 
