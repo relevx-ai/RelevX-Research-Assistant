@@ -68,7 +68,7 @@ export async function saveDeliveryLog(
   searchResultIds: string[],
   researchStartedAt: number,
   researchCompletedAt: number,
-  status: "pending" | "success" | "failed" | "partial" = "success"
+  status: "pending" | "success" | "failed" | "partial" = "pending"
 ): Promise<string> {
   const deliveryLogsCollection = db
     .collection("users")
