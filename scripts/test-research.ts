@@ -10,7 +10,7 @@
  * Environment variables required:
  *   OPENAI_API_KEY
  *   BRAVE_SEARCH_API_KEY
- *   FIREBASE_PROJECT_ID (optional for mock mode)
+ *   FIREBASE_SERVICE_ACCOUNT_JSON (optional for mock mode)
  */
 
 // Load environment variables from .env file

@@ -176,7 +176,7 @@ export async function executeResearchForProject(
       !validateFrequency(/*project.frequency,*/ project.lastRunAt)
     ) {
       throw new Error(
-        `E0001: Project cannot be run more than once per day. Last run: ${new Date(
+        `E1:${userId}:${projectId}:Project cannot be run more than once per day. Last run: ${new Date(
           project.lastRunAt!
         ).toISOString()}`
       );
@@ -802,24 +802,24 @@ export async function executeResearchForProject(
       durationMs: completedAt - startedAt,
     };
   } catch (error: any) {
-    console.error("Research execution error:", error);
+    // console.error("Research execution error:", error);
 
-    // Update project with error
-    try {
-      const projectRef = db
-        .collection("users")
-        .doc(userId)
-        .collection("projects")
-        .doc(projectId);
-      await projectRef.update({
-        lastRunAt: startedAt,
-        status: "error",
-        lastError: error.message,
-        updatedAt: Date.now(),
-      });
-    } catch (updateError) {
-      console.error("Failed to update project with error:", updateError);
-    }
+    // // Update project with error
+    // try {
+    //   const projectRef = db
+    //     .collection("users")
+    //     .doc(userId)
+    //     .collection("projects")
+    //     .doc(projectId);
+    //   await projectRef.update({
+    //     lastRunAt: startedAt,
+    //     status: "error",
+    //     lastError: error.message,
+    //     updatedAt: Date.now(),
+    //   });
+    // } catch (updateError) {
+    //   console.error("Failed to update project with error:", updateError);
+    // }
 
     return {
       success: false,

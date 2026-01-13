@@ -15,11 +15,21 @@ import { loadAwsSecrets } from "./plugins/aws";
 import { Queue } from "elegant-queue";
 
 // Import types from core package
-import type { NewDeliveryLog, Project, RelevxUserProfile } from "core";
+import type { NewDeliveryLog, Plan, Project, RelevxUserProfile } from "core";
 import { sendReportEmail } from "core";
 
 // Import scheduling utility
 import { calculateNextRunAt } from "core";
+import { check_and_increment_research_usage } from "./plugins/analytics";
+
+const getErrorMessage = (
+  errorCode: string,
+  userId: string,
+  projectId: string,
+  errorMessage: string
+): string => {
+  return `${errorCode}:${userId}:${projectId}:${errorMessage}`;
+};
 
 // Provider instances (initialized once at startup)
 let providersInitialized = false;
@@ -81,119 +91,33 @@ async function initializeProviders(): Promise<void> {
   }
 }
 
-/**
- * Execute research for a single project and return delivery log ID
- */
-async function executeProjectResearch(
-  userId: string,
-  project: Project,
-  status: "pending" | "success" = "pending"
-): Promise<string | null> {
-  logger.info("Starting research execution", {
-    userId,
-    projectId: project.id,
-    title: project.title,
-    frequency: project.frequency,
-    deliveryStatus: status,
-  });
-
+async function getRemoteConfigParam(key: string) {
   try {
-    // Ensure providers are initialized
-    await initializeProviders();
-
-    // Import the research engine from core package
-    const { executeResearchForProject, db } = await import("core");
-
-    // Update project status to running
-    const projectRef = db
-      .collection("users")
-      .doc(userId)
-      .collection("projects")
-      .doc(project.id);
-
-    await projectRef.update({
-      status: "running",
-      researchStartedAt: Date.now(),
-      updatedAt: Date.now(),
-    });
-
-    // Execute research (this will save with default "success" status)
-    // We need to pass the status through the options
-    const result = await executeResearchForProject(userId, project.id);
-
-    if (result.success && result.deliveryLogId) {
-      // If we need pending status, update the delivery log
-      if (status === "pending") {
-        const deliveryLogRef = db
-          .collection("users")
-          .doc(userId)
-          .collection("projects")
-          .doc(project.id)
-          .collection("deliveryLogs")
-          .doc(result.deliveryLogId);
-
-        await deliveryLogRef.update({
-          status: "pending",
-          preparedAt: Date.now(),
-          deliveredAt: null,
-        });
-      }
-
-      logger.info("Research execution completed successfully", {
-        userId,
-        projectId: project.id,
-        resultsCount: result.relevantResults.length,
-        durationMs: result.durationMs,
-        deliveryLogId: result.deliveryLogId,
-        status,
-      });
-
-      return result.deliveryLogId;
-    } else {
-      logger.error("Research execution failed", {
-        userId,
-        projectId: project.id,
-        error: result.error,
-      });
-      return null;
-    }
-  } catch (error: any) {
-    logger.error("Research execution error", {
-      userId,
-      projectId: project.id,
-      error: error.message,
-      stack: error.stack,
-    });
-
-    const errorCode = error.message.split(":")[0];
-
-    // E0001 is for daily limit exceeded -- that means we do not need to error out the project..
-    if (errorCode !== "E0001") {
-      // Update project with error status
-      try {
-        const { db } = await import("core");
-        await db
-          .collection("users")
-          .doc(userId)
-          .collection("projects")
-          .doc(project.id)
-          .update({
-            status: "error",
-            lastError: error.message,
-            researchStartedAt: null,
-            updatedAt: Date.now(),
-          });
-      } catch (updateError: any) {
-        logger.error("Failed to update project error status", {
-          userId,
-          projectId: project.id,
-          error: updateError.message,
-        });
-      }
-    }
-
-    return null;
+    const { fireBaseRemoteConfig } = await import("core");
+    const param = (await fireBaseRemoteConfig.getTemplate()).parameters[key];
+    return param;
+  } catch (error) {
+    console.error("Error fetching remote config:", error);
   }
+  return null;
+}
+
+async function getPlans(): Promise<Plan[]> {
+  const config = await getRemoteConfigParam("plans");
+  const plansRaw = config?.defaultValue?.value;
+  if (plansRaw) {
+    const parsed = JSON.parse(plansRaw);
+    const plansArray: Plan[] = Array.isArray(parsed)
+      ? parsed
+      : Object.values(parsed);
+
+    if (!Array.isArray(plansArray)) {
+      throw new Error("Parsed plans is not an array or valid object");
+    }
+    return plansArray;
+  }
+
+  return [];
 }
 
 /**
@@ -239,6 +163,9 @@ async function createAdminNotification(
  * Any project without prepared results gets researched
  */
 async function runResearchJob(): Promise<void> {
+  // Ensure providers are initialized
+  await initializeProviders();
+
   // import db
   const { db } = await import("core");
   const now = Date.now();
@@ -348,18 +275,68 @@ async function runResearchJob(): Promise<void> {
   };
 
   // executes research for a single project
-  const executeResearchForProject = async (polledProject: PolledProject) => {
-    const { userId, project, isRetry, projectRef } = polledProject;
+  const executeResearch = async (polledProject: PolledProject) => {
+    // Import the research engine from core package
     // Import scheduling utility for retry projects
-    const { calculateNextRunAt } = await import("core");
+    const { executeResearchForProject } = await import("core");
+    const { userId, project, isRetry, projectRef } = polledProject;
 
-    // Track retry attempts
+    // 1). Get user and plan
+    const userDoc = await db.collection("users").doc(userId);
+
+    const plans = await getPlans();
+    const userData = (await userDoc.get())?.data() as RelevxUserProfile;
+    const plan = plans.find((p) => p.id === userData.planId);
+
+    if (!plan) {
+      throw new Error(
+        getErrorMessage("E500", userId, project.id, "Plan not found")
+      );
+    }
+
+    // 2). Track retry attempts
     const retryAttempt = isRetry ? (project.lastError ? 2 : 1) : 0;
 
-    const deliveryLogId = await executeProjectResearch(
+    // 3). Update project status to running
+    await projectRef.update({
+      status: "running",
+      researchStartedAt: Date.now(),
+      updatedAt: Date.now(),
+    });
+
+    // 4). Execute research
+    const deliveryLogId = await check_and_increment_research_usage(
+      async () => {
+        // Execute research (this will save with default "success" status)
+        // We need to pass the status through the options
+        const result = await executeResearchForProject(userId, project.id);
+
+        if (result.success && result.deliveryLogId) {
+          logger.info("Research execution completed successfully", {
+            userId,
+            projectId: project.id,
+            resultsCount: result.relevantResults.length,
+            durationMs: result.durationMs,
+            deliveryLogId: result.deliveryLogId,
+            status: project.status,
+          });
+
+          return result.deliveryLogId;
+        } else {
+          throw new Error(
+            getErrorMessage(
+              "E0",
+              userId,
+              project.id,
+              result.error || "Research execution failed"
+            )
+          );
+        }
+      },
+      db,
       userId,
-      project,
-      "pending" // Always set to pending so delivery job handles it
+      plan,
+      project.title
     );
 
     let projectUpdates: any = {
@@ -368,12 +345,16 @@ async function runResearchJob(): Promise<void> {
       updatedAt: Date.now(),
     };
 
+    // 5). Update project status based on research result
     if (deliveryLogId) {
       // Success - prepare project for delivery
       projectUpdates = {
         ...projectUpdates,
         lastError: null,
         preparedDeliveryLogId: deliveryLogId,
+        status: "active",
+        preparedAt: Date.now(),
+        deliveredAt: null,
       };
 
       // For retry, we DO NOT update nextRunAt here.
@@ -386,41 +367,33 @@ async function runResearchJob(): Promise<void> {
         deliveryLogId,
         retryAttempt,
       });
-    } else {
-      // Research failed
-      if (isRetry && project.lastError) {
-        // Second failure - create admin notification
-        logger.error("Research failed after retry - notifying admin", {
-          userId,
-          projectId: project.id,
-          retryAttempt: 2,
-        });
-
-        await createAdminNotification(userId, project, project.lastError, 2);
-
-        // Move to next scheduled time to avoid infinite retries
-        const nextRunAt = calculateNextRunAt(
-          project.frequency,
-          project.deliveryTime,
-          project.timezone,
-          project.dayOfWeek,
-          project.dayOfMonth
-        );
-
-        projectUpdates = {
-          ...projectUpdates,
-          nextRunAt,
-          lastRunAt: Date.now(),
-        };
-      } else {
-        // First failure - just clear running status, will retry later
-        logger.warn("Research failed, will retry at delivery time", {
-          userId,
-          projectId: project.id,
-          isRetry,
-        });
-      }
     }
+    // else if (isRetry && project.lastError) {
+    //   // Second failure - create admin notification
+    //   logger.error("Research failed after retry - notifying admin", {
+    //     userId,
+    //     projectId: project.id,
+    //     retryAttempt: 2,
+    //   });
+
+    //   await createAdminNotification(userId, project, project.lastError, 2);
+
+    //   // Move to next scheduled time to avoid infinite retries
+    //   const nextRunAt = calculateNextRunAt(
+    //     project.frequency,
+    //     project.deliveryTime,
+    //     project.timezone,
+    //     project.dayOfWeek,
+    //     project.dayOfMonth
+    //   );
+
+    //   projectUpdates = {
+    //     ...projectUpdates,
+    //     nextRunAt,
+    //     lastRunAt: Date.now(),
+    //   };
+    // }
+
     await projectRef.update(projectUpdates);
   };
   try {
@@ -434,7 +407,7 @@ async function runResearchJob(): Promise<void> {
     let projectsToRun: Array<PolledProject> = await pollResearchProjects();
 
     if (projectsToRun.length === 0) {
-      logger.info("No projects need research");
+      logger.debug("No projects need research");
       return;
     }
 
@@ -447,18 +420,54 @@ async function runResearchJob(): Promise<void> {
     logger.info(`Research needed for ${projectsToRun.length} projects`, {
       prerun: prerunCount,
       retry: retryCount,
+      projectsToRun,
     });
 
     // Execute research for each project
     for (const polledProject of projectsToRun) {
       try {
-        await executeResearchForProject(polledProject);
+        await executeResearch(polledProject);
       } catch (error: any) {
         logger.error("Research execution error", {
           userId: polledProject.userId,
           projectId: polledProject.project.id,
           isRetry: polledProject.isRetry,
           error: error.message,
+        });
+        const splits = error.message.split(":")[0];
+        const errorCode = splits[0];
+        const userId = splits[1];
+        const projectId = splits[2];
+        const errorMessage = splits[3];
+
+        // E1 is for daily limit exceeded -- that means we do not need to error out the project..
+        if (errorCode !== "E1") {
+          // Update project with error status
+          try {
+            const { db } = await import("core");
+            await db
+              .collection("users")
+              .doc(userId)
+              .collection("projects")
+              .doc(projectId)
+              .update({
+                status: "error",
+                lastError: errorMessage,
+                researchStartedAt: null,
+                updatedAt: Date.now(),
+              });
+          } catch (updateError: any) {
+            logger.error("Failed to update project error status", {
+              userId,
+              projectId,
+              error: updateError.message,
+            });
+          }
+        }
+
+        logger.error("Research execution error", {
+          error: error.message,
+          stack: error.stack,
         });
       }
     }
@@ -532,7 +541,7 @@ async function runDeliveryJob(): Promise<void> {
     }
 
     if (projectsToDeliver.length === 0) {
-      logger.info("No projects ready for delivery");
+      logger.debug("No projects ready for delivery");
       return;
     }
 
@@ -687,7 +696,7 @@ async function runDeliveryQueue() {
  * Main scheduler job - runs every minute
  */
 async function runSchedulerJob(): Promise<void> {
-  logger.info("Scheduler job started");
+  logger.debug("Scheduler job started");
   const startTime = Date.now();
 
   try {
@@ -697,7 +706,7 @@ async function runSchedulerJob(): Promise<void> {
     await Promise.all([runResearchJob(), runDeliveryJob()]);
 
     const duration = Date.now() - startTime;
-    logger.info("Scheduler job completed", {
+    logger.debug("Scheduler job completed", {
       durationMs: duration,
     });
   } catch (error: any) {
@@ -721,19 +730,8 @@ async function startScheduler(): Promise<void> {
   const requiredEnvVars = [
     "OPENAI_API_KEY",
     "BRAVE_SEARCH_API_KEY",
-    "FIREBASE_PROJECT_ID",
+    "FIREBASE_SERVICE_ACCOUNT_JSON",
   ];
-
-  // Add Admin SDK credential requirement
-  if (
-    !process.env.FIREBASE_ADMIN_CLIENT_EMAIL &&
-    !process.env.FIREBASE_SERVICE_ACCOUNT_PATH
-  ) {
-    logger.error(
-      "Missing Firebase Admin credentials. Set either FIREBASE_SERVICE_ACCOUNT_PATH or FIREBASE_ADMIN_CLIENT_EMAIL + FIREBASE_ADMIN_PRIVATE_KEY"
-    );
-    process.exit(1);
-  }
 
   const missingVars = requiredEnvVars.filter((v) => !process.env[v]);
   if (missingVars.length > 0) {
@@ -778,10 +776,10 @@ async function startScheduler(): Promise<void> {
   cron.schedule(cronExpression, async () => {
     await runSchedulerJob();
   });
-  // Run delivery queue every second
+  // Run delivery queue every 1.2second
   setInterval(async () => {
     await runDeliveryQueue();
-  }, 1000);
+  }, 1200);
 
   logger.info("Scheduler service started successfully", {
     schedule: "Every minute",

@@ -8,12 +8,12 @@ import type {
   RelevxDeliveryLog,
   DeliveryLog,
   ProjectDeliveryLogResponse,
-  AnalyticsDocument,
+  UserAnalyticsDocument,
 } from "core";
 import { Frequency, getUserAnalytics } from "core";
 import { set, isAfter, add } from "date-fns";
 import { toZonedTime, fromZonedTime } from "date-fns-tz";
-import { isUserSubscribed } from "../utils/billing.js";
+import { gFreePlanId } from "../utils/billing.js";
 import { getUserData } from "../utils/user.js";
 import { Redis } from "ioredis";
 import { getPlans } from "./products.js";
@@ -149,6 +149,9 @@ function calculateNewRunAt(
 }
 
 export function validateActiveProjects(plan: Plan, projects: ProjectInfo[]) {
+  // console.debug(
+  //   `Validating active projects: ${JSON.stringify(projects, null, 1)}`
+  // );
   // Go through all the projects in 'docs' and count the max number of daily runs happening in a 30-Day period
   const maxDailyRuns = plan.settingsMaxDailyRuns;
   let totalDailyRuns = 0;
@@ -157,9 +160,9 @@ export function validateActiveProjects(plan: Plan, projects: ProjectInfo[]) {
 
   projects.forEach((project) => {
     if (project.frequency === "daily") totalDailyRuns++;
-    if (project.dayOfWeek !== undefined)
+    if (project.dayOfWeek !== undefined && project.dayOfWeek !== null)
       weekly[project.dayOfWeek] = (weekly[project.dayOfWeek] || 0) + 1;
-    if (project.dayOfMonth !== undefined)
+    if (project.dayOfMonth !== undefined && project.dayOfMonth !== null)
       monthly[project.dayOfMonth] = (monthly[project.dayOfMonth] || 0) + 1;
   });
 
@@ -171,6 +174,7 @@ export function validateActiveProjects(plan: Plan, projects: ProjectInfo[]) {
   weekly = Object.fromEntries(
     Object.entries(weekly).filter(([_, v]) => v + totalDailyRuns > maxDailyRuns)
   );
+  // console.debug(`Weekly: ${JSON.stringify(weekly, null, 1)}`);
 
   if (Object.keys(weekly).length > 0) {
     return false;
@@ -181,6 +185,7 @@ export function validateActiveProjects(plan: Plan, projects: ProjectInfo[]) {
       ([_, v]) => v + totalDailyRuns > maxDailyRuns
     )
   );
+  // console.debug(`Monthly: ${JSON.stringify(monthly, null, 1)}`);
 
   if (Object.keys(monthly).length > 0) {
     return false;
@@ -488,7 +493,7 @@ const routes: FastifyPluginAsync = async (app) => {
         const projectData: any = {
           ...request.projectInfo,
           userId,
-          status: "draft", // New projects start as draft
+          status: "active",
           nextRunAt: calculateNewRunAt(
             request.projectInfo.frequency,
             request.projectInfo.deliveryTime,
@@ -606,20 +611,21 @@ const routes: FastifyPluginAsync = async (app) => {
             }
 
             const userData = await getUserData(userId, db);
-            const plans: Plan[] = await getPlans(db);
+            const plans: Plan[] = await getPlans(remoteConfig);
             const plan: Plan | undefined = plans.find(
               (plan) => plan.id === userData.user.planId
             );
 
             // Validate that the new schedule allows the user to stay within their plan's limits
             if (plan && validateActiveProjects(plan, projects)) {
-              const userAnalytics: AnalyticsDocument | null =
+              const userAnalytics: UserAnalyticsDocument =
                 await getUserAnalytics(db, userId);
 
-              const forceNextRun =
-                userAnalytics?.num_completed_daily_research_projects.find(
-                  (item) => item === title
-                );
+              const dailyResearchProjects: string[] =
+                userAnalytics.num_completed_daily_research_projects;
+              const forceNextRun = dailyResearchProjects.find(
+                (item) => item === title
+              );
 
               // Calculate the next run time based on the new schedule
               const newRunAt = calculateNewRunAt(
@@ -640,18 +646,14 @@ const routes: FastifyPluginAsync = async (app) => {
               if (projectWithinDeliveryWindow) {
                 updates.nextRunAt = newRunAt;
               } else {
-                return rep.status(400).send({
-                  error: {
-                    message: `Failed to update project. Please refrain from updating the project schedule too close to the current time (~16 min window).`,
-                  },
-                });
+                throw new Error(
+                  `Failed to update project. Please refrain from updating the project schedule too close to the current time (~16 min window).`
+                );
               }
             } else {
-              return rep.status(400).send({
-                error: {
-                  message: `Failed to update project. Delivery settings are not valid. Please make sure settings align with your plan (max daily runs: ${plan?.settingsMaxDailyRuns}).`,
-                },
-              });
+              throw new Error(
+                `Failed to update project. Delivery settings are not valid. Please make sure settings align with your plan (max daily runs: ${plan?.settingsMaxDailyRuns}).`
+              );
             }
           }
         }
@@ -747,6 +749,7 @@ const routes: FastifyPluginAsync = async (app) => {
             .send({ error: { message: "Project not found" } });
 
         let nStatus: string = projectToToggle.status;
+        const updates: any = {};
         let cStatus: string = nStatus;
         if (nStatus === status)
           return rep.status(400).send({
@@ -767,19 +770,12 @@ const routes: FastifyPluginAsync = async (app) => {
         const activateNewProject = status === "active" && allowToggle;
         if (activateNewProject) {
           const userData = await getUserData(userId, db);
-          const isSubscribed = await isUserSubscribed(
-            userData.user,
-            app.stripe
-          );
 
           // Find the user's correct plan.. if not on a plan assume they are on free mode
           const plans: Plan[] = await getPlans(remoteConfig);
-          let plan: Plan | undefined = plans.find(
-            (p) => p.infoName === "Free Trial"
+          const plan: Plan | undefined = plans.find(
+            (p) => p.id === (userData.user.planId || gFreePlanId)
           );
-          if (isSubscribed) {
-            plan = plans.find((p) => p.id === userData.user.planId);
-          }
 
           if (plan) {
             // Simulate adding this project to the active list to check limits
@@ -798,6 +794,23 @@ const routes: FastifyPluginAsync = async (app) => {
               errorMessage =
                 "User has reached the maximum number of daily runs. Please subscribe to a higher plan, if available.";
             } else {
+              // calculate next run time if plan limit are already met
+              const analytics: UserAnalyticsDocument = await getUserAnalytics(
+                db,
+                userId
+              );
+              console.log("analytics", analytics);
+              const dailyResearch =
+                analytics.num_completed_daily_research_projects;
+              console.log("dailyResearch", dailyResearch);
+              updates.nextRunAt = calculateNewRunAt(
+                projectToToggle.frequency,
+                projectToToggle.deliveryTime,
+                projectToToggle.timezone,
+                projectToToggle.dayOfWeek,
+                projectToToggle.dayOfMonth,
+                dailyResearch.length + 1 > plan.settingsMaxDailyRuns
+              );
               nStatus = status;
             }
           } else {
@@ -823,6 +836,7 @@ const routes: FastifyPluginAsync = async (app) => {
             .then((querySnapshot) => {
               querySnapshot.forEach((doc) => {
                 doc.ref.update({
+                  ...updates,
                   status: nStatus,
                   updatedAt: new Date().toISOString(),
                 });
