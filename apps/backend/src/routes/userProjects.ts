@@ -493,7 +493,7 @@ const routes: FastifyPluginAsync = async (app) => {
         const projectData: any = {
           ...request.projectInfo,
           userId,
-          status: "draft", // New projects start as draft
+          status: "active",
           nextRunAt: calculateNewRunAt(
             request.projectInfo.frequency,
             request.projectInfo.deliveryTime,

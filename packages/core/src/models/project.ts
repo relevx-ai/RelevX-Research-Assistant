@@ -8,7 +8,7 @@ export type Frequency = "daily" | "weekly" | "monthly";
 
 export type ResultsDestination = "email" | "slack" | "sms" | "none";
 
-export type ProjectStatus = "active" | "paused" | "error" | "draft" | "running";
+export type ProjectStatus = "active" | "paused" | "error" | "running";
 
 export type DateRangePreference =
   | "last_24h"
