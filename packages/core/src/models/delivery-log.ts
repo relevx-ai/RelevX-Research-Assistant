@@ -42,7 +42,7 @@ export interface DeliveryLog {
   userId: string; // Owner user ID
 
   // Delivery information
-  destination: "email" | "slack" | "sms"; // Where it was delivered
+  destination: "email"; // Where it was delivered
 
   // Report content
   reportMarkdown: string; // The compiled markdown report
@@ -82,7 +82,7 @@ export interface RelevxDeliveryLog
 export interface DeliveryLogSummary {
   id: string;
   projectId: string;
-  destination: "email" | "slack" | "sms";
+  destination: "email";
   status: "success" | "failed" | "partial";
   deliveredAt: number;
   includedResults: number;

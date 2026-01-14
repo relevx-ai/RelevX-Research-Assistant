@@ -34,27 +34,8 @@ export async function saveDeliveryLog(
     .doc(projectId)
     .collection("deliveryLogs");
 
-  // Determine destination based on project configuration
-  let destination: "email" | "slack" | "sms" = "email"; // Default
-
-  if (project.resultsDestination !== "none" && project.deliveryConfig) {
-    if (
-      project.resultsDestination === "email" &&
-      project.deliveryConfig.email
-    ) {
-      destination = "email";
-    } else if (
-      project.resultsDestination === "slack" &&
-      project.deliveryConfig.slack
-    ) {
-      destination = "slack";
-    } else if (
-      project.resultsDestination === "sms" &&
-      project.deliveryConfig.sms
-    ) {
-      destination = "sms";
-    }
-  }
+  // Destination is always email
+  const destination: "email" = "email";
 
   const deliveryLogData: NewDeliveryLog = {
     projectId,
