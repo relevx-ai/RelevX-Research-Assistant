@@ -264,7 +264,7 @@ export function ProjectCard({ project }: ProjectCardProps) {
               onClick={() =>
                 setErrorDialog((prev) => ({ ...prev, open: false }))
               }
-              className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-md hover:shadow-xl hover:scale-105 transition-all duration-300"
+              className="bg-gradient-to-r from-purple-600 to-violet-600 hover:from-purple-700 hover:to-violet-700 text-white shadow-md hover:shadow-xl hover:scale-105 transition-all duration-300"
             >
               OK
             </Button>
