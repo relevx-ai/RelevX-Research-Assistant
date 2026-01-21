@@ -352,7 +352,7 @@ export interface GenerateSummaryOptions {
 }
 
 /**
- * Generate an executive summary from a completed report
+ * Generate a summary from a completed report
  * Called as a separate step after report compilation for better quality summaries
  */
 export async function generateReportSummary(

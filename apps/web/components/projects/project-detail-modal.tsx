@@ -472,6 +472,18 @@ function DeliveryHistoryTab({ projectTitle }: { projectTitle: string }) {
                   </div>
                 )}
 
+                {/* Summary */}
+                {log.reportSummary && (
+                  <div className="mx-4 mt-4 rounded-lg border border-border/50 bg-muted/30 p-4">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                      Summary
+                    </p>
+                    <p className="mt-2 text-sm text-foreground/80 leading-6">
+                      {log.reportSummary}
+                    </p>
+                  </div>
+                )}
+
                 {/* Report Content */}
                 {log.reportMarkdown && (
                   <div className="report-content max-h-[500px] overflow-y-auto p-6">

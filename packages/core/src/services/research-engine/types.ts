@@ -52,7 +52,7 @@ export interface ResearchOptions {
   // === Report Settings ===
   reportTone?: "professional" | "casual" | "technical"; // Report tone (default: from config)
   reportMaxLength?: number; // Max report length (default: from config)
-  includeExecutiveSummary?: boolean; // Include summary (default: from config)
+  includeSummary?: boolean; // Include summary (default: from config)
 
   // === Rate Limiting (advisory) ===
   apiDelayMs?: number; // Delay between API calls (default: from config)

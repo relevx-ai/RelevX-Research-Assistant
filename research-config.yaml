@@ -42,7 +42,7 @@ llm:
       temperature: 0.3
       responseFormat: "json_object"
 
-    # Report summary - generates executive summary
+    # Report summary - generates summary
     reportSummary:
       model: "gpt-4o-mini"
       temperature: 0.2 # Low for consistent, factual output
@@ -135,8 +135,8 @@ report:
   # Maximum report length in characters
   maxLength: 5000
 
-  # Include executive summary
-  includeExecutiveSummary: true
+  # Include summary
+  includeSummary: true
 
 # =============================================================================
 # Rate Limiting & Cost Control
