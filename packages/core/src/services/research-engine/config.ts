@@ -90,7 +90,7 @@ export interface ClusteringConfig {
 export interface ReportConfig {
   defaultTone: "professional" | "casual" | "technical";
   maxLength: number;
-  includeExecutiveSummary: boolean;
+  includeSummary: boolean;
 }
 
 /**
@@ -193,7 +193,7 @@ export const DEFAULT_CONFIG: ResearchConfig = {
   report: {
     defaultTone: "professional",
     maxLength: 5000,
-    includeExecutiveSummary: true,
+    includeSummary: true,
   },
   limits: {
     maxTokensPerRun: 50000,

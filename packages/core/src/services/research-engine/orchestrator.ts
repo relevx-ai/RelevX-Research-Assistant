@@ -734,27 +734,27 @@ export async function executeResearchForProject(
           tokenUsage.inputTokens + tokenUsage.outputTokens;
       }
 
-      // 9.3 Generate executive summary from the compiled report (if enabled)
-      const includeExecSummary =
-        options?.includeExecutiveSummary ??
-        reportConfig.includeExecutiveSummary;
+      // 9.3 Generate summary from the compiled report (if enabled)
+      const includeSummary =
+        options?.includeSummary ??
+        reportConfig.includeSummary;
 
-      let executiveSummary: string | null = null;
-      if (includeExecSummary) {
-        console.log("Generating executive summary...");
-        executiveSummary = await generateReportSummaryWithRetry({
+      let summary: string | null = null;
+      if (includeSummary) {
+        console.log("Generating summary...");
+        summary = await generateReportSummaryWithRetry({
           reportMarkdown: compiledReport.markdown,
           projectTitle: project.title,
           projectDescription: project.description,
         });
       }
 
-      // Track token usage for executive summary (if generated)
-      if (includeExecSummary && executiveSummary) {
+      // Track token usage for summary (if generated)
+      if (includeSummary && summary) {
         const summaryInput =
           compiledReport.markdown + project.title + project.description;
         tokenUsage.inputTokens += estimateTokens(summaryInput) + 400; // +400 for system prompt
-        tokenUsage.outputTokens += estimateTokens(executiveSummary);
+        tokenUsage.outputTokens += estimateTokens(summary);
         tokenUsage.totalTokens =
           tokenUsage.inputTokens + tokenUsage.outputTokens;
       }
@@ -762,7 +762,7 @@ export async function executeResearchForProject(
       report = {
         markdown: compiledReport.markdown,
         title: compiledReport.title,
-        summary: executiveSummary || compiledReport.summary,
+        summary: summary || compiledReport.summary,
         averageScore: compiledReport.averageScore,
         resultCount: compiledReport.resultCount,
       };

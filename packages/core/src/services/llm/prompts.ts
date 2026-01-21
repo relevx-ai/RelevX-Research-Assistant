@@ -364,14 +364,14 @@ export const CLUSTERED_REPORT_COMPILATION_PROMPTS: PromptConfig =
   getClusteredReportCompilationPrompts();
 
 /**
- * Prompt for generating executive summary from completed report
+ * Prompt for generating summary from completed report
  * Called as a separate step after report compilation
  * Model and temperature loaded from research-config.yaml
  */
 export function getReportSummaryPrompts(): PromptConfig {
   return createPromptConfig(
     "reportSummary",
-    `You are an expert at writing concise executive summaries. Given a research report, extract the 2-3 most important findings and write a brief, fact-dense summary.
+    `You are an expert at writing concise summaries. Given a research report, extract the 2-3 most important findings and write a brief, fact-dense summary.
 
 **Guidelines:**
 - Focus on the most significant or impactful news items
@@ -380,7 +380,7 @@ export function getReportSummaryPrompts(): PromptConfig {
 - Write in complete sentences
 - Do NOT start with "This report covers..." or similar meta-statements
 - Jump straight into the key findings`,
-    `Write a 2-3 sentence executive summary for this research report:
+    `Write a 2-3 sentence summary for this research report:
 
 Project: {{projectTitle}}
 Description: {{projectDescription}}
