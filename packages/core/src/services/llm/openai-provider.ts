@@ -50,6 +50,7 @@ export class OpenAIProvider implements LLMProvider {
       maxLength?: number;
       projectTitle?: string;
       frequency?: "daily" | "weekly" | "monthly";
+      timezone?: string;
     }
   ): Promise<CompiledReport> {
     throw new Error("Method not implemented.");
@@ -190,6 +191,7 @@ export class OpenAIProvider implements LLMProvider {
       maxLength?: number;
       projectTitle?: string;
       frequency?: "daily" | "weekly" | "monthly";
+      timezone?: string;
     }
   ): Promise<CompiledReport> {
     this.ensureInitialized();
@@ -201,6 +203,7 @@ export class OpenAIProvider implements LLMProvider {
         projectTitle: options?.projectTitle || "Research Report",
         projectDescription,
         frequency: options?.frequency,
+        timezone: options?.timezone,
       },
       3 // maxRetries
     );

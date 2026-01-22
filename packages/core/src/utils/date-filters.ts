@@ -128,3 +128,31 @@ export function formatReadableDate(
     return "";
   }
 }
+
+/**
+ * Format a report date using an optional timezone
+ */
+export function formatReportDate(
+  date: Date = new Date(),
+  timezone?: string
+): string {
+  const formatOptions: Intl.DateTimeFormatOptions = {
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  };
+
+  if (timezone) {
+    try {
+      return new Intl.DateTimeFormat("en-US", {
+        ...formatOptions,
+        timeZone: timezone,
+      }).format(date);
+    } catch {
+      // Fallback to local timezone if the provided timezone is invalid
+    }
+  }
+
+  return new Intl.DateTimeFormat("en-US", formatOptions).format(date);
+}

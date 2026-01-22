@@ -80,6 +80,7 @@ export interface LLMProvider {
       maxLength?: number;
       projectTitle?: string;
       frequency?: "daily" | "weekly" | "monthly";
+      timezone?: string;
     }
   ): Promise<CompiledReport>;
 
@@ -106,6 +107,7 @@ export interface LLMProvider {
       maxLength?: number;
       projectTitle?: string;
       frequency?: "daily" | "weekly" | "monthly";
+      timezone?: string;
     }
   ): Promise<CompiledReport>;
 }

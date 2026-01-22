@@ -89,6 +89,9 @@ export class HybridProvider implements LLMProvider {
     options?: {
       tone?: "professional" | "casual" | "technical";
       maxLength?: number;
+      projectTitle?: string;
+      frequency?: "daily" | "weekly" | "monthly";
+      timezone?: string;
     }
   ): Promise<CompiledReport> {
     return this.reportProvider.compileReport(description, results, options);
