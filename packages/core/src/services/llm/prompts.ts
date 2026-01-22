@@ -255,7 +255,7 @@ One sentence summary of the key takeaway.
 Return ONLY a JSON object:
 {
   "markdown": "the full markdown report in vertical newsletter format",
-  "title": "Descriptive title",
+  "title": "A unique, descriptive title summarizing the main themes of THIS SPECIFIC report (do NOT just use the project name as the title)",
   "summary": "2-3 factual sentences with key takeaways"
 }`
   );
@@ -353,7 +353,7 @@ One sentence summary combining insights from all sources.
 Return ONLY a JSON object:
 {
   "markdown": "the full markdown report in vertical newsletter format",
-  "title": "Descriptive title",
+  "title": "A unique, descriptive title summarizing the main themes of THIS SPECIFIC report (do NOT just use the project name - create a title like 'AI Safety Breakthroughs & OpenAI Updates' or 'Major Tech Layoffs Across Industry')",
   "summary": "2-3 factual sentences with key takeaways"
 }`
   );
