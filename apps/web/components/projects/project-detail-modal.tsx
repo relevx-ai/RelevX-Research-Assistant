@@ -30,6 +30,19 @@ import { EditProjectSettingsDialog } from "./edit-project-settings-dialog";
 import ReactMarkdown from "react-markdown";
 import { DAY_OF_WEEK_LABELS, formatDayOfMonth } from "@/lib/utils";
 
+const formatDate = (timestamp: number | undefined, timezone?: string) => {
+  if (!timestamp) return "Not scheduled";
+  const date = new Date(timestamp);
+  return date.toLocaleString(undefined, {
+    timeZone: timezone,
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+};
+
 type TabId = "overview" | "history";
 
 interface ProjectDetailModalProps {
@@ -147,7 +160,7 @@ export function ProjectDetailModal({
             {activeTab === "overview" && <OverviewTab project={project} />}
 
             {activeTab === "history" && (
-              <DeliveryHistoryTab projectTitle={project.title} />
+              <DeliveryHistoryTab project={project} />
             )}
           </div>
         </DialogContent>
@@ -230,17 +243,6 @@ function OverviewTab({ project }: { project: ProjectInfo }) {
     }
   };
 
-  const formatNextRun = (timestamp: number | undefined) => {
-    if (!timestamp) return "Not scheduled";
-    const date = new Date(timestamp);
-    return date.toLocaleString(undefined, {
-      weekday: "short",
-      month: "short",
-      day: "numeric",
-      hour: "numeric",
-      minute: "2-digit",
-    });
-  };
 
   return (
     <div className="space-y-8">
@@ -294,7 +296,7 @@ function OverviewTab({ project }: { project: ProjectInfo }) {
               <span className="text-xs text-muted-foreground">Next Run</span>
             </div>
             <p className="font-semibold text-foreground text-sm">
-              {formatNextRun(project.nextRunAt)}
+              {formatDate(project.nextRunAt, project.timezone)}
             </p>
           </div>
         </div>
@@ -326,9 +328,9 @@ function OverviewTab({ project }: { project: ProjectInfo }) {
 }
 
 // Delivery History Tab Component
-function DeliveryHistoryTab({ projectTitle }: { projectTitle: string }) {
+function DeliveryHistoryTab({ project }: { project: ProjectInfo }) {
   const { logs, loading, error, pagination, page, goToNextPage, goToPrevPage } =
-    useDeliveryLogs(projectTitle);
+    useDeliveryLogs(project.title);
   const [expandedLogIndex, setExpandedLogIndex] = useState<number | null>(null);
 
   const toggleExpand = (index: number) => {
@@ -361,17 +363,6 @@ function DeliveryHistoryTab({ projectTitle }: { projectTitle: string }) {
       default:
         return status;
     }
-  };
-
-  const formatDate = (timestamp: number) => {
-    return new Date(timestamp).toLocaleString(undefined, {
-      weekday: "short",
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-      hour: "numeric",
-      minute: "2-digit",
-    });
   };
 
   if (loading) {
@@ -438,7 +429,7 @@ function DeliveryHistoryTab({ projectTitle }: { projectTitle: string }) {
                 <div>
                   <p className="font-medium">{log.reportTitle}</p>
                   <p className="text-sm text-muted-foreground">
-                    {formatDate(log.researchCompletedAt)}
+                    {formatDate(log.deliveredAt, log.timezone)}
                   </p>
                 </div>
               </div>
@@ -649,14 +640,8 @@ function DeliveryHistoryTab({ projectTitle }: { projectTitle: string }) {
                 {/* Metadata */}
                 <div className="grid grid-cols-2 gap-4 text-sm p-4 pt-0 border-t border-border/30 mt-4">
                   <div className="pt-4">
-                    <span className="text-muted-foreground">
-                      Research Started:
-                    </span>
-                    <p>{formatDate(log.researchStartedAt)}</p>
-                  </div>
-                  <div className="pt-4">
-                    <span className="text-muted-foreground">Completed:</span>
-                    <p>{formatDate(log.researchCompletedAt)}</p>
+                    <span className="text-muted-foreground">Delivered At:</span>
+                    <p>{formatDate(log.deliveredAt, log.timezone)}</p>
                   </div>
                   {log.retryCount > 0 && (
                     <div>

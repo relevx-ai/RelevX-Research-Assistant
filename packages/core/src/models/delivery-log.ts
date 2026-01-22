@@ -60,9 +60,9 @@ export interface DeliveryLog {
   // References
   resultUrls: string[]; // URLs of results included in this report
 
-  // Timestamps
-  researchStartedAt: number; // When the research process started
-  researchCompletedAt: number; // When the research process completed
+  // Delivery timestamp and timezone
+  deliveredAt: number; // When the delivery was made (UTC timestamp)
+  timezone: string; // Project's timezone at time of delivery (IANA identifier)
 }
 
 /**
