@@ -703,6 +703,7 @@ export async function executeResearchForProject(
           projectTitle: project.title,
           projectDescription: project.description,
           frequency: project.frequency,
+          timezone: project.timezone,
         });
 
         // Track token usage for clustered report compilation
@@ -722,6 +723,7 @@ export async function executeResearchForProject(
             maxLength: options?.reportMaxLength ?? reportConfig.maxLength,
             projectTitle: project.title,
             frequency: project.frequency,
+            timezone: project.timezone,
           }
         );
 

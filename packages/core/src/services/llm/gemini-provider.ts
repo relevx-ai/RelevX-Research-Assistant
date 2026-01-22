@@ -26,6 +26,7 @@ import {
   REPORT_COMPILATION_PROMPTS,
   renderPrompt,
 } from "./prompts";
+import { formatReportDate } from "../../utils/date-filters";
 
 export class GeminiProvider implements LLMProvider {
   private genAI: GoogleGenerativeAI;
@@ -242,18 +243,6 @@ Snippet: ${r.description}
   }
 
   /**
-   * Format date for display in reports
-   */
-  private formatReportDate(): string {
-    return new Date().toLocaleDateString("en-US", {
-      weekday: "long",
-      month: "long",
-      day: "numeric",
-      year: "numeric",
-    });
-  }
-
-  /**
    * Compile report
    */
   async compileReport(
@@ -264,6 +253,7 @@ Snippet: ${r.description}
       maxLength?: number;
       projectTitle?: string;
       frequency?: "daily" | "weekly" | "monthly";
+      timezone?: string;
     }
   ): Promise<CompiledReport> {
     const promptConfig = REPORT_COMPILATION_PROMPTS;
@@ -283,7 +273,7 @@ Snippet: ${r.description}
       projectTitle,
       projectDescription: description,
       frequency,
-      reportDate: this.formatReportDate(),
+      reportDate: formatReportDate(new Date(), options?.timezone),
       resultCount: results.length,
       resultsFormatted,
     });

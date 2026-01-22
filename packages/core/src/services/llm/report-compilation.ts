@@ -11,7 +11,7 @@ import {
 } from "./prompts";
 import type { SearchParameters, Frequency } from "../../models/project";
 import type { ResultForReport, CompiledReport, TopicCluster } from "./types";
-import { formatReadableDate } from "../../utils/date-filters";
+import { formatReadableDate, formatReportDate } from "../../utils/date-filters";
 
 /**
  * Options for report compilation
@@ -22,18 +22,7 @@ export interface CompileReportOptions {
   projectDescription: string;
   frequency?: Frequency;
   searchParams?: SearchParameters;
-}
-
-/**
- * Format date for display in reports
- */
-function formatReportDate(): string {
-  return new Date().toLocaleDateString("en-US", {
-    weekday: "long",
-    month: "long",
-    day: "numeric",
-    year: "numeric",
-  });
+  timezone?: string;
 }
 
 /**
@@ -47,6 +36,7 @@ export async function compileReport(
     projectTitle,
     projectDescription,
     frequency = "weekly",
+    timezone,
   } = options;
 
   const client = getClient();
@@ -87,7 +77,7 @@ ${r.snippet}
     projectTitle,
     projectDescription,
     frequency,
-    reportDate: formatReportDate(),
+    reportDate: formatReportDate(new Date(), timezone),
     resultCount: results.length,
     resultsFormatted,
   });
@@ -168,6 +158,7 @@ export interface CompileClusteredReportOptions {
   projectDescription: string;
   frequency?: Frequency;
   searchParams?: SearchParameters;
+  timezone?: string;
 }
 
 /**
@@ -231,6 +222,7 @@ export async function compileClusteredReport(
     projectTitle,
     projectDescription,
     frequency = "weekly",
+    timezone,
   } = options;
 
   const client = getClient();
@@ -268,7 +260,7 @@ export async function compileClusteredReport(
     projectTitle,
     projectDescription,
     frequency,
-    reportDate: formatReportDate(),
+    reportDate: formatReportDate(new Date(), timezone),
     clusterCount: clusters.length,
     totalArticles,
     clustersFormatted,
