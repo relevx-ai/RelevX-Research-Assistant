@@ -808,9 +808,7 @@ export async function executeResearchForProject(
           project,
           report,
           stats,
-          resultUrls,
-          startedAt,
-          Date.now()
+          resultUrls
         );
       }
 

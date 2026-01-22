@@ -23,8 +23,6 @@ export async function saveDeliveryLog(
   },
   stats: DeliveryStats,
   resultUrls: string[],
-  researchStartedAt: number,
-  researchCompletedAt: number,
   status: "pending" | "success" | "failed" | "partial" = "pending"
 ): Promise<string> {
   const deliveryLogsCollection = db
@@ -49,8 +47,8 @@ export async function saveDeliveryLog(
     status, // Can be "pending" for pre-runs, "success" for immediate delivery
     retryCount: 0,
     resultUrls,
-    researchStartedAt,
-    researchCompletedAt,
+    deliveredAt: Date.now(),
+    timezone: project.timezone,
   };
 
   const docRef = await deliveryLogsCollection.add(deliveryLogData);

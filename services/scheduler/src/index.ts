@@ -202,6 +202,7 @@ async function runResearchJob(scheduledJobNumber: number): Promise<void> {
             Filter.where("status", "==", "error")
           )
         )
+        .where("preparedDeliveryLogId", "==", null)
         .where("nextRunAt", ">", now)
         .where("nextRunAt", "<=", prerunMaxTime)
         .get();
@@ -234,6 +235,7 @@ async function runResearchJob(scheduledJobNumber: number): Promise<void> {
             Filter.where("status", "==", "error")
           )
         )
+        .where("preparedDeliveryLogId", "==", null)
         .where("nextRunAt", "<=", now)
         .get();
 
@@ -338,29 +340,18 @@ async function runResearchJob(scheduledJobNumber: number): Promise<void> {
 
     // 5). Update project status based on research result
     if (deliveryLogId) {
-      // Calculate next run time
-      const nextRunAt = calculateNextRunAt(
-        project.frequency,
-        project.deliveryTime,
-        project.timezone,
-        project.dayOfWeek,
-        project.dayOfMonth
-      );
-
       // Success - prepare project for delivery
+      // - For pre-run: Keep nextRunAt at current delivery time so delivery job picks it up
+      // - For retry: Keep nextRunAt in the past so delivery job picks it up immediately
+      // The Delivery Job will update nextRunAt AFTER the email is sent successfully.
       projectUpdates = {
         ...projectUpdates,
         lastError: null,
         preparedDeliveryLogId: deliveryLogId,
-        nextRunAt,
         preparedAt: Date.now(),
         deliveredAt: null,
       };
 
-      // For retry, we DO NOT update nextRunAt here.
-      // We leave it in the past so the Delivery Job picks it up immediately.
-      // The Delivery Job will send the email and THEN update nextRunAt.
-      // For pre-run, just save the prepared delivery log
       logger.info(`${isRetry ? "Retry" : "Pre-run"} research succeeded`, {
         userId,
         projectId: project.id,
@@ -659,10 +650,21 @@ async function runDeliveryQueue() {
               deliveredAt: Date.now(),
             });
 
-            // Update project
+            // Calculate next run time AFTER successful delivery
+            const nextRunAt = calculateNextRunAt(
+              project.frequency,
+              project.deliveryTime,
+              project.timezone,
+              project.dayOfWeek,
+              project.dayOfMonth
+            );
+
+            // Update project with next scheduled run time
             await projectRef.update({
               lastRunAt: now,
               preparedDeliveryLogId: null,
+              nextRunAt,
+              deliveredAt: now,
               updatedAt: Date.now(),
             });
 
@@ -670,6 +672,7 @@ async function runDeliveryQueue() {
               userId,
               projectId: project.id,
               deliveryLogId: project.preparedDeliveryLogId,
+              nextRunAt: new Date(nextRunAt).toISOString(),
             });
           } else {
             // enqueue the delivery item again so it can be retried
