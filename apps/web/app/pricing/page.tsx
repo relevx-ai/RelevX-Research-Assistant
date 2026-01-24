@@ -29,6 +29,9 @@ function PricingContent() {
 
   const handleCloseStatusDialog = () => {
     router.replace("/pricing");
+    if (isSuccess) {
+      reloadUser();
+    }
   };
 
   const handleSelectPlanStart = async (planId: string) => {
