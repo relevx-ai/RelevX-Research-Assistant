@@ -37,9 +37,9 @@ export default function HomePage() {
   const features = [
     {
       icon: Brain,
-      title: "AI-Powered Research",
+      title: "Custom Briefs per Topic",
       description:
-        "Advanced AI analyzes and curates the most relevant information for your topics",
+        "Tailored research briefs for each project, focused on what matters most",
     },
     {
       icon: Clock,
@@ -49,9 +49,9 @@ export default function HomePage() {
     },
     {
       icon: Search,
-      title: "Smart Search",
+      title: "Source-Quality Filtering",
       description:
-        "Automatically searches across multiple sources to find the best content",
+        "Prioritize trusted sources and cut out noise before it hits your inbox",
     },
     {
       icon: Mail,
@@ -60,9 +60,9 @@ export default function HomePage() {
     },
     {
       icon: Zap,
-      title: "Lightning Fast",
+      title: "Summaries + Citations",
       description:
-        "Instant results powered by cutting-edge search and AI technology",
+        "Direct, readable summaries with links to original sources",
     },
     {
       icon: Sparkles,
@@ -114,41 +114,55 @@ export default function HomePage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.3 }}
-            className="text-xl text-muted-foreground mb-12 max-w-2xl mx-auto"
+            className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto"
           >
             Set up recurring research projects and get AI-curated insights
             delivered straight to your inbox. Never miss important updates in
             your field again.
+          </motion.p>
+          <motion.p
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.35 }}
+            className="text-sm text-muted-foreground mb-10 max-w-xl mx-auto leading-relaxed"
+          >
+            Built for product teams, analysts, and marketers who want concise
+            research briefs with cited sources, not a pile of links.
           </motion.p>
 
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.4 }}
-            className="flex flex-col sm:flex-row items-center justify-center gap-4"
+            className="flex flex-col items-center justify-center gap-8"
           >
-            {!userProfile && (
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+              {!userProfile && (
+                <Button
+                  onClick={handleSignIn}
+                  size="lg"
+                  className="gap-2 text-lg px-8 hover:scale-105 transition-all duration-300 shadow-md hover:shadow-xl active:scale-95"
+                >
+                  Get Started Free
+                  <ArrowRight className="w-5 h-5" />
+                </Button>
+              )}
               <Button
-                onClick={handleSignIn}
+                variant="outline"
                 size="lg"
                 className="gap-2 text-lg px-8 hover:scale-105 transition-all duration-300 shadow-md hover:shadow-xl active:scale-95"
+                onClick={() => {
+                  document.getElementById("features")?.scrollIntoView({
+                    behavior: "smooth",
+                  });
+                }}
               >
-                Get Started Free
-                <ArrowRight className="w-5 h-5" />
+                Learn More
               </Button>
-            )}
-            <Button
-              variant="outline"
-              size="lg"
-              className="gap-2 text-lg px-8 hover:scale-105 transition-all duration-300 shadow-md hover:shadow-xl active:scale-95"
-              onClick={() => {
-                document.getElementById("features")?.scrollIntoView({
-                  behavior: "smooth",
-                });
-              }}
-            >
-              Learn More
-            </Button>
+            </div>
+            <p className="text-sm text-muted-foreground max-w-md leading-relaxed">
+              Free to start. Set up your first brief in under 2 minutes.
+            </p>
           </motion.div>
         </motion.div>
       </section>
@@ -195,6 +209,63 @@ export default function HomePage() {
               </Card>
             </motion.div>
           ))}
+        </div>
+      </section>
+
+      {/* Why RelevX Section */}
+      <section className="container-wide py-16">
+        <Card className="glass-dark p-8">
+          <CardHeader className="text-center">
+            <CardTitle className="text-2xl md:text-3xl mb-2">
+              Why RelevX vs Google Alerts
+            </CardTitle>
+            <CardDescription className="text-base max-w-3xl mx-auto">
+              Alerts send raw articles. RelevX sends concise, summarized
+              research briefs so you get the insights without the extra reading.
+            </CardDescription>
+          </CardHeader>
+          <div className="grid md:grid-cols-3 gap-6 mt-4 text-center">
+            <div className="rounded-lg border border-border/50 p-4 bg-muted/20">
+              <p className="text-sm text-muted-foreground mb-2">RelevX</p>
+              <p className="font-semibold">
+                Summarized insights with citations
+              </p>
+            </div>
+            <div className="rounded-lg border border-border/50 p-4 bg-muted/20">
+              <p className="text-sm text-muted-foreground mb-2">Google Alerts</p>
+              <p className="font-semibold">
+                Raw links that still need reading
+              </p>
+            </div>
+            <div className="rounded-lg border border-border/50 p-4 bg-muted/20">
+              <p className="text-sm text-muted-foreground mb-2">Your Time</p>
+              <p className="font-semibold">Get answers in minutes, not hours</p>
+            </div>
+          </div>
+        </Card>
+      </section>
+
+      {/* Trust Section */}
+      <section className="container-wide py-12">
+        <div className="grid md:grid-cols-3 gap-6 text-center">
+          <Card className="glass-dark p-6">
+            <p className="text-3xl font-bold gradient-text mb-2">3–5 hrs</p>
+            <p className="text-muted-foreground">
+              Saved per week on manual research
+            </p>
+          </Card>
+          <Card className="glass-dark p-6">
+            <p className="text-3xl font-bold gradient-text mb-2">Weekly</p>
+            <p className="text-muted-foreground">
+              Briefs delivered on your schedule
+            </p>
+          </Card>
+          <Card className="glass-dark p-6">
+            <p className="text-3xl font-bold gradient-text mb-2">Cited</p>
+            <p className="text-muted-foreground">
+              Every insight links back to sources
+            </p>
+          </Card>
         </div>
       </section>
 
@@ -270,20 +341,25 @@ export default function HomePage() {
                 with automated research.
               </CardDescription>
               <div className="flex justify-center">
-                <Button
-                  onClick={() => {
-                    if (!userProfile) {
-                      handleSignIn();
-                    } else {
-                      router.push("/projects");
-                    }
-                  }}
-                  size="lg"
-                  className="gap-2 text-lg px-8 hover:scale-105 transition-all duration-300 shadow-md hover:shadow-xl active:scale-95"
-                >
-                  Start Researching Now
-                  <ArrowRight className="w-5 h-5" />
-                </Button>
+                <div className="flex flex-col items-center gap-3">
+                  <Button
+                    onClick={() => {
+                      if (!userProfile) {
+                        handleSignIn();
+                      } else {
+                        router.push("/projects");
+                      }
+                    }}
+                    size="lg"
+                    className="gap-2 text-lg px-8 hover:scale-105 transition-all duration-300 shadow-md hover:shadow-xl active:scale-95"
+                  >
+                    Start Researching Now
+                    <ArrowRight className="w-5 h-5" />
+                  </Button>
+                  <p className="text-sm text-muted-foreground">
+                    No credit card required. First project in minutes.
+                  </p>
+                </div>
               </div>
             </CardHeader>
           </Card>
