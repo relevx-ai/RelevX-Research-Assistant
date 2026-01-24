@@ -39,7 +39,7 @@ const routes: FastifyPluginAsync = async (app) => {
             content: `
 You are a helpful assistant that improves project descriptions.
 Project Description: ${request.description}
-Constraints: 1). It should clearly state everything that needs to be researched. It should be specific and detailed. 2). Should not be 'This project aims', that is obvious. 3). Should be a list of items, not a paragraph.
+Constraints: 1). It should clearly state everything that needs to be researched. It should be specific and concise (~3 concise sentences. Do not order items). 2). Should not be 'This project aims', that is obvious. 3). Should be a list of items, not a paragraph.
 
 Return ONLY a JSON object with this structure:
 {
@@ -49,8 +49,19 @@ Return ONLY a JSON object with this structure:
           },
         ]);
 
+        // verify response
+        if (!response.description) {
+          return rep.status(400).send({
+            error: { message: "Failed to generate a ai description" },
+          });
+        }
+
+        const finalDescription = Array.isArray(response.description)
+          ? response.description.join("\n")
+          : String(response.description);
+
         return rep.status(200).send({
-          description: response.description,
+          description: finalDescription,
         } as ImproveProjectDescriptionResponse);
       } catch (err: any) {
         const isDev = process.env.NODE_ENV !== "production";

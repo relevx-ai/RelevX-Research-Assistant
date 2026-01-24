@@ -58,6 +58,8 @@ export function CreateProjectDialog({
   const [error, setError] = useState("");
   const [advancedOpen, setAdvancedOpen] = useState(false);
   const [isEnhancing, setIsEnhancing] = useState(false);
+  const [suggestedDescription, setSuggestedDescription] = useState("");
+  const [isSuggestionDialogOpen, setIsSuggestionDialogOpen] = useState(false);
 
   // Helper function to parse comma-separated or newline-separated values
   const parseList = (value: string): string[] => {
@@ -69,19 +71,21 @@ export function CreateProjectDialog({
   };
 
   const handleEnhanceDescription = async () => {
-    if (!description.trim() || isEnhancing) return;
+    const desc = String(description || "");
+    if (!desc.trim() || isEnhancing) return;
 
     setIsEnhancing(true);
     try {
       const request: ImproveProjectDescriptionRequest = {
-        description: description.trim() || "research project",
+        description: desc.trim() || "research project",
       };
       const response = await relevx_api.post<ImproveProjectDescriptionResponse>(
         "/api/v1/ai/improve-project-description",
         request as any
       );
       if (response.description) {
-        setDescription(response.description);
+        setSuggestedDescription(response.description);
+        setIsSuggestionDialogOpen(true);
       }
     } catch (err) {
       console.error("Failed to enhance description:", err);
@@ -111,7 +115,7 @@ export function CreateProjectDialog({
       return;
     }
 
-    if (!description.trim()) {
+    if (!String(description || "").trim()) {
       setError("Please enter a description");
       return;
     }
@@ -141,7 +145,7 @@ export function CreateProjectDialog({
       const cprojectinfo: any =
       {
         title: title.trim(),
-        description: description.trim(),
+        description: String(description || "").trim(),
         frequency,
         resultsDestination: "email",
         deliveryTime,
@@ -186,6 +190,11 @@ export function CreateProjectDialog({
     }
   };
 
+  const handleAcceptSuggestion = () => {
+    setDescription(String(suggestedDescription || ""));
+    setIsSuggestionDialogOpen(false);
+  };
+
   const handleOpenChange = (newOpen: boolean) => {
     if (!isCreating) {
       onOpenChange(newOpen);
@@ -208,311 +217,374 @@ export function CreateProjectDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="sm:max-w-[750px] max-h-[90vh] flex flex-col">
-        <DialogHeader>
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
-              <Sparkles className="w-5 h-5 text-white" />
-            </div>
-            <DialogTitle>Create New Project</DialogTitle>
-          </div>
-          <DialogDescription>
-            Set up a new research project. Our AI will automatically search and
-            deliver curated insights based on your schedule.
-          </DialogDescription>
-        </DialogHeader>
-
-        <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
-          {/* Error Message - Fixed at top */}
-          {error && (
-            <div className="mx-1 mt-4 mb-2 rounded-md bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 p-3">
-              <p className="text-sm text-red-600 dark:text-red-400 font-medium">
-                {error}
-              </p>
-            </div>
-          )}
-
-          <div className="space-y-6 py-4 px-1 overflow-y-auto flex-1">
-            {/* Title */}
-            <div className="space-y-2">
-              <Label htmlFor="title">
-                Project Title <span className="text-destructive">*</span>
-              </Label>
-              <Input
-                id="title"
-                placeholder="e.g., AI Research Updates"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                disabled={isCreating}
-              />
-            </div>
-
-            {/* Description */}
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="description">
-                  What to Research <span className="text-destructive">*</span>
-                </Label>
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8"
-                        onClick={handleEnhanceDescription}
-                        disabled={isCreating || isEnhancing}
-                      >
-                        {isEnhancing ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                          <Sparkles className="h-4 w-4" />
-                        )}
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Enhance with AI</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
+    <>
+      <Dialog open={open} onOpenChange={handleOpenChange}>
+        <DialogContent className="sm:max-w-[750px] max-h-[90vh] flex flex-col">
+          <DialogHeader>
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
+                <Sparkles className="w-5 h-5 text-white" />
               </div>
-              <Textarea
-                id="description"
-                placeholder="e.g., Latest developments in AI and machine learning, focusing on practical applications and breakthrough research"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                disabled={isCreating}
-                rows={4}
-              />
-              <p className="text-xs text-muted-foreground">
-                Be specific about what you want to track. The more detailed, the
-                better the results.
-              </p>
+              <DialogTitle>Create New Project</DialogTitle>
             </div>
+            <DialogDescription>
+              Set up a new research project. Our AI will automatically search and
+              deliver curated insights based on your schedule.
+            </DialogDescription>
+          </DialogHeader>
 
-            {/* Schedule Card */}
-            <div className="rounded-lg border border-border bg-muted/30 p-4 space-y-4">
-              <div className="flex items-center gap-2 text-sm font-medium text-foreground">
-                <Calendar className="w-4 h-4 text-muted-foreground" />
-                Schedule
+          <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
+            {/* Error Message - Fixed at top */}
+            {error && (
+              <div className="mx-1 mt-4 mb-2 rounded-md bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 p-3">
+                <p className="text-sm text-red-600 dark:text-red-400 font-medium">
+                  {error}
+                </p>
               </div>
+            )}
 
-              {/* Frequency */}
+            <div className="space-y-6 py-4 px-1 overflow-y-auto flex-1">
+              {/* Title */}
               <div className="space-y-2">
-                <Label htmlFor="frequency">Frequency</Label>
-                <Select
-                  id="frequency"
-                  value={frequency}
-                  onChange={(e) => setFrequency(e.target.value as Frequency)}
+                <Label htmlFor="title">
+                  Project Title <span className="text-destructive">*</span>
+                </Label>
+                <Input
+                  id="title"
+                  placeholder="e.g., AI Research Updates"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
                   disabled={isCreating}
-                >
-                  <option value="daily">Daily</option>
-                  <option value="weekly">Weekly</option>
-                  <option value="monthly">Monthly</option>
-                </Select>
+                />
               </div>
 
-              {/* Scheduling Options Row */}
-              <div className="flex flex-wrap items-start gap-4">
-                {/* Day of Week (for weekly frequency) */}
-                {frequency === "weekly" && (
+              {/* Description */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="description">
+                    What to Research <span className="text-destructive">*</span>
+                  </Label>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={handleEnhanceDescription}
+                          disabled={isCreating || isEnhancing}
+                        >
+                          {isEnhancing ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Sparkles className="h-4 w-4" />
+                          )}
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Enhance with AI</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
+                <Textarea
+                  id="description"
+                  placeholder="e.g., Latest developments in AI and machine learning, focusing on practical applications and breakthrough research"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  disabled={isCreating}
+                  rows={4}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Be specific about what you want to track. The more detailed, the
+                  better the results.
+                </p>
+              </div>
+
+              {/* Schedule Card */}
+              <div className="rounded-lg border border-border bg-muted/30 p-4 space-y-4">
+                <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+                  <Calendar className="w-4 h-4 text-muted-foreground" />
+                  Schedule
+                </div>
+
+                {/* Frequency */}
+                <div className="space-y-2">
+                  <Label htmlFor="frequency">Frequency</Label>
+                  <Select
+                    id="frequency"
+                    value={frequency}
+                    onChange={(e) => setFrequency(e.target.value as Frequency)}
+                    disabled={isCreating}
+                  >
+                    <option value="daily">Daily</option>
+                    <option value="weekly">Weekly</option>
+                    <option value="monthly">Monthly</option>
+                  </Select>
+                </div>
+
+                {/* Scheduling Options Row */}
+                <div className="flex flex-wrap items-start gap-4">
+                  {/* Day of Week (for weekly frequency) */}
+                  {frequency === "weekly" && (
+                    <div className="space-y-2">
+                      <Label>Day of Week</Label>
+                      <DayOfWeekPicker
+                        value={dayOfWeek}
+                        onChange={setDayOfWeek}
+                        disabled={isCreating}
+                      />
+                    </div>
+                  )}
+
+                  {/* Day of Month (for monthly frequency) */}
+                  {frequency === "monthly" && (
+                    <div className="space-y-2">
+                      <Label>Day of Month</Label>
+                      <DayOfMonthPicker
+                        value={dayOfMonth}
+                        onChange={setDayOfMonth}
+                        disabled={isCreating}
+                      />
+                    </div>
+                  )}
+
+                  {/* Placeholder for daily to maintain consistent layout */}
+                  {frequency === "daily" && (
+                    <div className="space-y-2">
+                      <Label className="text-muted-foreground">Repeats</Label>
+                      <div className="h-[120px] w-32 flex items-center justify-center text-sm text-muted-foreground bg-muted/50 rounded-md border border-dashed border-border">
+                        Every day
+                      </div>
+                    </div>
+                  )}
+
                   <div className="space-y-2">
-                    <Label>Day of Week</Label>
-                    <DayOfWeekPicker
-                      value={dayOfWeek}
-                      onChange={setDayOfWeek}
+                    <Label>Time</Label>
+                    <TimePicker
+                      value={deliveryTime}
+                      onChange={setDeliveryTime}
                       disabled={isCreating}
                     />
                   </div>
-                )}
 
-                {/* Day of Month (for monthly frequency) */}
-                {frequency === "monthly" && (
-                  <div className="space-y-2">
-                    <Label>Day of Month</Label>
-                    <DayOfMonthPicker
-                      value={dayOfMonth}
-                      onChange={setDayOfMonth}
+                  <div className="space-y-2 flex-1 min-w-[180px]">
+                    <Label htmlFor="timezone">Timezone</Label>
+                    <Select
+                      id="timezone"
+                      value={timezone}
+                      onChange={(e) => setTimezone(e.target.value)}
                       disabled={isCreating}
-                    />
+                    >
+                      <option value="America/New_York">Eastern Time (ET)</option>
+                      <option value="America/Chicago">Central Time (CT)</option>
+                      <option value="America/Denver">Mountain Time (MT)</option>
+                      <option value="America/Los_Angeles">
+                        Pacific Time (PT)
+                      </option>
+                      <option value="America/Anchorage">Alaska Time (AKT)</option>
+                      <option value="Pacific/Honolulu">Hawaii Time (HT)</option>
+                      <option value="Europe/London">London (GMT/BST)</option>
+                      <option value="Europe/Paris">Paris (CET/CEST)</option>
+                      <option value="Europe/Berlin">Berlin (CET/CEST)</option>
+                      <option value="Asia/Tokyo">Tokyo (JST)</option>
+                      <option value="Asia/Shanghai">Shanghai (CST)</option>
+                      <option value="Asia/Hong_Kong">Hong Kong (HKT)</option>
+                      <option value="Asia/Singapore">Singapore (SGT)</option>
+                      <option value="Asia/Dubai">Dubai (GST)</option>
+                      <option value="Asia/Kolkata">India (IST)</option>
+                      <option value="Australia/Sydney">Sydney (AEDT/AEST)</option>
+                      <option value="Australia/Melbourne">
+                        Melbourne (AEDT/AEST)
+                      </option>
+                      <option value="Pacific/Auckland">
+                        Auckland (NZDT/NZST)
+                      </option>
+                      <option value="UTC">UTC</option>
+                    </Select>
                   </div>
-                )}
+                </div>
+              </div>
 
-                {/* Placeholder for daily to maintain consistent layout */}
-                {frequency === "daily" && (
-                  <div className="space-y-2">
-                    <Label className="text-muted-foreground">Repeats</Label>
-                    <div className="h-[120px] w-32 flex items-center justify-center text-sm text-muted-foreground bg-muted/50 rounded-md border border-dashed border-border">
-                      Every day
+              {/* Advanced Settings Collapsible */}
+              <div className="rounded-lg border border-border bg-muted/30">
+                <button
+                  type="button"
+                  onClick={() => setAdvancedOpen(!advancedOpen)}
+                  className="w-full flex items-center justify-between p-4 text-sm font-medium text-foreground hover:bg-muted/50 transition-colors rounded-lg"
+                >
+                  <div className="flex items-center gap-2">
+                    <Settings className="w-4 h-4 text-muted-foreground" />
+                    Advanced Settings
+                  </div>
+                  <ChevronDown
+                    className={`w-4 h-4 text-muted-foreground transition-transform duration-200 ${advancedOpen ? "rotate-180" : ""
+                      }`}
+                  />
+                </button>
+
+                {advancedOpen && (
+                  <div className="px-4 pb-4 space-y-4 border-t border-border pt-4">
+                    {/* Priority Domains */}
+                    <div className="space-y-2">
+                      <Label htmlFor="priorityDomains">Priority Domains</Label>
+                      <Textarea
+                        id="priorityDomains"
+                        placeholder="e.g., example.com, news.site.com"
+                        value={priorityDomains}
+                        onChange={(e) => setPriorityDomains(e.target.value)}
+                        disabled={isCreating}
+                        rows={2}
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Domains to prioritize in search results (one per line or
+                        comma-separated). We will prioritize content from these
+                        domains.
+                      </p>
+                    </div>
+
+                    {/* Excluded Domains */}
+                    <div className="space-y-2">
+                      <Label htmlFor="excludedDomains">Excluded Domains</Label>
+                      <Textarea
+                        id="excludedDomains"
+                        placeholder="e.g., spam-site.com, unreliable.com"
+                        value={excludedDomains}
+                        onChange={(e) => setExcludedDomains(e.target.value)}
+                        disabled={isCreating}
+                        rows={2}
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Domains to exclude from search results (one per line or
+                        comma-separated). Results from these domains will be
+                        filtered out.
+                      </p>
+                    </div>
+
+                    {/* Required Keywords */}
+                    <div className="space-y-2">
+                      <Label htmlFor="requiredKeywords">
+                        Keywords to Search For
+                      </Label>
+                      <Textarea
+                        id="requiredKeywords"
+                        placeholder="e.g., machine learning, neural networks, AI"
+                        value={requiredKeywords}
+                        onChange={(e) => setRequiredKeywords(e.target.value)}
+                        disabled={isCreating}
+                        rows={2}
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Keywords to include in searches to improve result quality
+                        (one per line or comma-separated). These will be used to
+                        enhance search queries.
+                      </p>
+                    </div>
+
+                    {/* Excluded Keywords */}
+                    <div className="space-y-2">
+                      <Label htmlFor="excludedKeywords">Excluded Keywords</Label>
+                      <Textarea
+                        id="excludedKeywords"
+                        placeholder="e.g., advertisement, sponsored, clickbait"
+                        value={excludedKeywords}
+                        onChange={(e) => setExcludedKeywords(e.target.value)}
+                        disabled={isCreating}
+                        rows={2}
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Keywords to exclude from results (one per line or
+                        comma-separated). Content containing these keywords will
+                        be filtered out.
+                      </p>
                     </div>
                   </div>
                 )}
-
-                <div className="space-y-2">
-                  <Label>Time</Label>
-                  <TimePicker
-                    value={deliveryTime}
-                    onChange={setDeliveryTime}
-                    disabled={isCreating}
-                  />
-                </div>
-
-                <div className="space-y-2 flex-1 min-w-[180px]">
-                  <Label htmlFor="timezone">Timezone</Label>
-                  <Select
-                    id="timezone"
-                    value={timezone}
-                    onChange={(e) => setTimezone(e.target.value)}
-                    disabled={isCreating}
-                  >
-                    <option value="America/New_York">Eastern Time (ET)</option>
-                    <option value="America/Chicago">Central Time (CT)</option>
-                    <option value="America/Denver">Mountain Time (MT)</option>
-                    <option value="America/Los_Angeles">
-                      Pacific Time (PT)
-                    </option>
-                    <option value="America/Anchorage">Alaska Time (AKT)</option>
-                    <option value="Pacific/Honolulu">Hawaii Time (HT)</option>
-                    <option value="Europe/London">London (GMT/BST)</option>
-                    <option value="Europe/Paris">Paris (CET/CEST)</option>
-                    <option value="Europe/Berlin">Berlin (CET/CEST)</option>
-                    <option value="Asia/Tokyo">Tokyo (JST)</option>
-                    <option value="Asia/Shanghai">Shanghai (CST)</option>
-                    <option value="Asia/Hong_Kong">Hong Kong (HKT)</option>
-                    <option value="Asia/Singapore">Singapore (SGT)</option>
-                    <option value="Asia/Dubai">Dubai (GST)</option>
-                    <option value="Asia/Kolkata">India (IST)</option>
-                    <option value="Australia/Sydney">Sydney (AEDT/AEST)</option>
-                    <option value="Australia/Melbourne">
-                      Melbourne (AEDT/AEST)
-                    </option>
-                    <option value="Pacific/Auckland">
-                      Auckland (NZDT/NZST)
-                    </option>
-                    <option value="UTC">UTC</option>
-                  </Select>
-                </div>
               </div>
             </div>
 
-            {/* Advanced Settings Collapsible */}
-            <div className="rounded-lg border border-border bg-muted/30">
-              <button
+            <DialogFooter>
+              <Button
                 type="button"
-                onClick={() => setAdvancedOpen(!advancedOpen)}
-                className="w-full flex items-center justify-between p-4 text-sm font-medium text-foreground hover:bg-muted/50 transition-colors rounded-lg"
+                variant="outline"
+                onClick={() => handleOpenChange(false)}
+                disabled={isCreating}
               >
-                <div className="flex items-center gap-2">
-                  <Settings className="w-4 h-4 text-muted-foreground" />
-                  Advanced Settings
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                disabled={isCreating}
+                className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-md hover:shadow-xl hover:scale-105 transition-all duration-300"
+              >
+                {isCreating ? "Creating..." : "Create Project"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isSuggestionDialogOpen} onOpenChange={setIsSuggestionDialogOpen}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center">
+                <Sparkles className="w-5 h-5 text-white" />
+              </div>
+              <DialogTitle>AI Improved Description</DialogTitle>
+            </div>
+            <DialogDescription>
+              Review the AI-enhanced description for your project. You can accept it
+              or ask the AI to try again.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="py-4">
+            <div className="rounded-lg border border-purple-100 dark:border-purple-900 bg-purple-50/30 dark:bg-purple-900/10 p-4 min-h-[120px] text-sm leading-relaxed">
+              {isEnhancing ? (
+                <div className="flex flex-col items-center justify-center h-full space-y-3 py-6">
+                  <Loader2 className="h-6 w-6 animate-spin text-purple-500" />
+                  <p className="text-muted-foreground animate-pulse">Generating new suggestion...</p>
                 </div>
-                <ChevronDown
-                  className={`w-4 h-4 text-muted-foreground transition-transform duration-200 ${advancedOpen ? "rotate-180" : ""
-                    }`}
-                />
-              </button>
-
-              {advancedOpen && (
-                <div className="px-4 pb-4 space-y-4 border-t border-border pt-4">
-                  {/* Priority Domains */}
-                  <div className="space-y-2">
-                    <Label htmlFor="priorityDomains">Priority Domains</Label>
-                    <Textarea
-                      id="priorityDomains"
-                      placeholder="e.g., example.com, news.site.com"
-                      value={priorityDomains}
-                      onChange={(e) => setPriorityDomains(e.target.value)}
-                      disabled={isCreating}
-                      rows={2}
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      Domains to prioritize in search results (one per line or
-                      comma-separated). We will prioritize content from these
-                      domains.
-                    </p>
-                  </div>
-
-                  {/* Excluded Domains */}
-                  <div className="space-y-2">
-                    <Label htmlFor="excludedDomains">Excluded Domains</Label>
-                    <Textarea
-                      id="excludedDomains"
-                      placeholder="e.g., spam-site.com, unreliable.com"
-                      value={excludedDomains}
-                      onChange={(e) => setExcludedDomains(e.target.value)}
-                      disabled={isCreating}
-                      rows={2}
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      Domains to exclude from search results (one per line or
-                      comma-separated). Results from these domains will be
-                      filtered out.
-                    </p>
-                  </div>
-
-                  {/* Required Keywords */}
-                  <div className="space-y-2">
-                    <Label htmlFor="requiredKeywords">
-                      Keywords to Search For
-                    </Label>
-                    <Textarea
-                      id="requiredKeywords"
-                      placeholder="e.g., machine learning, neural networks, AI"
-                      value={requiredKeywords}
-                      onChange={(e) => setRequiredKeywords(e.target.value)}
-                      disabled={isCreating}
-                      rows={2}
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      Keywords to include in searches to improve result quality
-                      (one per line or comma-separated). These will be used to
-                      enhance search queries.
-                    </p>
-                  </div>
-
-                  {/* Excluded Keywords */}
-                  <div className="space-y-2">
-                    <Label htmlFor="excludedKeywords">Excluded Keywords</Label>
-                    <Textarea
-                      id="excludedKeywords"
-                      placeholder="e.g., advertisement, sponsored, clickbait"
-                      value={excludedKeywords}
-                      onChange={(e) => setExcludedKeywords(e.target.value)}
-                      disabled={isCreating}
-                      rows={2}
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      Keywords to exclude from results (one per line or
-                      comma-separated). Content containing these keywords will
-                      be filtered out.
-                    </p>
-                  </div>
-                </div>
+              ) : (
+                suggestedDescription
               )}
             </div>
           </div>
 
-          <DialogFooter>
+          <DialogFooter className="gap-2 sm:gap-0">
             <Button
               type="button"
-              variant="outline"
-              onClick={() => handleOpenChange(false)}
-              disabled={isCreating}
+              variant="ghost"
+              onClick={() => setIsSuggestionDialogOpen(false)}
+              disabled={isEnhancing}
             >
-              Cancel
+              Discard
             </Button>
-            <Button
-              type="submit"
-              disabled={isCreating}
-              className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-md hover:shadow-xl hover:scale-105 transition-all duration-300"
-            >
-              {isCreating ? "Creating..." : "Create Project"}
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleEnhanceDescription}
+                disabled={isEnhancing}
+                className="border-purple-200 hover:bg-purple-50 dark:border-purple-800 dark:hover:bg-purple-900/20"
+              >
+                <Sparkles className="w-4 h-4 mr-2" />
+                Regenerate
+              </Button>
+              <Button
+                type="button"
+                onClick={handleAcceptSuggestion}
+                disabled={isEnhancing}
+                className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white"
+              >
+                Accept Suggestion
+              </Button>
+            </div>
           </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
