@@ -12,6 +12,9 @@ WORKDIR /app
 # Copy workspace and package files
 COPY pnpm-workspace.yaml package.json pnpm-lock.yaml tsconfig.base.json ./
 
+# Copy research configuration
+COPY research-config.yaml ./
+
 # Copy core package
 COPY packages/core/package.json ./packages/core/
 COPY packages/core/tsconfig.json ./packages/core/
@@ -38,6 +41,7 @@ RUN apk add --no-cache dumb-init
 WORKDIR /app
 
 # Copy built artifacts and production node_modules from builder
+COPY --from=builder /app/research-config.yaml ./
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/packages/core/dist ./packages/core/dist
 COPY --from=builder /app/packages/core/package.json ./packages/core/
