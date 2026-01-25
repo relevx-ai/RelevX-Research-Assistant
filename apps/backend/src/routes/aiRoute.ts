@@ -33,6 +33,12 @@ const routes: FastifyPluginAsync = async (app) => {
             .status(400)
             .send({ error: { message: "Description is required" } });
         }
+        const currentDate = new Date().toLocaleDateString("en-US", {
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+        });
+
         const response = await aiInterface.query([
           {
             role: "system",
@@ -40,7 +46,9 @@ const routes: FastifyPluginAsync = async (app) => {
           },
           {
             role: "user",
-            content: `Improve the following project description for research and search query generation.
+            content: `Today's Date: ${currentDate}
+
+Improve the following project description for research and search query generation.
 
 Original Description:
 ${request.description}
