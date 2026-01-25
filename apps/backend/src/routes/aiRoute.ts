@@ -35,17 +35,27 @@ const routes: FastifyPluginAsync = async (app) => {
         }
         const response = await aiInterface.query([
           {
+            role: "system",
+            content: `You are an expert at refining research project descriptions into clear, search-optimized summaries. The output will be used by AI to generate effective web search queries, so prioritize specific terminology, key entities, and searchable concepts over vague or generic language.`,
+          },
+          {
             role: "user",
-            content: `
-You are a helpful assistant that improves project descriptions.
-Project Description: ${request.description}
-Constraints: 1). It should clearly state everything that needs to be researched. It should be specific and concise (~3 concise sentences. Do not order items). 2). Should not be 'This project aims', that is obvious. 3). Should be a list of items, not a paragraph.
+            content: `Improve the following project description for research and search query generation.
 
-Return ONLY a JSON object with this structure:
+Original Description:
+${request.description}
+
+Requirements:
+- Extract and emphasize specific topics, technologies, companies, or concepts that should be researched
+- Use precise, searchable terminology (e.g., "React Server Components" not "new React features")
+- Write 2-4 concise bullet points, each representing a distinct research focus area
+- Avoid filler phrases like "This project aims to" or "The goal is to"
+- Each bullet should be independently searchable as a research topic
+
+Return ONLY a JSON object with bullet points separated by newlines:
 {
-  "description": "the improved project description"
-}
-`,
+  "description": "- First research focus\n- Second research focus\n- Third research focus"
+}`,
           },
         ]);
 

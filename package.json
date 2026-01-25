@@ -12,7 +12,8 @@
     "test:brave": "tsx scripts/test-brave-search.ts",
     "test:extract": "tsx scripts/test-content-extraction.ts",
     "test:research": "tsx scripts/test-research.ts",
-    "test:email": "tsx scripts/test-email.ts"
+    "test:email": "tsx scripts/test-email.ts",
+    "test:queries": "tsx scripts/test-query-generation.ts"
   },
   "packageManager": "pnpm@10.25.0",
   "engines": {

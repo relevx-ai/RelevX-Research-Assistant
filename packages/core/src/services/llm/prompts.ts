@@ -60,11 +60,13 @@ Generate 5 search queries using different strategies:
 1. BROAD queries - general terms that cast a wide net
 2. SPECIFIC queries - precise terms with specific details
 3. QUESTION queries - phrased as questions people might ask
-4. TEMPORAL queries - include recency indicators like "latest", "recent", "2024", "new"
+4. TEMPORAL queries - include recency indicators like "latest", "recent", "new" (do NOT include specific years or dates)
 
 Each query should be distinct and approach the topic from different angles.
-Queries should be concise (3-8 words typically) and use natural search language.`,
-    `Project Description:
+Queries should be concise but include enough context for precise results. Use natural search language.`,
+    `Today's Date: {{currentDate}}
+
+Project Description:
 {{description}}
 
 {{additionalContext}}{{queryPerformanceContext}}{{iterationGuidance}}

@@ -541,7 +541,7 @@ export function CreateProjectDialog({
           </DialogHeader>
 
           <div className="py-4">
-            <div className="rounded-lg border border-purple-100 dark:border-purple-900 bg-purple-50/30 dark:bg-purple-900/10 p-4 min-h-[120px] text-sm leading-relaxed">
+            <div className="rounded-lg border border-purple-100 dark:border-purple-900 bg-purple-50/30 dark:bg-purple-900/10 p-4 min-h-[120px] text-sm leading-relaxed whitespace-pre-line">
               {isEnhancing ? (
                 <div className="flex flex-col items-center justify-center h-full space-y-3 py-6">
                   <Loader2 className="h-6 w-6 animate-spin text-purple-500" />

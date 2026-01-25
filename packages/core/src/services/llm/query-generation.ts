@@ -79,8 +79,16 @@ export async function generateSearchQueries(
       ? `Additional Context:\n${contextParts.join("\n")}\n`
       : "";
 
+  // Format current date for the prompt
+  const currentDate = new Date().toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+
   // Render user prompt with template variables
   const userPrompt = renderPrompt(QUERY_GENERATION_PROMPTS.user, {
+    currentDate,
     description,
     additionalContext,
     queryPerformanceContext: queryPerformanceContext || "",
