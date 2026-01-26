@@ -603,8 +603,15 @@ const routes: FastifyPluginAsync = async (app) => {
                 project.deliveryTime =
                   data.deliveryTime || docData.deliveryTime;
                 project.timezone = data.timezone || docData.timezone;
-                project.dayOfWeek = data.dayOfWeek || docData.dayOfWeek;
-                project.dayOfMonth = data.dayOfMonth || docData.dayOfMonth;
+                // Use explicit undefined check to allow null values to clear fields
+                project.dayOfWeek =
+                  data.dayOfWeek !== undefined
+                    ? data.dayOfWeek
+                    : docData.dayOfWeek;
+                project.dayOfMonth =
+                  data.dayOfMonth !== undefined
+                    ? data.dayOfMonth
+                    : docData.dayOfMonth;
                 break;
               }
             }
@@ -631,8 +638,12 @@ const routes: FastifyPluginAsync = async (app) => {
                 data.frequency || docData.frequency,
                 data.deliveryTime || docData.deliveryTime,
                 data.timezone || docData.timezone,
-                data.dayOfWeek || docData.dayOfWeek,
-                data.dayOfMonth || docData.dayOfMonth,
+                data.dayOfWeek !== undefined
+                  ? data.dayOfWeek
+                  : docData.dayOfWeek,
+                data.dayOfMonth !== undefined
+                  ? data.dayOfMonth
+                  : docData.dayOfMonth,
                 forceNextRun !== undefined
               );
 

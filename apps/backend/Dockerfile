@@ -42,6 +42,7 @@ RUN npm install -g pnpm
 
 # Copy root workspace configs
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY research-config.yaml ./
 
 # Copy core package.json for dependency resolution
 COPY packages/core/package.json ./packages/core/
