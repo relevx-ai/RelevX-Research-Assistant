@@ -104,15 +104,13 @@ export function Navbar() {
               </span>
             </Link>
 
-            {(planStatus === "Inactive" || planStatus === "") && (
-              <Button
-                variant="ghost"
-                asChild
-                className="hidden sm:flex h-auto py-1.5 text-base font-medium transition-all duration-300 hover:scale-105 hover:bg-gradient-to-r hover:from-blue-500/10 hover:to-purple-600/10 hover:text-blue-600"
-              >
-                <Link href="/pricing">Pricing</Link>
-              </Button>
-            )}
+            <Button
+              variant="ghost"
+              asChild
+              className="hidden sm:flex h-auto py-1.5 text-base font-medium transition-all duration-300 hover:scale-105 hover:bg-gradient-to-r hover:from-blue-500/10 hover:to-purple-600/10 hover:text-blue-600"
+            >
+              <Link href="/pricing">Pricing</Link>
+            </Button>
 
             {user && (
               <Button
