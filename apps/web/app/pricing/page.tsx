@@ -79,15 +79,15 @@ function PricingContent() {
   return (
     <>
 
-      <div className="container py-8 max-w-5xl mx-auto">
-        <div className="text-center mb-10">
-          <h1 className="text-3xl font-bold tracking-tight mb-2">Pricing Plans</h1>
-          <p className="text-muted-foreground">
+      <div className="container py-6 sm:py-8 px-4 sm:px-6 max-w-5xl mx-auto">
+        <div className="text-center mb-8 sm:mb-10">
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight mb-2">Pricing Plans</h1>
+          <p className="text-sm sm:text-base text-muted-foreground">
             Choose the plan that best fits your research needs.
           </p>
         </div>
 
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-4 sm:gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
           {plans.map((plan) => (
             <Card key={plan.id} className="flex flex-col">
               <CardHeader>

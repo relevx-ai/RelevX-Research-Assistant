@@ -86,15 +86,15 @@ export function ProjectDetailModal({
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="sm:max-w-[900px] max-h-[90vh] p-0 flex flex-col overflow-hidden">
+        <DialogContent className="sm:max-w-[900px] max-h-[85vh] p-0 flex flex-col overflow-hidden">
           {/* Header */}
-          <div className="flex items-center justify-between p-6 border-b border-border/50">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-purple-500 to-violet-600 flex items-center justify-center">
-                <LayoutDashboard className="w-5 h-5 text-white" />
+          <div className="flex items-center justify-between p-4 sm:p-6 border-b border-border/50">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 shrink-0 rounded-lg bg-gradient-to-br from-purple-500 to-violet-600 flex items-center justify-center">
+                <LayoutDashboard className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
               </div>
-              <div>
-                <h2 className="text-xl font-semibold">{project.title}</h2>
+              <div className="min-w-0">
+                <h2 className="text-lg sm:text-xl font-semibold truncate">{project.title}</h2>
                 <div className="flex items-center gap-2 mt-1">
                   {project.status === "active" ? (
                     <>
@@ -117,27 +117,27 @@ export function ProjectDetailModal({
           </div>
 
           {/* Tab Navigation */}
-          <div className="flex items-center justify-between border-b border-border/50 px-6">
-            <div className="flex">
+          <div className="flex items-center justify-between border-b border-border/50 px-3 sm:px-6">
+            <div className="flex overflow-x-auto scrollbar-hide">
               {tabs.map((tab) => (
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 rounded-t-lg transition-all duration-200 ${
+                  className={`flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-4 py-3 text-xs sm:text-sm font-medium border-b-2 rounded-t-lg transition-all duration-200 whitespace-nowrap ${
                     activeTab === tab.id
                       ? "border-purple-500 text-purple-400 bg-purple-500/5"
                       : "border-transparent text-muted-foreground hover:border-border hover:bg-accent hover:text-accent-foreground"
                   }`}
                 >
                   {tab.icon}
-                  {tab.label}
+                  <span className="hidden xs:inline sm:inline">{tab.label}</span>
                 </button>
               ))}
             </div>
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8 text-muted-foreground hover:text-foreground transition-all duration-300 hover:rotate-90"
+              className="h-8 w-8 shrink-0 text-muted-foreground hover:text-foreground transition-all duration-300 hover:rotate-90"
               onClick={() => {
                 if (project.status === "running") {
                   setErrorDialog({
@@ -156,7 +156,7 @@ export function ProjectDetailModal({
           </div>
 
           {/* Tab Content */}
-          <div className="flex-1 overflow-y-auto p-6">
+          <div className="flex-1 overflow-y-auto p-4 sm:p-6">
             {activeTab === "overview" && <OverviewTab project={project} />}
 
             {activeTab === "history" && (
@@ -263,7 +263,7 @@ function OverviewTab({ project }: { project: ProjectInfo }) {
         <h3 className="text-sm font-semibold text-foreground/70 uppercase tracking-wide mb-3">
           Schedule Settings
         </h3>
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
           <div className="p-4 rounded-lg border border-border/50 bg-muted/20 hover:bg-muted/30 transition-colors">
             <div className="flex items-center gap-2 mb-2">
               <Clock className="w-4 h-4 text-purple-400" />

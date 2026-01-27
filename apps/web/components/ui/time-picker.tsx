@@ -26,14 +26,14 @@ export function TimePicker({
   };
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-1 sm:gap-2">
       <ScrollPicker
         value={hour12}
         onChange={(h) => onChange(formatTime(h, minutes, isPM))}
         items={Array.from({ length: 12 }, (_, i) => i + 1)}
         disabled={disabled}
       />
-      <span className="text-2xl font-semibold text-foreground">:</span>
+      <span className="text-xl sm:text-2xl font-semibold text-foreground">:</span>
       <ScrollPicker
         value={minutes}
         onChange={(m) => onChange(formatTime(hour12, m, isPM))}
@@ -67,7 +67,7 @@ function ScrollPicker<T extends number | string>({
   disabled = false,
 }: ScrollPickerProps<T>) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const itemHeight = 40;
+  const itemHeight = 36;
 
   // Scroll to selected item on mount and value changes
   useEffect(() => {
@@ -95,10 +95,10 @@ function ScrollPicker<T extends number | string>({
   };
 
   return (
-    <div className="relative w-20 h-[120px]">
-      <div className="absolute top-0 left-0 right-0 h-10 bg-gradient-to-b from-background to-transparent pointer-events-none z-10" />
-      <div className="absolute bottom-0 left-0 right-0 h-10 bg-gradient-to-t from-background to-transparent pointer-events-none z-10" />
-      <div className="absolute top-1/2 left-0 right-0 h-10 -mt-5 bg-primary/10 border-y border-primary/20 pointer-events-none z-10 rounded-md" />
+    <div className="relative w-14 sm:w-16 h-[108px]">
+      <div className="absolute top-0 left-0 right-0 h-9 bg-gradient-to-b from-background to-transparent pointer-events-none z-10" />
+      <div className="absolute bottom-0 left-0 right-0 h-9 bg-gradient-to-t from-background to-transparent pointer-events-none z-10" />
+      <div className="absolute top-1/2 left-0 right-0 h-9 -mt-[18px] bg-primary/10 border-y border-primary/20 pointer-events-none z-10 rounded-md" />
 
       <div
         ref={containerRef}
@@ -118,8 +118,8 @@ function ScrollPicker<T extends number | string>({
             className={cn(
               "flex items-center justify-center cursor-pointer transition-all duration-200",
               item === value
-                ? "text-foreground font-semibold text-xl"
-                : "text-muted-foreground text-sm"
+                ? "text-foreground font-semibold text-lg sm:text-xl"
+                : "text-muted-foreground text-xs sm:text-sm"
             )}
             style={{ height: itemHeight }}
             onClick={() => !disabled && onChange(item)}

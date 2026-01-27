@@ -223,7 +223,7 @@ export function EditProjectSettingsDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="sm:max-w-[750px] max-h-[90vh] flex flex-col">
+      <DialogContent className="sm:max-w-[750px] max-h-[85vh] flex flex-col overflow-hidden">
         <DialogHeader>
           <div className="flex items-center gap-3 mb-2">
             <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
@@ -320,7 +320,7 @@ export function EditProjectSettingsDialog({
               </div>
 
               {/* Scheduling Options Row */}
-              <div className="flex flex-wrap items-start gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {/* Day of Week (for weekly frequency) */}
                 {frequency === "weekly" && (
                   <div className="space-y-2">
@@ -347,9 +347,9 @@ export function EditProjectSettingsDialog({
 
                 {/* Placeholder for daily to maintain consistent layout */}
                 {frequency === "daily" && (
-                  <div className="space-y-2">
+                  <div className="space-y-2 hidden sm:block">
                     <Label className="text-muted-foreground">Repeats</Label>
-                    <div className="h-[120px] w-32 flex items-center justify-center text-sm text-muted-foreground bg-muted/50 rounded-md border border-dashed border-border">
+                    <div className="h-[108px] flex items-center justify-center text-sm text-muted-foreground bg-muted/50 rounded-md border border-dashed border-border">
                       Every day
                     </div>
                   </div>
@@ -364,7 +364,7 @@ export function EditProjectSettingsDialog({
                   />
                 </div>
 
-                <div className="space-y-2 flex-1 min-w-[180px]">
+                <div className="space-y-2">
                   <Label htmlFor="edit-timezone">Timezone</Label>
                   <Select
                     id="edit-timezone"
