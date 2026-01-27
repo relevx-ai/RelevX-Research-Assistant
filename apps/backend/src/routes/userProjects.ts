@@ -489,20 +489,50 @@ const routes: FastifyPluginAsync = async (app) => {
           });
         }
 
+        // Check if user has reached their plan's active project limit
+        const userData = await getUserData(userId, db);
+        const plans: Plan[] = await getPlans(remoteConfig);
+        const plan: Plan | undefined = plans.find(
+          (p) => p.id === (userData.user.planId || gFreePlanId)
+        );
+
+        let createAsPaused = false;
+        // Default to 1 for free plan if not specified in remote config
+        const maxActiveProjects = plan?.settingsMaxActiveProjects || 1;
+
+        // Get current active project count
+        const activeProjectsSnapshot = await db
+          .collection("users")
+          .doc(userId)
+          .collection("projects")
+          .where("status", "in", ["active", "running"])
+          .get();
+
+        const currentActiveCount = activeProjectsSnapshot.size;
+
+        // If at or over the limit, create as paused
+        if (currentActiveCount >= maxActiveProjects) {
+          createAsPaused = true;
+        }
+
         const projectData: any = {
           ...request.projectInfo,
           userId,
-          status: "active",
-          nextRunAt: calculateNewRunAt(
+          status: createAsPaused ? "paused" : "active",
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        };
+
+        // Only calculate nextRunAt if the project is active
+        if (!createAsPaused) {
+          projectData.nextRunAt = calculateNewRunAt(
             request.projectInfo.frequency,
             request.projectInfo.deliveryTime,
             request.projectInfo.timezone,
             request.projectInfo.dayOfWeek,
             request.projectInfo.dayOfMonth
-          ),
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        };
+          );
+        }
 
         const projectRef = db
           .collection("users")
@@ -512,9 +542,17 @@ const routes: FastifyPluginAsync = async (app) => {
 
         const { userId: _userId, ...projectInfo } = projectData;
 
-        return rep.status(200).send({
+        const response: CreateProjectResponse = {
           project: projectInfo as ProjectInfo,
-        } as CreateProjectResponse);
+        };
+
+        // Include paused info if the project was created as paused
+        if (createAsPaused) {
+          response.createdAsPaused = true;
+          response.maxActiveProjects = maxActiveProjects;
+        }
+
+        return rep.status(200).send(response);
       } catch (err: any) {
         const isDev = process.env.NODE_ENV !== "production";
         const detail = err instanceof Error ? err.message : String(err);
@@ -788,22 +826,30 @@ const routes: FastifyPluginAsync = async (app) => {
           );
 
           if (plan) {
-            // Simulate adding this project to the active list to check limits
-            let newActivatedProjects: ProjectInfo[] = activeProjects
-              ? [...activeProjects]
-              : [];
-            newActivatedProjects.push(projectToToggle);
+            // Check max active projects limit first
+            const maxActiveProjects = plan.settingsMaxActiveProjects || 1;
+            const currentActiveCount = activeProjects?.length || 0;
 
-            const allowToggle = validateActiveProjects(
-              plan,
-              newActivatedProjects
-            );
-
-            if (!allowToggle) {
-              errorCode = "max_daily_runs";
-              errorMessage =
-                "User has reached the maximum number of daily runs. Please subscribe to a higher plan, if available.";
+            if (currentActiveCount >= maxActiveProjects) {
+              errorCode = "max_active_projects";
+              errorMessage = `You can only have ${maxActiveProjects} active project${maxActiveProjects === 1 ? "" : "s"} on your current plan. Please pause another project first, or upgrade your plan.`;
             } else {
+              // Simulate adding this project to the active list to check daily run limits
+              let newActivatedProjects: ProjectInfo[] = activeProjects
+                ? [...activeProjects]
+                : [];
+              newActivatedProjects.push(projectToToggle);
+
+              const allowToggle = validateActiveProjects(
+                plan,
+                newActivatedProjects
+              );
+
+              if (!allowToggle) {
+                errorCode = "max_daily_runs";
+                errorMessage =
+                  "User has reached the maximum number of daily runs. Please subscribe to a higher plan, if available.";
+              } else {
               // calculate next run time if plan limit are already met
               const analytics: UserAnalyticsDocument = await getUserAnalytics(
                 db,
@@ -822,6 +868,7 @@ const routes: FastifyPluginAsync = async (app) => {
                 dailyResearch.length + 1 > plan.settingsMaxDailyRuns
               );
               nStatus = status;
+              }
             }
           } else {
             errorCode = "user_plan_not_found";
