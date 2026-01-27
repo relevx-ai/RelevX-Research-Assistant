@@ -49,24 +49,25 @@ export default function ProjectsPage() {
         className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
       >
         <div>
-          <h1 className="text-4xl font-bold mb-2">Your Projects</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-2xl sm:text-4xl font-bold mb-2">Your Projects</h1>
+          <p className="text-sm sm:text-base text-muted-foreground">
             Manage your research projects and track ongoing investigations
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
           <motion.div
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             transition={{ type: "spring", stiffness: 400, damping: 17 }}
+            className="flex-1 sm:flex-none"
           >
             <Button
-              size="lg"
-              className="gap-2 shadow-md hover:shadow-xl transition-shadow duration-300"
+              size="default"
+              className="gap-2 shadow-md hover:shadow-xl transition-shadow duration-300 w-full sm:w-auto sm:size-lg"
               onClick={() => handleCreateProject()}
             >
-              <Plus className="w-5 h-5" />
-              New Project
+              <Plus className="w-4 h-4 sm:w-5 sm:h-5" />
+              <span>New Project</span>
             </Button>
           </motion.div>
 
@@ -78,7 +79,7 @@ export default function ProjectsPage() {
             <Button
               variant="outline"
               size="icon"
-              className="h-10 w-10 shadow-sm hover:shadow-md transition-shadow duration-300"
+              className="h-9 w-9 sm:h-10 sm:w-10 shadow-sm hover:shadow-md transition-shadow duration-300"
               onClick={() => refresh()}
             >
               <RefreshCw
@@ -91,7 +92,7 @@ export default function ProjectsPage() {
 
       {/* Loading State */}
       {loading && (
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
           {[1, 2, 3].map((i) => (
             <div key={i} className="h-64 rounded-xl bg-muted animate-pulse" />
           ))}
@@ -130,7 +131,7 @@ export default function ProjectsPage() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.5, delay: 0.1 }}
-          className="grid md:grid-cols-2 lg:grid-cols-3 gap-6"
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6"
         >
           <AnimatePresence mode="popLayout">
             {sortedProjects.map((project, index) => (
