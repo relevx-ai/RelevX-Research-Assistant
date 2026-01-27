@@ -522,7 +522,11 @@ export function EditProjectSettingsDialog({
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={isUpdating}>
+            <Button
+              type="submit"
+              disabled={isUpdating}
+              className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-md hover:shadow-xl hover:scale-105 transition-all duration-300"
+            >
               {isUpdating ? "Saving..." : "Save Changes"}
             </Button>
           </DialogFooter>
