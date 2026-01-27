@@ -94,12 +94,12 @@ export function Navbar() {
       <nav className="sticky top-0 z-40 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container-wide flex h-16 items-center justify-between">
           {/* Logo / Brand */}
-          <div className="flex items-center gap-6">
-            <Link href="/" className="flex items-center gap-2 group">
-              <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600">
-                <Sparkles className="w-5 h-5 text-white" />
+          <div className="flex items-center gap-2 sm:gap-6">
+            <Link href="/" className="flex items-center gap-1.5 sm:gap-2 group">
+              <div className="flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600">
+                <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
               </div>
-              <span className="text-xl font-bold gradient-text group-hover:opacity-80 transition-opacity">
+              <span className="text-lg sm:text-xl font-bold gradient-text group-hover:opacity-80 transition-opacity">
                 RelevX
               </span>
             </Link>
@@ -107,7 +107,7 @@ export function Navbar() {
             <Button
               variant="ghost"
               asChild
-              className="hidden sm:flex h-auto py-1.5 text-base font-medium transition-all duration-300 hover:scale-105 hover:bg-gradient-to-r hover:from-blue-500/10 hover:to-purple-600/10 hover:text-blue-600"
+              className="h-auto px-2 sm:px-3 py-1.5 text-sm sm:text-base font-medium transition-all duration-300 hover:scale-105 hover:bg-gradient-to-r hover:from-blue-500/10 hover:to-purple-600/10 hover:text-blue-600"
             >
               <Link href="/pricing">Pricing</Link>
             </Button>
@@ -116,7 +116,7 @@ export function Navbar() {
               <Button
                 variant="ghost"
                 asChild
-                className="hidden sm:flex h-auto py-1.5 text-base font-medium transition-all duration-300 hover:scale-105 hover:bg-gradient-to-r hover:from-blue-500/10 hover:to-purple-600/10 hover:text-blue-600"
+                className="h-auto px-2 sm:px-3 py-1.5 text-sm sm:text-base font-medium transition-all duration-300 hover:scale-105 hover:bg-gradient-to-r hover:from-blue-500/10 hover:to-purple-600/10 hover:text-blue-600"
               >
                 <Link href="/projects">Projects</Link>
               </Button>
