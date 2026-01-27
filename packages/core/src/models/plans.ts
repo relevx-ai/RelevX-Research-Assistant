@@ -8,6 +8,7 @@ export interface Plan {
   infoPerks: string[];
   infoPrice: number;
   settingsMaxDailyRuns: number;
+  settingsMaxActiveProjects: number;
 }
 
 export interface PlanInfo

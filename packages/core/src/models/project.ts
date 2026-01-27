@@ -117,6 +117,10 @@ export interface CreateProjectRequest {
 
 export interface CreateProjectResponse {
   project: ProjectInfo;
+  /** If true, the project was created as paused because the user has reached their active project limit */
+  createdAsPaused?: boolean;
+  /** The maximum number of active projects allowed on the user's plan */
+  maxActiveProjects?: number;
 }
 
 export interface ToggleProjectStatusResponse {

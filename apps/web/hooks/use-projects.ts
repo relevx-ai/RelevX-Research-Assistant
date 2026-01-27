@@ -9,6 +9,7 @@ import type {
   ProjectInfo,
   NewProject,
   ProjectStatus,
+  CreateProjectResponse,
 } from "../../../packages/core/src/models/project";
 import {
   subscribeToProjects,
@@ -26,7 +27,7 @@ interface UseProjectsResult {
   error: string | null;
   createProject: (
     data: Omit<NewProject, "userId">
-  ) => Promise<ProjectInfo | null>;
+  ) => Promise<CreateProjectResponse | null>;
   updateProject: (
     projectId: string,
     data: Partial<Omit<ProjectInfo, "updatedAt" | "createdAt">>
@@ -75,15 +76,15 @@ export function useProjects(
   }, [user?.uid, options.subscribe]);
 
   const createProject = useCallback(
-    async (data: Omit<NewProject, "userId">): Promise<ProjectInfo | null> => {
+    async (data: Omit<NewProject, "userId">): Promise<CreateProjectResponse | null> => {
       if (!user?.uid) {
         setError("User must be logged in to create a project");
         return null;
       }
 
       try {
-        const newProject = await createProjectService(data);
-        return newProject;
+        const response = await createProjectService(data);
+        return response;
       } catch (err) {
         const errorMessage =
           err instanceof Error ? err.message : "Failed to create project";

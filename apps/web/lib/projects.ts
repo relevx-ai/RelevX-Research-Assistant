@@ -24,7 +24,7 @@ let socket_connection_statis: "connecting" | "connected" | "disconnected" =
 /**
  * Create a new project for a user
  */
-export async function createProject(data: NewProject): Promise<ProjectInfo> {
+export async function createProject(data: NewProject): Promise<CreateProjectResponse> {
   try {
     // Set default settings if not provided
     const settings = data.settings || {
@@ -60,7 +60,7 @@ export async function createProject(data: NewProject): Promise<ProjectInfo> {
       throw new Error("Failed to create project");
     }
 
-    return response.project;
+    return response;
   } catch (error) {
     console.error("Error creating project:", error);
     throw error;
