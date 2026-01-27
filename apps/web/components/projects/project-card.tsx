@@ -14,7 +14,6 @@ import {
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -28,11 +27,12 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
-import { MoreVertical, Settings, Trash2, Clock, Calendar } from "lucide-react";
+import { MoreVertical, Settings, Trash2, Clock, Calendar, AlertCircle, ArrowRight } from "lucide-react";
 import { DeleteProjectDialog } from "./delete-project-dialog";
 import { EditProjectSettingsDialog } from "./edit-project-settings-dialog";
 import { ProjectDetailModal } from "./project-detail-modal";
 import { DAY_OF_WEEK_LABELS, formatDayOfMonth } from "@/lib/utils";
+import Link from "next/link";
 
 interface ProjectCardProps {
   project: ProjectInfo;
@@ -51,10 +51,12 @@ export function ProjectCard({ project }: ProjectCardProps) {
     open: boolean;
     title: string;
     message: string;
+    type?: "generic" | "max_active_projects";
   }>({
     open: false,
     title: "",
     message: "",
+    type: "generic",
   });
 
   const frequencyLabels = {
@@ -89,13 +91,32 @@ export function ProjectCard({ project }: ProjectCardProps) {
         await toggleProjectStatus(project.title, newStatus);
       }
     } catch (err: any) {
-      console.error("Failed to toggle project status:", err);
       // Check if it's a ProjectError with custom code
-      if (err.errorCode) {
+      if (err.errorCode === "max_active_projects") {
+        // This is an expected limit, show a helpful dialog without logging error
+        setErrorDialog({
+          open: true,
+          title: "Active Project Limit Reached",
+          message: err.errorMessage || "You have reached the maximum number of active projects on your current plan.",
+          type: "max_active_projects",
+        });
+      } else if (err.errorCode) {
+        // Other known errors
+        console.error("Failed to toggle project status:", err);
         setErrorDialog({
           open: true,
           title: "Action Failed",
           message: err.errorMessage || "An unexpected error occurred.",
+          type: "generic",
+        });
+      } else {
+        // Unknown errors
+        console.error("Failed to toggle project status:", err);
+        setErrorDialog({
+          open: true,
+          title: "Action Failed",
+          message: "An unexpected error occurred. Please try again.",
+          type: "generic",
         });
       }
     } finally {
@@ -248,8 +269,9 @@ export function ProjectCard({ project }: ProjectCardProps) {
         onOpenChange={setDetailModalOpen}
       />
 
+      {/* Generic Error Dialog */}
       <Dialog
-        open={errorDialog.open}
+        open={errorDialog.open && errorDialog.type === "generic"}
         onOpenChange={(open: boolean) =>
           setErrorDialog((prev) => ({ ...prev, open }))
         }
@@ -257,8 +279,8 @@ export function ProjectCard({ project }: ProjectCardProps) {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>{errorDialog.title}</DialogTitle>
-            <DialogDescription>{errorDialog.message}</DialogDescription>
           </DialogHeader>
+          <p className="text-sm text-muted-foreground">{errorDialog.message}</p>
           <DialogFooter>
             <Button
               onClick={() =>
@@ -267,6 +289,57 @@ export function ProjectCard({ project }: ProjectCardProps) {
               className="bg-gradient-to-r from-purple-600 to-violet-600 hover:from-purple-700 hover:to-violet-700 text-white shadow-md hover:shadow-xl hover:scale-105 transition-all duration-300"
             >
               OK
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Max Active Projects Limit Dialog */}
+      <Dialog
+        open={errorDialog.open && errorDialog.type === "max_active_projects"}
+        onOpenChange={(open: boolean) =>
+          setErrorDialog((prev) => ({ ...prev, open }))
+        }
+      >
+        <DialogContent className="sm:max-w-[450px]">
+          <DialogHeader>
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-10 h-10 rounded-lg bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
+                <AlertCircle className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+              </div>
+              <DialogTitle>{errorDialog.title}</DialogTitle>
+            </div>
+          </DialogHeader>
+
+          <div className="text-left space-y-3 text-sm text-muted-foreground">
+            <p>
+              You can only have <span className="font-medium text-foreground">1 active project</span> on your current plan.
+            </p>
+            <p>
+              To activate this project, you can either:
+            </p>
+            <ul className="list-disc list-inside space-y-1">
+              <li>Pause your currently active project first</li>
+              <li>Upgrade your plan to run more projects simultaneously</li>
+            </ul>
+          </div>
+
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setErrorDialog((prev) => ({ ...prev, open: false }))}
+            >
+              Got it
+            </Button>
+            <Button
+              asChild
+              className="gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-md hover:shadow-lg transition-all duration-300"
+            >
+              <Link href="/pricing">
+                View Plans
+                <ArrowRight className="w-4 h-4" />
+              </Link>
             </Button>
           </DialogFooter>
         </DialogContent>
