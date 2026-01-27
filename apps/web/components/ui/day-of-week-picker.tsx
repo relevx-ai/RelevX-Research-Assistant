@@ -25,7 +25,7 @@ export function DayOfWeekPicker({
   disabled = false,
 }: DayOfWeekPickerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const itemHeight = 40;
+  const itemHeight = 36;
 
   // Scroll to selected item on mount and value changes
   useEffect(() => {
@@ -51,10 +51,10 @@ export function DayOfWeekPicker({
   };
 
   return (
-    <div className="relative w-32 h-[120px]">
-      <div className="absolute top-0 left-0 right-0 h-10 bg-gradient-to-b from-background to-transparent pointer-events-none z-10" />
-      <div className="absolute bottom-0 left-0 right-0 h-10 bg-gradient-to-t from-background to-transparent pointer-events-none z-10" />
-      <div className="absolute top-1/2 left-0 right-0 h-10 -mt-5 bg-primary/10 border-y border-primary/20 pointer-events-none z-10 rounded-md" />
+    <div className="relative w-full max-w-[10rem] h-[108px]">
+      <div className="absolute top-0 left-0 right-0 h-9 bg-gradient-to-b from-background to-transparent pointer-events-none z-10" />
+      <div className="absolute bottom-0 left-0 right-0 h-9 bg-gradient-to-t from-background to-transparent pointer-events-none z-10" />
+      <div className="absolute top-1/2 left-0 right-0 h-9 -mt-[18px] bg-primary/10 border-y border-primary/20 pointer-events-none z-10 rounded-md" />
 
       <div
         ref={containerRef}
@@ -74,8 +74,8 @@ export function DayOfWeekPicker({
             className={cn(
               "flex items-center justify-center cursor-pointer transition-all duration-200",
               day.value === value
-                ? "text-foreground font-semibold text-lg"
-                : "text-muted-foreground text-sm"
+                ? "text-foreground font-semibold text-base sm:text-lg"
+                : "text-muted-foreground text-xs sm:text-sm"
             )}
             style={{ height: itemHeight }}
             onClick={() => !disabled && onChange(day.value)}

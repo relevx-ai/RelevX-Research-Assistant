@@ -105,7 +105,7 @@ export default function HomePage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.2 }}
-            className="text-5xl md:text-7xl font-bold tracking-tight mb-6"
+            className="text-3xl sm:text-5xl md:text-7xl font-bold tracking-tight mb-6"
           >
             Stay Informed, <span className="gradient-text">Effortlessly</span>
           </motion.h1>
@@ -185,7 +185,7 @@ export default function HomePage() {
           </p>
         </motion.div>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
           {features.map((feature, index) => (
             <motion.div
               key={feature.title}
@@ -224,7 +224,7 @@ export default function HomePage() {
               research briefs so you get the insights without the extra reading.
             </CardDescription>
           </CardHeader>
-          <div className="grid md:grid-cols-3 gap-6 mt-4 text-center">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 mt-4 text-center">
             <div className="rounded-lg border border-border/50 p-4 bg-muted/20">
               <p className="text-sm text-muted-foreground mb-2">RelevX</p>
               <p className="font-semibold">
@@ -247,7 +247,7 @@ export default function HomePage() {
 
       {/* Trust Section */}
       <section className="container-wide py-12">
-        <div className="grid md:grid-cols-3 gap-6 text-center">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 text-center">
           <Card className="glass-dark p-6">
             <p className="text-3xl font-bold gradient-text mb-2">3–5 hrs</p>
             <p className="text-muted-foreground">
@@ -284,7 +284,7 @@ export default function HomePage() {
           </p>
         </motion.div>
 
-        <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-8 max-w-5xl mx-auto">
           {[
             {
               step: "01",
