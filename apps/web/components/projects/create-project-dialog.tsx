@@ -24,9 +24,10 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { Sparkles, Calendar, ChevronDown, Settings, Loader2 } from "lucide-react";
+import { Sparkles, Calendar, ChevronDown, Settings, Loader2, Info, ArrowRight } from "lucide-react";
 import { useProjects } from "@/hooks/use-projects";
 import { relevx_api } from "@/lib/client";
+import Link from "next/link";
 
 interface CreateProjectDialogProps {
   open: boolean;
@@ -60,6 +61,8 @@ export function CreateProjectDialog({
   const [isEnhancing, setIsEnhancing] = useState(false);
   const [suggestedDescription, setSuggestedDescription] = useState("");
   const [isSuggestionDialogOpen, setIsSuggestionDialogOpen] = useState(false);
+  const [pausedInfoDialogOpen, setPausedInfoDialogOpen] = useState(false);
+  const [maxActiveProjects, setMaxActiveProjects] = useState(1);
 
   // Helper function to parse comma-separated or newline-separated values
   const parseList = (value: string): string[] => {
@@ -164,7 +167,7 @@ export function CreateProjectDialog({
         cprojectinfo.dayOfMonth = dayOfMonth;
       }
 
-      await createProject({
+      const response = await createProject({
         ...cprojectinfo,
         ...(Object.keys(searchParameters).length > 0 && { searchParameters }),
       });
@@ -182,6 +185,12 @@ export function CreateProjectDialog({
       setRequiredKeywords("");
       setExcludedKeywords("");
       onOpenChange(false);
+
+      // Show paused info dialog if the project was created as paused
+      if (response?.createdAsPaused) {
+        setMaxActiveProjects(response.maxActiveProjects || 1);
+        setPausedInfoDialogOpen(true);
+      }
     } catch (err) {
       console.error("Failed to create project:", err);
       setError("Failed to create project. Please try again.");
@@ -582,6 +591,53 @@ export function CreateProjectDialog({
                 Accept Suggestion
               </Button>
             </div>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Paused Project Info Dialog */}
+      <Dialog open={pausedInfoDialogOpen} onOpenChange={setPausedInfoDialogOpen}>
+        <DialogContent className="sm:max-w-[450px]">
+          <DialogHeader>
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                <Info className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+              </div>
+              <DialogTitle>Project Created as Paused</DialogTitle>
+            </div>
+          </DialogHeader>
+
+          <div className="text-left space-y-3 text-sm text-muted-foreground">
+            <p>
+              Your project has been created successfully, but it's currently <span className="font-medium text-foreground">paused</span> because 
+              you can only have {maxActiveProjects} active project{maxActiveProjects === 1 ? "" : "s"} on your current plan.
+            </p>
+            <p>
+              To activate this project, you can either:
+            </p>
+            <ul className="list-disc list-inside space-y-1">
+              <li>Pause one of your currently active projects</li>
+              <li>Upgrade your plan to run more projects simultaneously</li>
+            </ul>
+          </div>
+
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setPausedInfoDialogOpen(false)}
+            >
+              Got it
+            </Button>
+            <Button
+              asChild
+              className="gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-md hover:shadow-lg transition-all duration-300"
+            >
+              <Link href="/pricing">
+                View Plans
+                <ArrowRight className="w-4 h-4" />
+              </Link>
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
