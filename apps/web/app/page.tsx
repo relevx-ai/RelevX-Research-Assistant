@@ -196,9 +196,7 @@ export default function HomePage() {
             >
               <Card className="h-full glass-card group">
                 <CardHeader>
-                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-teal-500 to-teal-600 flex items-center justify-center mb-4 shadow-glow-sm group-hover:shadow-glow-md transition-shadow duration-300">
-                    <feature.icon className="w-6 h-6 text-white" />
-                  </div>
+                  <feature.icon className="w-7 h-7 text-teal-400 mb-4 group-hover:text-teal-300 transition-colors duration-300" />
                   <CardTitle className="text-xl mb-2">
                     {feature.title}
                   </CardTitle>
