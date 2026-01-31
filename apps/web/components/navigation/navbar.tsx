@@ -91,12 +91,12 @@ export function Navbar() {
 
   return (
     <>
-      <nav className="sticky top-0 z-40 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <nav className="sticky top-0 z-40 w-full border-b border-purple-500/10 bg-background/80 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60">
         <div className="container-wide flex h-16 items-center justify-between">
           {/* Logo / Brand */}
           <div className="flex items-center gap-2 sm:gap-6">
             <Link href="/" className="flex items-center gap-1.5 sm:gap-2 group">
-              <div className="flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600">
+              <div className="flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 shadow-glow-sm group-hover:shadow-glow-md transition-shadow">
                 <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
               </div>
               <span className="text-lg sm:text-xl font-bold gradient-text group-hover:opacity-80 transition-opacity">
@@ -107,7 +107,7 @@ export function Navbar() {
             <Button
               variant="ghost"
               asChild
-              className="h-auto px-2 sm:px-3 py-1.5 text-sm sm:text-base font-medium transition-all duration-300 hover:scale-105 hover:bg-gradient-to-r hover:from-blue-500/10 hover:to-purple-600/10 hover:text-blue-600"
+              className="h-auto px-2 sm:px-3 py-1.5 text-sm sm:text-base font-medium transition-all duration-300 hover:scale-105 hover:bg-purple-500/10 hover:text-purple-300"
             >
               <Link href="/pricing">Pricing</Link>
             </Button>
@@ -116,7 +116,7 @@ export function Navbar() {
               <Button
                 variant="ghost"
                 asChild
-                className="h-auto px-2 sm:px-3 py-1.5 text-sm sm:text-base font-medium transition-all duration-300 hover:scale-105 hover:bg-gradient-to-r hover:from-blue-500/10 hover:to-purple-600/10 hover:text-blue-600"
+                className="h-auto px-2 sm:px-3 py-1.5 text-sm sm:text-base font-medium transition-all duration-300 hover:scale-105 hover:bg-purple-500/10 hover:text-purple-300"
               >
                 <Link href="/projects">Projects</Link>
               </Button>
@@ -147,16 +147,16 @@ export function Navbar() {
                     </span>
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-60 p-2">
+                <DropdownMenuContent align="end" className="w-60 p-2 glass-card border-purple-500/20">
                   <div className="flex items-center justify-start gap-3 p-2 mb-1">
                     {user.photoURL ? (
                       <img
                         src={user.photoURL}
                         alt={user.displayName || "User"}
-                        className="w-10 h-10 rounded-full border border-border"
+                        className="w-10 h-10 rounded-full border border-purple-500/30"
                       />
                     ) : (
-                      <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center border border-border">
+                      <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center border border-purple-500/30">
                         <User className="w-5 h-5" />
                       </div>
                     )}
@@ -186,10 +186,10 @@ export function Navbar() {
                     </div>
                   </div>
 
-                  <DropdownMenuSeparator />
+                  <DropdownMenuSeparator className="bg-purple-500/20" />
                   <DropdownMenuItem
                     onClick={() => router.push("/pricing")}
-                    className="gap-2 cursor-pointer focus:text-blue-600 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/10"
+                    className="gap-2 cursor-pointer focus:text-purple-300 hover:text-purple-300 hover:bg-purple-500/10"
                   >
                     <CreditCard className="w-4 h-4" />
                     Pricing
@@ -197,16 +197,16 @@ export function Navbar() {
 
                   <DropdownMenuItem
                     onClick={handleUserBillingClicked}
-                    className="gap-2 cursor-pointer focus:text-blue-600 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/10"
+                    className="gap-2 cursor-pointer focus:text-purple-300 hover:text-purple-300 hover:bg-purple-500/10"
                   >
                     <Receipt className="w-4 h-4" />
                     Billing
                   </DropdownMenuItem>
 
-                  <DropdownMenuSeparator />
+                  <DropdownMenuSeparator className="bg-purple-500/20" />
                   <DropdownMenuItem
                     onClick={handleSignOut}
-                    className="gap-2 text-red-600 focus:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/10 cursor-pointer"
+                    className="gap-2 text-red-400 focus:text-red-300 hover:bg-red-500/10 cursor-pointer"
                   >
                     <LogOut className="w-4 h-4" />
                     Sign Out
@@ -217,7 +217,7 @@ export function Navbar() {
               <Button
                 onClick={handleSignIn}
                 variant="default"
-                className="shadow-lg shadow-blue-500/20 transition-all duration-300 hover:scale-105 hover:shadow-blue-500/40"
+                className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 shadow-glow-sm transition-all duration-300 hover:scale-105 hover:shadow-glow-md border-0"
               >
                 Sign In with Google
               </Button>

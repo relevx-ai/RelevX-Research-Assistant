@@ -141,8 +141,8 @@ export function ProjectCard({ project }: ProjectCardProps) {
   return (
     <>
       <Card
-        className={`group hover:shadow-xl hover:shadow-primary/10 hover:scale-[1.02] transition-all duration-300 glass-dark h-full flex flex-col cursor-pointer ${
-          project.status === "running" ? "!border-red-500 !border-2" : ""
+        className={`group glass-card hover:scale-[1.02] transition-all duration-300 h-full flex flex-col cursor-pointer ${
+          project.status === "running" ? "!border-purple-500 !border-2 shadow-glow-sm" : ""
         }`}
         onClick={handleCardClick}
       >
@@ -175,9 +175,9 @@ export function ProjectCard({ project }: ProjectCardProps) {
                   <span className="sr-only">Open menu</span>
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
+              <DropdownMenuContent align="end" className="glass-card border-purple-500/20">
                 <DropdownMenuItem
-                  className="gap-2"
+                  className="gap-2 hover:bg-purple-500/10 focus:bg-purple-500/10"
                   onClick={(e) => {
                     e.stopPropagation();
                     if (project.status === "running") {
@@ -195,9 +195,9 @@ export function ProjectCard({ project }: ProjectCardProps) {
                   <Settings className="w-4 h-4" />
                   Settings
                 </DropdownMenuItem>
-                <DropdownMenuSeparator />
+                <DropdownMenuSeparator className="bg-purple-500/20" />
                 <DropdownMenuItem
-                  className="gap-2 text-destructive focus:text-destructive"
+                  className="gap-2 text-red-400 focus:text-red-300 hover:bg-red-500/10 focus:bg-red-500/10"
                   onClick={(e) => {
                     e.stopPropagation();
                     setDeleteDialogOpen(true);
@@ -210,7 +210,7 @@ export function ProjectCard({ project }: ProjectCardProps) {
             </DropdownMenu>
           </div>
 
-          <CardDescription className="line-clamp-3">
+          <CardDescription className="line-clamp-3 text-muted-foreground/80">
             {project.description}
           </CardDescription>
         </CardHeader>
@@ -218,15 +218,15 @@ export function ProjectCard({ project }: ProjectCardProps) {
         <CardContent className="flex-1">
           <div className="space-y-3">
             <div className="flex items-center gap-2 text-sm">
-              <Clock className="w-4 h-4 text-muted-foreground" />
-              <span className="text-muted-foreground">Frequency:</span>
+              <Clock className="w-4 h-4 text-purple-400/60" />
+              <span className="text-muted-foreground/70">Frequency:</span>
               <span className="font-medium">{getFrequencyDisplay()}</span>
             </div>
 
             {project.deliveryTime && project.timezone && (
               <div className="flex items-center gap-2 text-sm">
-                <Clock className="w-4 h-4 text-muted-foreground" />
-                <span className="text-muted-foreground">Time:</span>
+                <Clock className="w-4 h-4 text-purple-400/60" />
+                <span className="text-muted-foreground/70">Time:</span>
                 <span className="font-medium">
                   {formatTime12Hour(project.deliveryTime)}{" "}
                   {project.timezone.split("/")[1]?.replace(/_/g, " ") ||
@@ -237,8 +237,8 @@ export function ProjectCard({ project }: ProjectCardProps) {
           </div>
         </CardContent>
 
-        <CardFooter className="border-t border-border/50 pt-4">
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+        <CardFooter className="border-t border-purple-500/10 pt-4">
+          <div className="flex items-center gap-2 text-xs text-muted-foreground/60">
             <Calendar className="w-3 h-3" />
             <span>
               Created {new Date(project.createdAt).toLocaleDateString()}
