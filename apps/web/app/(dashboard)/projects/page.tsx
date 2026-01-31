@@ -49,8 +49,10 @@ export default function ProjectsPage() {
         className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
       >
         <div>
-          <h1 className="text-2xl sm:text-4xl font-bold mb-2">Your Projects</h1>
-          <p className="text-sm sm:text-base text-muted-foreground">
+          <h1 className="text-2xl sm:text-4xl font-bold mb-2">
+            Your <span className="gradient-text">Projects</span>
+          </h1>
+          <p className="text-sm sm:text-base text-muted-foreground/80">
             Manage your research projects and track ongoing investigations
           </p>
         </div>
@@ -63,7 +65,7 @@ export default function ProjectsPage() {
           >
             <Button
               size="default"
-              className="gap-2 shadow-md hover:shadow-xl transition-shadow duration-300 w-full sm:w-auto sm:size-lg"
+              className="gap-2 shadow-glow-sm hover:shadow-glow-md transition-all duration-300 w-full sm:w-auto sm:size-lg"
               onClick={() => handleCreateProject()}
             >
               <Plus className="w-4 h-4 sm:w-5 sm:h-5" />
@@ -79,7 +81,7 @@ export default function ProjectsPage() {
             <Button
               variant="outline"
               size="icon"
-              className="h-9 w-9 sm:h-10 sm:w-10 shadow-sm hover:shadow-md transition-shadow duration-300"
+              className="h-9 w-9 sm:h-10 sm:w-10 transition-all duration-300"
               onClick={() => refresh()}
             >
               <RefreshCw
@@ -94,7 +96,7 @@ export default function ProjectsPage() {
       {loading && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="h-64 rounded-xl bg-muted animate-pulse" />
+            <div key={i} className="h-64 rounded-xl bg-muted/30 animate-pulse border border-teal-500/10" />
           ))}
         </div>
       )}
@@ -105,11 +107,11 @@ export default function ProjectsPage() {
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.5 }}
-          className="col-span-full text-center py-20 border-2 border-dashed border-border rounded-xl"
+          className="col-span-full text-center py-20 border-2 border-dashed border-teal-500/20 rounded-xl glass-card"
         >
-          <FolderOpen className="w-16 h-16 mx-auto mb-4 text-muted-foreground" />
+          <FolderOpen className="w-16 h-16 mx-auto mb-4 text-teal-400/60" />
           <h3 className="text-xl font-semibold mb-2">No projects yet</h3>
-          <p className="text-muted-foreground mb-6">
+          <p className="text-muted-foreground/80 mb-6">
             Create your first project to start tracking research topics
           </p>
           <motion.div
@@ -117,7 +119,7 @@ export default function ProjectsPage() {
             whileTap={{ scale: 0.95 }}
             transition={{ type: "spring", stiffness: 400, damping: 17 }}
           >
-            <Button onClick={() => handleCreateProject()} className="gap-2 shadow-md hover:shadow-xl transition-shadow duration-300">
+            <Button onClick={() => handleCreateProject()} className="gap-2 shadow-glow-sm hover:shadow-glow-md transition-all duration-300">
               <Plus className="w-4 h-4" />
               Create Project
             </Button>

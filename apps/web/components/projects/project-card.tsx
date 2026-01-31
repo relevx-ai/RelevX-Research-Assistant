@@ -141,8 +141,8 @@ export function ProjectCard({ project }: ProjectCardProps) {
   return (
     <>
       <Card
-        className={`group hover:shadow-xl hover:shadow-primary/10 hover:scale-[1.02] transition-all duration-300 glass-dark h-full flex flex-col cursor-pointer ${
-          project.status === "running" ? "!border-red-500 !border-2" : ""
+        className={`group glass-card hover:scale-[1.02] transition-all duration-300 h-full flex flex-col cursor-pointer ${
+          project.status === "running" ? "!border-teal-500 !border-2 shadow-glow-sm" : ""
         }`}
         onClick={handleCardClick}
       >
@@ -175,9 +175,9 @@ export function ProjectCard({ project }: ProjectCardProps) {
                   <span className="sr-only">Open menu</span>
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
+              <DropdownMenuContent align="end" className="glass-card border-teal-500/20">
                 <DropdownMenuItem
-                  className="gap-2"
+                  className="gap-2 hover:bg-teal-500/10 focus:bg-teal-500/10"
                   onClick={(e) => {
                     e.stopPropagation();
                     if (project.status === "running") {
@@ -195,9 +195,9 @@ export function ProjectCard({ project }: ProjectCardProps) {
                   <Settings className="w-4 h-4" />
                   Settings
                 </DropdownMenuItem>
-                <DropdownMenuSeparator />
+                <DropdownMenuSeparator className="bg-teal-500/20" />
                 <DropdownMenuItem
-                  className="gap-2 text-destructive focus:text-destructive"
+                  className="gap-2 text-red-400 focus:text-red-300 hover:bg-red-500/10 focus:bg-red-500/10"
                   onClick={(e) => {
                     e.stopPropagation();
                     setDeleteDialogOpen(true);
@@ -210,7 +210,7 @@ export function ProjectCard({ project }: ProjectCardProps) {
             </DropdownMenu>
           </div>
 
-          <CardDescription className="line-clamp-3">
+          <CardDescription className="line-clamp-3 text-muted-foreground/80">
             {project.description}
           </CardDescription>
         </CardHeader>
@@ -218,15 +218,15 @@ export function ProjectCard({ project }: ProjectCardProps) {
         <CardContent className="flex-1">
           <div className="space-y-3">
             <div className="flex items-center gap-2 text-sm">
-              <Clock className="w-4 h-4 text-muted-foreground" />
-              <span className="text-muted-foreground">Frequency:</span>
+              <Clock className="w-4 h-4 text-teal-400/60" />
+              <span className="text-muted-foreground/70">Frequency:</span>
               <span className="font-medium">{getFrequencyDisplay()}</span>
             </div>
 
             {project.deliveryTime && project.timezone && (
               <div className="flex items-center gap-2 text-sm">
-                <Clock className="w-4 h-4 text-muted-foreground" />
-                <span className="text-muted-foreground">Time:</span>
+                <Clock className="w-4 h-4 text-teal-400/60" />
+                <span className="text-muted-foreground/70">Time:</span>
                 <span className="font-medium">
                   {formatTime12Hour(project.deliveryTime)}{" "}
                   {project.timezone.split("/")[1]?.replace(/_/g, " ") ||
@@ -237,8 +237,8 @@ export function ProjectCard({ project }: ProjectCardProps) {
           </div>
         </CardContent>
 
-        <CardFooter className="border-t border-border/50 pt-4">
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+        <CardFooter className="border-t border-teal-500/10 pt-4">
+          <div className="flex items-center gap-2 text-xs text-muted-foreground/60">
             <Calendar className="w-3 h-3" />
             <span>
               Created {new Date(project.createdAt).toLocaleDateString()}
@@ -286,7 +286,7 @@ export function ProjectCard({ project }: ProjectCardProps) {
               onClick={() =>
                 setErrorDialog((prev) => ({ ...prev, open: false }))
               }
-              className="bg-gradient-to-r from-purple-600 to-violet-600 hover:from-purple-700 hover:to-violet-700 text-white shadow-md hover:shadow-xl hover:scale-105 transition-all duration-300"
+              className="bg-gradient-to-r from-teal-600 to-teal-500 hover:from-teal-500 hover:to-teal-400 text-white shadow-md hover:shadow-xl hover:scale-105 transition-all duration-300"
             >
               OK
             </Button>
@@ -334,7 +334,7 @@ export function ProjectCard({ project }: ProjectCardProps) {
             </Button>
             <Button
               asChild
-              className="gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-md hover:shadow-lg transition-all duration-300"
+              className="gap-2 bg-gradient-to-r from-coral-500 to-coral-600 hover:from-coral-400 hover:to-coral-500 text-white shadow-md hover:shadow-lg transition-all duration-300"
             >
               <Link href="/pricing">
                 View Plans

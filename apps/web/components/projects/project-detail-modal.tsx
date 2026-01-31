@@ -90,7 +90,7 @@ export function ProjectDetailModal({
           {/* Header */}
           <div className="flex items-center justify-between p-4 sm:p-6 border-b border-border/50">
             <div className="flex items-center gap-3 min-w-0">
-              <div className="w-8 h-8 sm:w-10 sm:h-10 shrink-0 rounded-lg bg-gradient-to-br from-purple-500 to-violet-600 flex items-center justify-center">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 shrink-0 rounded-lg bg-gradient-to-br from-teal-500 to-teal-600 flex items-center justify-center">
                 <LayoutDashboard className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
               </div>
               <div className="min-w-0">
@@ -125,7 +125,7 @@ export function ProjectDetailModal({
                   onClick={() => setActiveTab(tab.id)}
                   className={`flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-4 py-3 text-xs sm:text-sm font-medium border-b-2 rounded-t-lg transition-all duration-200 whitespace-nowrap ${
                     activeTab === tab.id
-                      ? "border-purple-500 text-purple-400 bg-purple-500/5"
+                      ? "border-teal-500 text-teal-400 bg-teal-500/5"
                       : "border-transparent text-muted-foreground hover:border-border hover:bg-accent hover:text-accent-foreground"
                   }`}
                 >
@@ -266,7 +266,7 @@ function OverviewTab({ project }: { project: ProjectInfo }) {
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
           <div className="p-4 rounded-lg border border-border/50 bg-muted/20 hover:bg-muted/30 transition-colors">
             <div className="flex items-center gap-2 mb-2">
-              <Clock className="w-4 h-4 text-purple-400" />
+              <Clock className="w-4 h-4 text-teal-400" />
               <span className="text-xs text-muted-foreground">Frequency</span>
             </div>
             <p className="font-semibold text-foreground">
@@ -276,7 +276,7 @@ function OverviewTab({ project }: { project: ProjectInfo }) {
 
           <div className="p-4 rounded-lg border border-border/50 bg-muted/20 hover:bg-muted/30 transition-colors">
             <div className="flex items-center gap-2 mb-2">
-              <Clock className="w-4 h-4 text-purple-400" />
+              <Clock className="w-4 h-4 text-teal-400" />
               <span className="text-xs text-muted-foreground">
                 Delivery Time
               </span>
@@ -292,7 +292,7 @@ function OverviewTab({ project }: { project: ProjectInfo }) {
 
           <div className="p-4 rounded-lg border border-border/50 bg-muted/20 hover:bg-muted/30 transition-colors">
             <div className="flex items-center gap-2 mb-2">
-              <Calendar className="w-4 h-4 text-purple-400" />
+              <Calendar className="w-4 h-4 text-teal-400" />
               <span className="text-xs text-muted-foreground">Next Run</span>
             </div>
             <p className="font-semibold text-foreground text-sm">
@@ -495,7 +495,7 @@ function DeliveryHistoryTab({ project }: { project: ProjectInfo }) {
                           }: {
                             children?: React.ReactNode;
                           }) => (
-                            <h2 className="text-xl font-bold text-foreground mt-10 mb-4 pb-2 border-b border-purple-500/30">
+                            <h2 className="text-xl font-bold text-foreground mt-10 mb-4 pb-2 border-b border-teal-500/30">
                               {children}
                             </h2>
                           ),
@@ -543,7 +543,7 @@ function DeliveryHistoryTab({ project }: { project: ProjectInfo }) {
                           }: {
                             children?: React.ReactNode;
                           }) => (
-                            <ol className="mb-6 pl-6 space-y-3 text-foreground/80 list-decimal marker:text-purple-400">
+                            <ol className="mb-6 pl-6 space-y-3 text-foreground/80 list-decimal marker:text-teal-400">
                               {children}
                             </ol>
                           ),
@@ -565,7 +565,7 @@ function DeliveryHistoryTab({ project }: { project: ProjectInfo }) {
                             }
                             return (
                               <li className="text-base leading-7 flex gap-3">
-                                <span className="text-purple-400 mt-0.5 shrink-0">
+                                <span className="text-teal-400 mt-0.5 shrink-0">
                                   •
                                 </span>
                                 <span>{children}</span>
@@ -586,7 +586,7 @@ function DeliveryHistoryTab({ project }: { project: ProjectInfo }) {
                           }: {
                             children?: React.ReactNode;
                           }) => (
-                            <em className="text-foreground/90 bg-purple-500/10 px-1 rounded not-italic">
+                            <em className="text-foreground/90 bg-teal-500/10 px-1 rounded not-italic">
                               {children}
                             </em>
                           ),
@@ -595,7 +595,7 @@ function DeliveryHistoryTab({ project }: { project: ProjectInfo }) {
                           }: {
                             children?: React.ReactNode;
                           }) => (
-                            <blockquote className="my-6 py-4 px-5 bg-muted/50 border-l-4 border-purple-500 rounded-r-lg text-foreground/70">
+                            <blockquote className="my-6 py-4 px-5 bg-muted/50 border-l-4 border-teal-500 rounded-r-lg text-foreground/70">
                               {children}
                             </blockquote>
                           ),
@@ -612,7 +612,7 @@ function DeliveryHistoryTab({ project }: { project: ProjectInfo }) {
                                 {children}
                               </code>
                             ) : (
-                              <code className="text-sm font-mono text-purple-200">
+                              <code className="text-sm font-mono text-teal-200">
                                 {children}
                               </code>
                             );
@@ -627,7 +627,7 @@ function DeliveryHistoryTab({ project }: { project: ProjectInfo }) {
                             </pre>
                           ),
                           hr: () => (
-                            <hr className="my-8 border-none h-px bg-gradient-to-r from-transparent via-purple-500/30 to-transparent" />
+                            <hr className="my-8 border-none h-px bg-gradient-to-r from-transparent via-teal-500/30 to-transparent" />
                           ),
                         }}
                       >

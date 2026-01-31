@@ -81,39 +81,41 @@ function PricingContent() {
 
       <div className="container py-6 sm:py-8 px-4 sm:px-6 max-w-5xl mx-auto">
         <div className="text-center mb-8 sm:mb-10">
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight mb-2">Pricing Plans</h1>
-          <p className="text-sm sm:text-base text-muted-foreground">
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight mb-2">
+            <span className="gradient-text">Pricing</span> Plans
+          </h1>
+          <p className="text-sm sm:text-base text-muted-foreground/80">
             Choose the plan that best fits your research needs.
           </p>
         </div>
 
         <div className="grid gap-4 sm:gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
           {plans.map((plan) => (
-            <Card key={plan.id} className="flex flex-col">
+            <Card key={plan.id} className="flex flex-col glass-card">
               <CardHeader>
                 <CardTitle className="text-xl capitalize">{plan.infoName}</CardTitle>
-                <CardDescription>
+                <CardDescription className="text-muted-foreground/80">
                   {plan.infoDescription}
                 </CardDescription>
               </CardHeader>
               <CardContent className="flex-1">
                 <div className="space-y-4">
                   <div className="flex items-baseline justify-start pb-4">
-                    <span className="text-xl font-medium text-muted-foreground mr-1 self-start">US</span>
-                    <span className="text-5xl font-bold">
+                    <span className="text-xl font-medium text-muted-foreground/60 mr-1 self-start">US</span>
+                    <span className="text-5xl font-bold gradient-text">
                       ${plan.infoPrice ?? "0"}
                     </span>
                   </div>
 
                   {userProfile && userProfile.planId == plan.id ? (
-                    <Button className="rounded-lg px-6 bg-gradient-to-r from-white-500 to-green-700 text-white w-full" disabled>
+                    <Button className="rounded-lg px-6 bg-gradient-to-r from-green-600 to-emerald-600 text-white w-full shadow-[0_0_20px_rgba(16,185,129,0.3)]" disabled>
                       Current Plan
                     </Button>
                   ) : (
                     <Button
-                      className={`rounded-lg px-6 text-white shadow-md transition-all duration-300 w-full ${plan.infoPrice === 0 && userProfile?.freeTrailRedeemed
-                        ? "bg-gradient-to-r from-white-500 to-blue-600 cursor-not-allowed opacity-90 shadow-none"
-                        : "bg-gradient-to-r from-white-500 to-red-600 hover:shadow-lg hover:from-white-500 hover:to-green-700 hover:scale-105"
+                      className={`rounded-lg px-6 text-white transition-all duration-300 w-full ${plan.infoPrice === 0 && userProfile?.freeTrailRedeemed
+                        ? "bg-muted/50 cursor-not-allowed opacity-70 shadow-none"
+                        : "bg-gradient-to-r from-teal-600 to-teal-500 hover:from-teal-500 hover:to-teal-400 shadow-glow-sm hover:shadow-glow-md hover:scale-105"
                         }`}
                       onClick={() => {
                         if (plan.infoPrice === 0 && userProfile?.freeTrailRedeemed) return;
@@ -127,12 +129,12 @@ function PricingContent() {
                 </div>
 
                 <div className="mt-6">
-                  <p className="font-semibold text-sm mb-3">{plan.infoPerksHeader}</p>
+                  <p className="font-semibold text-sm mb-3 text-teal-300">{plan.infoPerksHeader}</p>
                   <ul className="space-y-3 text-sm">
                     {plan.infoPerks?.map((perk, i) => (
                       <li key={i} className="flex items-center gap-2">
-                        <Check className="h-4 w-4 text-primary flex-shrink-0" />
-                        <span>{perk}</span>
+                        <Check className="h-4 w-4 text-teal-400 flex-shrink-0" />
+                        <span className="text-muted-foreground/90">{perk}</span>
                       </li>
                     ))}
                   </ul>

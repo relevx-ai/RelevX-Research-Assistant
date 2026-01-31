@@ -231,7 +231,7 @@ export function CreateProjectDialog({
         <DialogContent className="sm:max-w-[750px] max-h-[85vh] flex flex-col overflow-hidden">
           <DialogHeader>
             <div className="flex items-center gap-3 mb-2">
-              <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
+              <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-teal-500 to-teal-600 flex items-center justify-center">
                 <Sparkles className="w-5 h-5 text-white" />
               </div>
               <DialogTitle>Create New Project</DialogTitle>
@@ -525,7 +525,7 @@ export function CreateProjectDialog({
               <Button
                 type="submit"
                 disabled={isCreating}
-                className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-md hover:shadow-xl hover:scale-105 transition-all duration-300"
+                className="bg-gradient-to-r from-teal-600 to-teal-500 hover:from-teal-500 hover:to-teal-400 text-white shadow-md hover:shadow-xl hover:scale-105 transition-all duration-300"
               >
                 {isCreating ? "Creating..." : "Create Project"}
               </Button>
@@ -538,7 +538,7 @@ export function CreateProjectDialog({
         <DialogContent className="sm:max-w-[600px]">
           <DialogHeader>
             <div className="flex items-center gap-3 mb-2">
-              <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center">
+              <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-coral-500 to-coral-600 flex items-center justify-center">
                 <Sparkles className="w-5 h-5 text-white" />
               </div>
               <DialogTitle>AI Improved Description</DialogTitle>
@@ -550,10 +550,10 @@ export function CreateProjectDialog({
           </DialogHeader>
 
           <div className="py-4">
-            <div className="rounded-lg border border-purple-100 dark:border-purple-900 bg-purple-50/30 dark:bg-purple-900/10 p-4 min-h-[120px] text-sm leading-relaxed whitespace-pre-line">
+            <div className="rounded-lg border border-coral-100 dark:border-coral-900 bg-coral-50/30 dark:bg-coral-900/10 p-4 min-h-[120px] text-sm leading-relaxed whitespace-pre-line">
               {isEnhancing ? (
                 <div className="flex flex-col items-center justify-center h-full space-y-3 py-6">
-                  <Loader2 className="h-6 w-6 animate-spin text-purple-500" />
+                  <Loader2 className="h-6 w-6 animate-spin text-coral-500" />
                   <p className="text-muted-foreground animate-pulse">Generating new suggestion...</p>
                 </div>
               ) : (
@@ -577,7 +577,7 @@ export function CreateProjectDialog({
                 variant="outline"
                 onClick={handleEnhanceDescription}
                 disabled={isEnhancing}
-                className="border-purple-200 hover:bg-purple-50 dark:border-purple-800 dark:hover:bg-purple-900/20"
+                className="border-coral-200 hover:bg-coral-50 dark:border-coral-800 dark:hover:bg-coral-900/20"
               >
                 <Sparkles className="w-4 h-4 mr-2" />
                 Regenerate
@@ -586,7 +586,7 @@ export function CreateProjectDialog({
                 type="button"
                 onClick={handleAcceptSuggestion}
                 disabled={isEnhancing}
-                className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white"
+                className="bg-gradient-to-r from-coral-600 to-coral-500 hover:from-coral-500 hover:to-coral-400 text-white"
               >
                 Accept Suggestion
               </Button>
@@ -600,8 +600,8 @@ export function CreateProjectDialog({
         <DialogContent className="sm:max-w-[450px]">
           <DialogHeader>
             <div className="flex items-center gap-3 mb-2">
-              <div className="w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-                <Info className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+              <div className="w-10 h-10 rounded-lg bg-teal-100 dark:bg-teal-900/30 flex items-center justify-center">
+                <Info className="w-5 h-5 text-teal-600 dark:text-teal-400" />
               </div>
               <DialogTitle>Project Created as Paused</DialogTitle>
             </div>
@@ -631,7 +631,7 @@ export function CreateProjectDialog({
             </Button>
             <Button
               asChild
-              className="gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-md hover:shadow-lg transition-all duration-300"
+              className="gap-2 bg-gradient-to-r from-coral-500 to-coral-600 hover:from-coral-400 hover:to-coral-500 text-white shadow-md hover:shadow-lg transition-all duration-300"
             >
               <Link href="/pricing">
                 View Plans
