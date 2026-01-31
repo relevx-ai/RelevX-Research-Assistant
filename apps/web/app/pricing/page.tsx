@@ -115,7 +115,7 @@ function PricingContent() {
                     <Button
                       className={`rounded-lg px-6 text-white transition-all duration-300 w-full ${plan.infoPrice === 0 && userProfile?.freeTrailRedeemed
                         ? "bg-muted/50 cursor-not-allowed opacity-70 shadow-none"
-                        : "bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 shadow-glow-sm hover:shadow-glow-md hover:scale-105"
+                        : "bg-gradient-to-r from-teal-600 to-teal-500 hover:from-teal-500 hover:to-teal-400 shadow-glow-sm hover:shadow-glow-md hover:scale-105"
                         }`}
                       onClick={() => {
                         if (plan.infoPrice === 0 && userProfile?.freeTrailRedeemed) return;
@@ -129,11 +129,11 @@ function PricingContent() {
                 </div>
 
                 <div className="mt-6">
-                  <p className="font-semibold text-sm mb-3 text-purple-300">{plan.infoPerksHeader}</p>
+                  <p className="font-semibold text-sm mb-3 text-teal-300">{plan.infoPerksHeader}</p>
                   <ul className="space-y-3 text-sm">
                     {plan.infoPerks?.map((perk, i) => (
                       <li key={i} className="flex items-center gap-2">
-                        <Check className="h-4 w-4 text-purple-400 flex-shrink-0" />
+                        <Check className="h-4 w-4 text-teal-400 flex-shrink-0" />
                         <span className="text-muted-foreground/90">{perk}</span>
                       </li>
                     ))}

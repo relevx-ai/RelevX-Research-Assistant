@@ -95,8 +95,8 @@ export default function HomePage() {
             transition={{ duration: 0.5, delay: 0.1 }}
             className="inline-flex items-center gap-2 px-4 py-2 rounded-full glass-card mb-8"
           >
-            <Sparkles className="w-4 h-4 text-purple-400" />
-            <span className="text-sm font-medium text-purple-200">
+            <Sparkles className="w-4 h-4 text-teal-400" />
+            <span className="text-sm font-medium text-teal-200">
               AI-Powered Research Assistant
             </span>
           </motion.div>
@@ -141,7 +141,7 @@ export default function HomePage() {
                 <Button
                   onClick={handleSignIn}
                   size="lg"
-                  className="gap-2 text-lg px-8 hover:scale-105 transition-all duration-300 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 shadow-glow-md hover:shadow-glow-lg active:scale-95 border-0"
+                  className="gap-2 text-lg px-8 hover:scale-105 transition-all duration-300 bg-gradient-to-r from-teal-600 to-teal-500 hover:from-teal-500 hover:to-teal-400 shadow-glow-md hover:shadow-glow-lg active:scale-95 border-0"
                 >
                   Get Started Free
                   <ArrowRight className="w-5 h-5" />
@@ -150,7 +150,7 @@ export default function HomePage() {
               <Button
                 variant="outline"
                 size="lg"
-                className="gap-2 text-lg px-8 hover:scale-105 transition-all duration-300 glass-card hover:border-purple-500/40 active:scale-95"
+                className="gap-2 text-lg px-8 hover:scale-105 transition-all duration-300 glass-card hover:border-teal-500/40 active:scale-95"
                 onClick={() => {
                   document.getElementById("features")?.scrollIntoView({
                     behavior: "smooth",
@@ -196,7 +196,7 @@ export default function HomePage() {
             >
               <Card className="h-full glass-card group">
                 <CardHeader>
-                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center mb-4 shadow-glow-sm group-hover:shadow-glow-md transition-shadow duration-300">
+                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-teal-500 to-teal-600 flex items-center justify-center mb-4 shadow-glow-sm group-hover:shadow-glow-md transition-shadow duration-300">
                     <feature.icon className="w-6 h-6 text-white" />
                   </div>
                   <CardTitle className="text-xl mb-2">
@@ -226,19 +226,19 @@ export default function HomePage() {
           </CardHeader>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 mt-4 text-center">
             <div className="rounded-xl glass-card p-5">
-              <p className="text-sm text-purple-400 mb-2 font-medium">RelevX</p>
+              <p className="text-sm text-teal-400 mb-2 font-medium">RelevX</p>
               <p className="font-semibold">
                 Summarized insights with citations
               </p>
             </div>
             <div className="rounded-xl glass-card p-5">
-              <p className="text-sm text-blue-400 mb-2 font-medium">Google Alerts</p>
+              <p className="text-sm text-coral-400 mb-2 font-medium">Google Alerts</p>
               <p className="font-semibold">
                 Raw links that still need reading
               </p>
             </div>
             <div className="rounded-xl glass-card p-5">
-              <p className="text-sm text-purple-400 mb-2 font-medium">Your Time</p>
+              <p className="text-sm text-teal-400 mb-2 font-medium">Your Time</p>
               <p className="font-semibold">Get answers in minutes, not hours</p>
             </div>
           </div>
@@ -254,7 +254,7 @@ export default function HomePage() {
               Saved per week on manual research
             </p>
           </Card>
-          <Card className="glass-card p-6 group hover:shadow-glow-blue-sm transition-all duration-300">
+          <Card className="glass-card p-6 group hover:shadow-glow-coral-sm transition-all duration-300">
             <p className="text-3xl font-bold gradient-text glow-text mb-2">Weekly</p>
             <p className="text-muted-foreground/80">
               Briefs delivered on your schedule
@@ -333,7 +333,7 @@ export default function HomePage() {
         >
           <Card className="glass-card gradient-border text-center p-12 relative overflow-hidden">
             {/* Subtle glow accent */}
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-2/3 h-1/2 bg-glow-purple opacity-30 blur-3xl pointer-events-none" />
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-2/3 h-1/2 bg-glow-teal opacity-30 blur-3xl pointer-events-none" />
             
             <CardHeader className="relative z-10">
               <CardTitle className="text-3xl md:text-4xl mb-4">
@@ -354,7 +354,7 @@ export default function HomePage() {
                       }
                     }}
                     size="lg"
-                    className="gap-2 text-lg px-8 hover:scale-105 transition-all duration-300 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 shadow-glow-md hover:shadow-glow-lg active:scale-95 border-0"
+                    className="gap-2 text-lg px-8 hover:scale-105 transition-all duration-300 bg-gradient-to-r from-teal-600 to-teal-500 hover:from-teal-500 hover:to-teal-400 shadow-glow-md hover:shadow-glow-lg active:scale-95 border-0"
                   >
                     Start Researching Now
                     <ArrowRight className="w-5 h-5" />

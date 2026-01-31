@@ -226,7 +226,7 @@ export function EditProjectSettingsDialog({
       <DialogContent className="sm:max-w-[750px] max-h-[85vh] flex flex-col overflow-hidden">
         <DialogHeader>
           <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-teal-500 to-teal-600 flex items-center justify-center">
               <Settings className="w-5 h-5 text-white" />
             </div>
             <DialogTitle>Project Settings</DialogTitle>
@@ -525,7 +525,7 @@ export function EditProjectSettingsDialog({
             <Button
               type="submit"
               disabled={isUpdating}
-              className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-md hover:shadow-xl hover:scale-105 transition-all duration-300"
+              className="bg-gradient-to-r from-teal-600 to-teal-500 hover:from-teal-500 hover:to-teal-400 text-white shadow-md hover:shadow-xl hover:scale-105 transition-all duration-300"
             >
               {isUpdating ? "Saving..." : "Save Changes"}
             </Button>

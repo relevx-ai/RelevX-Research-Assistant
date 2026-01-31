@@ -142,7 +142,7 @@ export function ProjectCard({ project }: ProjectCardProps) {
     <>
       <Card
         className={`group glass-card hover:scale-[1.02] transition-all duration-300 h-full flex flex-col cursor-pointer ${
-          project.status === "running" ? "!border-purple-500 !border-2 shadow-glow-sm" : ""
+          project.status === "running" ? "!border-teal-500 !border-2 shadow-glow-sm" : ""
         }`}
         onClick={handleCardClick}
       >
@@ -175,9 +175,9 @@ export function ProjectCard({ project }: ProjectCardProps) {
                   <span className="sr-only">Open menu</span>
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="glass-card border-purple-500/20">
+              <DropdownMenuContent align="end" className="glass-card border-teal-500/20">
                 <DropdownMenuItem
-                  className="gap-2 hover:bg-purple-500/10 focus:bg-purple-500/10"
+                  className="gap-2 hover:bg-teal-500/10 focus:bg-teal-500/10"
                   onClick={(e) => {
                     e.stopPropagation();
                     if (project.status === "running") {
@@ -195,7 +195,7 @@ export function ProjectCard({ project }: ProjectCardProps) {
                   <Settings className="w-4 h-4" />
                   Settings
                 </DropdownMenuItem>
-                <DropdownMenuSeparator className="bg-purple-500/20" />
+                <DropdownMenuSeparator className="bg-teal-500/20" />
                 <DropdownMenuItem
                   className="gap-2 text-red-400 focus:text-red-300 hover:bg-red-500/10 focus:bg-red-500/10"
                   onClick={(e) => {
@@ -218,14 +218,14 @@ export function ProjectCard({ project }: ProjectCardProps) {
         <CardContent className="flex-1">
           <div className="space-y-3">
             <div className="flex items-center gap-2 text-sm">
-              <Clock className="w-4 h-4 text-purple-400/60" />
+              <Clock className="w-4 h-4 text-teal-400/60" />
               <span className="text-muted-foreground/70">Frequency:</span>
               <span className="font-medium">{getFrequencyDisplay()}</span>
             </div>
 
             {project.deliveryTime && project.timezone && (
               <div className="flex items-center gap-2 text-sm">
-                <Clock className="w-4 h-4 text-purple-400/60" />
+                <Clock className="w-4 h-4 text-teal-400/60" />
                 <span className="text-muted-foreground/70">Time:</span>
                 <span className="font-medium">
                   {formatTime12Hour(project.deliveryTime)}{" "}
@@ -237,7 +237,7 @@ export function ProjectCard({ project }: ProjectCardProps) {
           </div>
         </CardContent>
 
-        <CardFooter className="border-t border-purple-500/10 pt-4">
+        <CardFooter className="border-t border-teal-500/10 pt-4">
           <div className="flex items-center gap-2 text-xs text-muted-foreground/60">
             <Calendar className="w-3 h-3" />
             <span>
@@ -286,7 +286,7 @@ export function ProjectCard({ project }: ProjectCardProps) {
               onClick={() =>
                 setErrorDialog((prev) => ({ ...prev, open: false }))
               }
-              className="bg-gradient-to-r from-purple-600 to-violet-600 hover:from-purple-700 hover:to-violet-700 text-white shadow-md hover:shadow-xl hover:scale-105 transition-all duration-300"
+              className="bg-gradient-to-r from-teal-600 to-teal-500 hover:from-teal-500 hover:to-teal-400 text-white shadow-md hover:shadow-xl hover:scale-105 transition-all duration-300"
             >
               OK
             </Button>
@@ -334,7 +334,7 @@ export function ProjectCard({ project }: ProjectCardProps) {
             </Button>
             <Button
               asChild
-              className="gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-md hover:shadow-lg transition-all duration-300"
+              className="gap-2 bg-gradient-to-r from-coral-500 to-coral-600 hover:from-coral-400 hover:to-coral-500 text-white shadow-md hover:shadow-lg transition-all duration-300"
             >
               <Link href="/pricing">
                 View Plans

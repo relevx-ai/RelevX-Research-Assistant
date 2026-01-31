@@ -21,27 +21,43 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark">
       <body className="antialiased min-h-screen relative overflow-x-hidden">
-        {/* Background gradient orbs */}
+        {/* Subtle star field */}
+        <div className="fixed inset-0 bg-stars opacity-40 pointer-events-none" />
+        
+        {/* Subtle vignette for depth */}
+        <div className="fixed inset-0 bg-vignette pointer-events-none z-[1]" />
+        
+        {/* Background gradient orbs - OpenClaw inspired */}
         <div className="fixed inset-0 overflow-hidden pointer-events-none">
-          {/* Top-center purple glow */}
+          {/* Top-center warm coral/red glow - prominent hero accent */}
           <div 
-            className="absolute -top-[40%] left-1/2 -translate-x-1/2 w-[80%] h-[60%] bg-glow-orb bg-glow-orb-purple animate-pulse-glow"
-            style={{ filter: 'blur(120px)' }}
+            className="absolute -top-[30%] left-1/2 -translate-x-1/2 w-[90%] h-[70%] bg-glow-orb bg-glow-orb-warm animate-pulse-glow"
+            style={{ filter: 'blur(100px)', opacity: 0.8 }}
           />
-          {/* Left blue glow */}
+          {/* Top-right coral accent */}
           <div 
-            className="absolute top-[20%] -left-[20%] w-[50%] h-[50%] bg-glow-orb bg-glow-orb-blue animate-gradient-shift"
-            style={{ filter: 'blur(100px)', animationDelay: '-5s' }}
+            className="absolute -top-[10%] right-[5%] w-[40%] h-[50%] bg-glow-orb bg-glow-orb-coral animate-gradient-shift"
+            style={{ filter: 'blur(80px)', opacity: 0.5, animationDelay: '-3s' }}
           />
-          {/* Right purple glow */}
+          {/* Left teal glow */}
           <div 
-            className="absolute top-[40%] -right-[15%] w-[45%] h-[45%] bg-glow-orb bg-glow-orb-purple animate-gradient-shift"
-            style={{ filter: 'blur(100px)', animationDelay: '-10s' }}
+            className="absolute top-[25%] -left-[15%] w-[45%] h-[45%] bg-glow-orb bg-glow-orb-teal animate-gradient-shift"
+            style={{ filter: 'blur(100px)', opacity: 0.4, animationDelay: '-5s' }}
           />
-          {/* Bottom blue accent */}
+          {/* Center-right mixed purple/coral */}
           <div 
-            className="absolute -bottom-[20%] left-1/4 w-[60%] h-[40%] bg-glow-orb bg-glow-orb-blue animate-pulse-glow"
-            style={{ filter: 'blur(120px)', animationDelay: '-2s' }}
+            className="absolute top-[45%] -right-[10%] w-[50%] h-[50%] bg-glow-orb bg-glow-orb-mixed animate-gradient-shift"
+            style={{ filter: 'blur(120px)', opacity: 0.5, animationDelay: '-8s' }}
+          />
+          {/* Bottom teal accent */}
+          <div 
+            className="absolute -bottom-[15%] left-[10%] w-[50%] h-[40%] bg-glow-orb bg-glow-orb-teal animate-pulse-glow"
+            style={{ filter: 'blur(100px)', opacity: 0.35, animationDelay: '-2s' }}
+          />
+          {/* Bottom-right warm glow */}
+          <div 
+            className="absolute -bottom-[20%] right-[5%] w-[40%] h-[35%] bg-glow-orb bg-glow-orb-coral animate-pulse-glow"
+            style={{ filter: 'blur(90px)', opacity: 0.3, animationDelay: '-4s' }}
           />
         </div>
         

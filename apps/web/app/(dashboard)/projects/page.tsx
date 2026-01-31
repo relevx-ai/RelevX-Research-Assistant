@@ -96,7 +96,7 @@ export default function ProjectsPage() {
       {loading && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="h-64 rounded-xl bg-muted/30 animate-pulse border border-purple-500/10" />
+            <div key={i} className="h-64 rounded-xl bg-muted/30 animate-pulse border border-teal-500/10" />
           ))}
         </div>
       )}
@@ -107,9 +107,9 @@ export default function ProjectsPage() {
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.5 }}
-          className="col-span-full text-center py-20 border-2 border-dashed border-purple-500/20 rounded-xl glass-card"
+          className="col-span-full text-center py-20 border-2 border-dashed border-teal-500/20 rounded-xl glass-card"
         >
-          <FolderOpen className="w-16 h-16 mx-auto mb-4 text-purple-400/60" />
+          <FolderOpen className="w-16 h-16 mx-auto mb-4 text-teal-400/60" />
           <h3 className="text-xl font-semibold mb-2">No projects yet</h3>
           <p className="text-muted-foreground/80 mb-6">
             Create your first project to start tracking research topics
