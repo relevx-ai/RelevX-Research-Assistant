@@ -334,7 +334,7 @@ export function ProjectCard({ project }: ProjectCardProps) {
             </Button>
             <Button
               asChild
-              className="gap-2 bg-gradient-to-r from-coral-500 to-coral-600 hover:from-coral-400 hover:to-coral-500 text-white shadow-md hover:shadow-lg transition-all duration-300"
+              className="gap-2 bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-400 hover:to-teal-500 text-white shadow-md hover:shadow-lg transition-all duration-300"
             >
               <Link href="/pricing">
                 View Plans

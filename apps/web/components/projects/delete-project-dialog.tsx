@@ -52,8 +52,8 @@ export function DeleteProjectDialog({
       <DialogContent>
         <DialogHeader>
           <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 rounded-full bg-destructive/10 flex items-center justify-center">
-              <AlertTriangle className="w-5 h-5 text-destructive" />
+            <div className="w-10 h-10 rounded-lg bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
+              <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400" />
             </div>
             <DialogTitle>Delete Project</DialogTitle>
           </div>
@@ -80,9 +80,9 @@ export function DeleteProjectDialog({
             Cancel
           </Button>
           <Button
-            variant="destructive"
             onClick={handleDelete}
             disabled={isDeleting}
+            className="bg-red-600 hover:bg-red-700 text-white"
           >
             {isDeleting ? "Deleting..." : "Delete Project"}
           </Button>
