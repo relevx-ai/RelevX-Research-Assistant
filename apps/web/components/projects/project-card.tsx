@@ -210,7 +210,7 @@ export function ProjectCard({ project }: ProjectCardProps) {
             </DropdownMenu>
           </div>
 
-          <CardDescription className="line-clamp-3 text-muted-foreground/80">
+          <CardDescription className="line-clamp-3 text-muted-foreground/80 whitespace-pre-line">
             {project.description}
           </CardDescription>
         </CardHeader>
@@ -324,7 +324,7 @@ export function ProjectCard({ project }: ProjectCardProps) {
             </ul>
           </div>
 
-          <DialogFooter className="gap-2 sm:gap-0">
+          <DialogFooter className="gap-3">
             <Button
               type="button"
               variant="outline"

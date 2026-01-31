@@ -252,7 +252,7 @@ function OverviewTab({ project }: { project: ProjectInfo }) {
           Research Topic
         </h3>
         <div className="p-4 rounded-lg border border-border/50 bg-muted/20">
-          <p className="text-foreground/80 leading-relaxed">
+          <p className="text-foreground/80 leading-relaxed whitespace-pre-line">
             {project.description}
           </p>
         </div>

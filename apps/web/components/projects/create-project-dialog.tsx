@@ -562,7 +562,7 @@ export function CreateProjectDialog({
             </div>
           </div>
 
-          <DialogFooter className="gap-2 sm:gap-0">
+          <DialogFooter className="gap-3">
             <Button
               type="button"
               variant="ghost"
@@ -621,7 +621,7 @@ export function CreateProjectDialog({
             </ul>
           </div>
 
-          <DialogFooter className="gap-2 sm:gap-0">
+          <DialogFooter className="gap-3">
             <Button
               type="button"
               variant="outline"
