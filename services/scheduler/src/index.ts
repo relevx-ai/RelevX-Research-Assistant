@@ -16,21 +16,11 @@ import { Queue } from "elegant-queue";
 import { Mutex } from "async-mutex";
 
 // Import types from core package
-import type { NewDeliveryLog, Plan, Project, RelevxUserProfile } from "core";
+import type { NewDeliveryLog, Project, RelevxUserProfile } from "core";
 import { sendReportEmail } from "core";
 
 // Import scheduling utility
 import { calculateNextRunAt } from "core";
-import { check_and_increment_research_usage } from "./plugins/analytics";
-
-const getErrorMessage = (
-  errorCode: string,
-  userId: string,
-  projectId: string,
-  errorMessage: string
-): string => {
-  return `${errorCode}:${userId}:${projectId}:${errorMessage}`;
-};
 
 // Provider instances (initialized once at startup)
 let providersInitialized = false;
@@ -89,72 +79,6 @@ async function initializeProviders(): Promise<void> {
       stack: error.stack,
     });
     throw error;
-  }
-}
-
-async function getRemoteConfigParam(key: string) {
-  try {
-    const { fireBaseRemoteConfig } = await import("core");
-    const param = (await fireBaseRemoteConfig.getTemplate()).parameters[key];
-    return param;
-  } catch (error) {
-    console.error("Error fetching remote config:", error);
-  }
-  return null;
-}
-
-async function getPlans(): Promise<Plan[]> {
-  const config = await getRemoteConfigParam("plans");
-  const plansRaw = config?.defaultValue?.value;
-  if (plansRaw) {
-    const parsed = JSON.parse(plansRaw);
-    const plansArray: Plan[] = Array.isArray(parsed)
-      ? parsed
-      : Object.values(parsed);
-
-    if (!Array.isArray(plansArray)) {
-      throw new Error("Parsed plans is not an array or valid object");
-    }
-    return plansArray;
-  }
-
-  return [];
-}
-
-/**
- * Create admin notification for research failure
- */
-async function createAdminNotification(
-  userId: string,
-  project: Project,
-  error: string,
-  retryCount: number
-): Promise<void> {
-  try {
-    const { db } = await import("core");
-
-    await db.collection("adminNotifications").add({
-      type: "research_failure",
-      severity: "high",
-      projectId: project.id,
-      userId,
-      projectTitle: project.title,
-      errorMessage: error,
-      retryCount,
-      occurredAt: Date.now(),
-      status: "pending",
-    });
-
-    logger.info("Admin notification created", {
-      projectId: project.id,
-      userId,
-      retryCount,
-    });
-  } catch (err: any) {
-    logger.error("Failed to create admin notification", {
-      error: err.message,
-      projectId: project.id,
-    });
   }
 }
 
@@ -280,112 +204,54 @@ async function runResearchJob(scheduledJobNumber: number): Promise<void> {
 
   // executes research for a single project
   const executeResearch = async (polledProject: PolledProject) => {
-    // Import the research engine from core package
-    // Import scheduling utility for retry projects
     const { executeResearchForProject } = await import("core");
     const { userId, project, isRetry, projectRef } = polledProject;
 
-    // 1). Get user and plan
-    const userDoc = await db.collection("users").doc(userId);
-
-    const plans = await getPlans();
-    const userData = (await userDoc.get())?.data() as RelevxUserProfile;
-    const plan = plans.find((p) => p.id === userData.planId);
-
-    if (!plan) {
-      throw new Error(
-        getErrorMessage("E500", userId, project.id, "Plan not found")
-      );
-    }
-
-    // 2). Track retry attempts
-    const retryAttempt = isRetry ? (project.lastError ? 2 : 1) : 0;
-
-    // 3). Update project status to running
+    // Update project status to running
     await projectRef.update({
       status: "running",
       researchStartedAt: Date.now(),
       updatedAt: Date.now(),
     });
 
-    // 4). Execute research
-    const deliveryLogId = await check_and_increment_research_usage(
-      async () => {
-        const result = await executeResearchForProject(userId, project.id);
-
-        if (!result.success || !result.deliveryLogId) {
-          throw new Error(
-            getErrorMessage(
-              "E0",
-              userId,
-              project.id,
-              result.error || "Research execution failed"
-            )
-          );
-        }
-
-        return result.deliveryLogId;
-      },
-      db,
+    logger.info("Starting research execution", {
       userId,
-      plan,
-      project.title
-    );
+      projectId: project.id,
+      projectTitle: project.title,
+      isRetry,
+    });
 
-    let projectUpdates: any = {
+    // Execute research
+    const result = await executeResearchForProject(userId, project.id);
+
+    if (!result.success || !result.deliveryLogId) {
+      throw new Error(result.error || "Research execution failed");
+    }
+
+    logger.info("Research execution completed successfully", {
+      userId,
+      projectId: project.id,
+      deliveryLogId: result.deliveryLogId,
+      durationMs: result.durationMs,
+    });
+
+    // Success - prepare project for delivery
+    // The Delivery Job will update nextRunAt AFTER the email is sent successfully.
+    await projectRef.update({
       status: "active",
       researchStartedAt: null,
+      lastError: null,
+      preparedDeliveryLogId: result.deliveryLogId,
+      preparedAt: Date.now(),
+      deliveredAt: null,
       updatedAt: Date.now(),
-    };
+    });
 
-    // 5). Update project status based on research result
-    if (deliveryLogId) {
-      // Success - prepare project for delivery
-      // - For pre-run: Keep nextRunAt at current delivery time so delivery job picks it up
-      // - For retry: Keep nextRunAt in the past so delivery job picks it up immediately
-      // The Delivery Job will update nextRunAt AFTER the email is sent successfully.
-      projectUpdates = {
-        ...projectUpdates,
-        lastError: null,
-        preparedDeliveryLogId: deliveryLogId,
-        preparedAt: Date.now(),
-        deliveredAt: null,
-      };
-
-      logger.info(`${isRetry ? "Retry" : "Pre-run"} research succeeded`, {
-        userId,
-        projectId: project.id,
-        projectUpdates: projectUpdates,
-        retryAttempt: retryAttempt,
-      });
-    }
-    // else if (isRetry && project.lastError) {
-    //   // Second failure - create admin notification
-    //   logger.error("Research failed after retry - notifying admin", {
-    //     userId,
-    //     projectId: project.id,
-    //     retryAttempt: 2,
-    //   });
-
-    //   await createAdminNotification(userId, project, project.lastError, 2);
-
-    //   // Move to next scheduled time to avoid infinite retries
-    //   const nextRunAt = calculateNextRunAt(
-    //     project.frequency,
-    //     project.deliveryTime,
-    //     project.timezone,
-    //     project.dayOfWeek,
-    //     project.dayOfMonth
-    //   );
-
-    //   projectUpdates = {
-    //     ...projectUpdates,
-    //     nextRunAt,
-    //     lastRunAt: Date.now(),
-    //   };
-    // }
-
-    await projectRef.update(projectUpdates);
+    logger.info(`${isRetry ? "Retry" : "Pre-run"} research succeeded`, {
+      userId,
+      projectId: project.id,
+      deliveryLogId: result.deliveryLogId,
+    });
   };
 
   try {
@@ -427,42 +293,30 @@ async function runResearchJob(scheduledJobNumber: number): Promise<void> {
               projectId: polledProject.project.id,
               isRetry: polledProject.isRetry,
               error: error.message,
-            });
-            const splits = error.message.split(":");
-            const errorCode = splits[0];
-            const userId = splits[1];
-            const projectId = splits[2];
-            const errorMessage = splits[3];
-
-            // E1 is for daily limit exceeded -- that means we do not need to error out the project..
-            if (errorCode !== "E1") {
-              // Update project with error status
-              try {
-                const { db } = await import("core");
-                await db
-                  .collection("users")
-                  .doc(userId)
-                  .collection("projects")
-                  .doc(projectId)
-                  .update({
-                    status: "error",
-                    lastError: errorMessage,
-                    researchStartedAt: null,
-                    updatedAt: Date.now(),
-                  });
-              } catch (updateError: any) {
-                logger.error("Failed to update project error status", {
-                  userId,
-                  projectId,
-                  error: updateError.message,
-                });
-              }
-            }
-
-            logger.error("Research execution error", {
-              error: error.message,
               stack: error.stack,
             });
+
+            // Update project with error status
+            try {
+              await polledProject.projectRef.update({
+                status: "error",
+                lastError: error.message,
+                researchStartedAt: null,
+                updatedAt: Date.now(),
+              });
+
+              logger.info("Project marked as error", {
+                userId: polledProject.userId,
+                projectId: polledProject.project.id,
+                error: error.message,
+              });
+            } catch (updateError: any) {
+              logger.error("Failed to update project error status", {
+                userId: polledProject.userId,
+                projectId: polledProject.project.id,
+                error: updateError.message,
+              });
+            }
           }
         })
       );

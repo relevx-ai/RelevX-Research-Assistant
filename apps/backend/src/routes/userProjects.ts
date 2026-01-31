@@ -8,9 +8,8 @@ import type {
   RelevxDeliveryLog,
   DeliveryLog,
   ProjectDeliveryLogResponse,
-  UserAnalyticsDocument,
 } from "core";
-import { Frequency, getUserAnalytics } from "core";
+import { Frequency } from "core";
 import { set, isAfter, add } from "date-fns";
 import { toZonedTime, fromZonedTime } from "date-fns-tz";
 import { gFreePlanId } from "../utils/billing.js";
@@ -57,8 +56,7 @@ function calculateNewRunAt(
   deliveryTime: string,
   timezone: string,
   dayOfWeek?: number,
-  dayOfMonth?: number,
-  forceNextRun: boolean = false
+  dayOfMonth?: number
 ): number {
   // Parse delivery time
   const [hours, minutes] = deliveryTime.split(":").map(Number);
@@ -138,61 +136,11 @@ function calculateNewRunAt(
     nextRunInUserTz = addFrequencyPeriod(nextRunInUserTz, frequency);
   }
 
-  // If forceNextRun is true, move to the next run
-  if (forceNextRun) {
-    nextRunInUserTz = addFrequencyPeriod(nextRunInUserTz, frequency);
-  }
-
   // Convert from user's timezone to UTC timestamp
   const nextRunUtc = fromZonedTime(nextRunInUserTz, timezone);
   return nextRunUtc.getTime();
 }
 
-export function validateActiveProjects(plan: Plan, projects: ProjectInfo[]) {
-  // console.debug(
-  //   `Validating active projects: ${JSON.stringify(projects, null, 1)}`
-  // );
-  // Go through all the projects in 'docs' and count the max number of daily runs happening in a 30-Day period
-  const maxDailyRuns = plan.settingsMaxDailyRuns;
-  let totalDailyRuns = 0;
-  let weekly: Record<number, number> = {};
-  let monthly: Record<number, number> = {};
-
-  projects.forEach((project) => {
-    if (project.frequency === "daily") totalDailyRuns++;
-    if (project.dayOfWeek !== undefined && project.dayOfWeek !== null)
-      weekly[project.dayOfWeek] = (weekly[project.dayOfWeek] || 0) + 1;
-    if (project.dayOfMonth !== undefined && project.dayOfMonth !== null)
-      monthly[project.dayOfMonth] = (monthly[project.dayOfMonth] || 0) + 1;
-  });
-
-  const maxAllowedDailyRuns = maxDailyRuns - totalDailyRuns;
-  if (maxAllowedDailyRuns < 0) {
-    return false;
-  }
-
-  weekly = Object.fromEntries(
-    Object.entries(weekly).filter(([_, v]) => v + totalDailyRuns > maxDailyRuns)
-  );
-  // console.debug(`Weekly: ${JSON.stringify(weekly, null, 1)}`);
-
-  if (Object.keys(weekly).length > 0) {
-    return false;
-  }
-
-  monthly = Object.fromEntries(
-    Object.entries(monthly).filter(
-      ([_, v]) => v + totalDailyRuns > maxDailyRuns
-    )
-  );
-  // console.debug(`Monthly: ${JSON.stringify(monthly, null, 1)}`);
-
-  if (Object.keys(monthly).length > 0) {
-    return false;
-  }
-
-  return true;
-}
 
 async function getAllUserProjectsFromCache(
   app: any,
@@ -584,10 +532,8 @@ const routes: FastifyPluginAsync = async (app) => {
 
   /**
    * Update a user's project settings.
-   * Special handling is performed if the project schedule (frequency, delivery time, etc.) is modified:
-   * 1. Validates that the new schedule complies with the user's plan limits (max daily runs).
-   * 2. Recalculates the `nextRunAt` timestamp.
-   * 3. Prevents updates if the new run time is too close to the current time (within ~16 mins window) to avoid scheduling conflicts.
+   * If the project schedule is modified, recalculates the `nextRunAt` timestamp.
+   * Prevents updates if the new run time is too close to the current time (within ~16 mins window).
    */
   app.post(
     "/update",
@@ -621,88 +567,31 @@ const routes: FastifyPluginAsync = async (app) => {
           data.deliveryTime ||
           data.frequency ||
           data.timezone ||
-          data.dayOfWeek ||
-          data.dayOfMonth;
+          data.dayOfWeek !== undefined ||
+          data.dayOfMonth !== undefined;
 
         if (isScheduleChanged && docData.status === "active") {
-          // Fetch all user projects to validate against plan limits
-          let projects: ProjectInfo[] | null =
-            await getAllUserProjectsFromCache(app, userId);
+          // Calculate the next run time based on the new schedule
+          const newRunAt = calculateNewRunAt(
+            data.frequency || docData.frequency,
+            data.deliveryTime || docData.deliveryTime,
+            data.timezone || docData.timezone,
+            data.dayOfWeek !== undefined ? data.dayOfWeek : docData.dayOfWeek,
+            data.dayOfMonth !== undefined ? data.dayOfMonth : docData.dayOfMonth
+          );
 
-          if (projects) {
-            projects = projects?.filter(
-              (project) => project.status === "active"
+          const now = Date.now();
+          const currentUtcTime = fromZonedTime(now, "UTC").getTime();
+
+          // Ensure we don't schedule a run too close to the current time (16 minute buffer)
+          const projectWithinDeliveryWindow =
+            newRunAt - currentUtcTime > 16 * 60 * 1000;
+          if (projectWithinDeliveryWindow) {
+            updates.nextRunAt = newRunAt;
+          } else {
+            throw new Error(
+              `Failed to update project. Please refrain from updating the project schedule too close to the current time (~16 min window).`
             );
-
-            // Temporarily update the current project in the list to test the new schedule configuration
-            for (let project of projects) {
-              if (project.title === title) {
-                project.frequency = data.frequency || docData.frequency;
-                project.deliveryTime =
-                  data.deliveryTime || docData.deliveryTime;
-                project.timezone = data.timezone || docData.timezone;
-                // Use explicit undefined check to allow null values to clear fields
-                project.dayOfWeek =
-                  data.dayOfWeek !== undefined
-                    ? data.dayOfWeek
-                    : docData.dayOfWeek;
-                project.dayOfMonth =
-                  data.dayOfMonth !== undefined
-                    ? data.dayOfMonth
-                    : docData.dayOfMonth;
-                break;
-              }
-            }
-
-            const userData = await getUserData(userId, db);
-            const plans: Plan[] = await getPlans(remoteConfig);
-            const plan: Plan | undefined = plans.find(
-              (plan) => plan.id === userData.user.planId
-            );
-
-            // Validate that the new schedule allows the user to stay within their plan's limits
-            if (plan && validateActiveProjects(plan, projects)) {
-              const userAnalytics: UserAnalyticsDocument =
-                await getUserAnalytics(db, userId);
-
-              const dailyResearchProjects: string[] =
-                userAnalytics.num_completed_daily_research_projects;
-              const forceNextRun = dailyResearchProjects.find(
-                (item) => item === title
-              );
-
-              // Calculate the next run time based on the new schedule
-              const newRunAt = calculateNewRunAt(
-                data.frequency || docData.frequency,
-                data.deliveryTime || docData.deliveryTime,
-                data.timezone || docData.timezone,
-                data.dayOfWeek !== undefined
-                  ? data.dayOfWeek
-                  : docData.dayOfWeek,
-                data.dayOfMonth !== undefined
-                  ? data.dayOfMonth
-                  : docData.dayOfMonth,
-                forceNextRun !== undefined
-              );
-
-              const now = Date.now();
-              const currentUtcTime = fromZonedTime(now, "UTC").getTime();
-
-              // Ensure we don't schedule a run too close to the current time (16 minute buffer)
-              const projectWithinDeliveryWindow =
-                newRunAt - currentUtcTime > 16 * 60 * 1000;
-              if (projectWithinDeliveryWindow) {
-                updates.nextRunAt = newRunAt;
-              } else {
-                throw new Error(
-                  `Failed to update project. Please refrain from updating the project schedule too close to the current time (~16 min window).`
-                );
-              }
-            } else {
-              throw new Error(
-                `Failed to update project. Delivery settings are not valid. Please make sure settings align with your plan (max daily runs: ${plan?.settingsMaxDailyRuns}).`
-              );
-            }
           }
         }
 
@@ -762,7 +651,7 @@ const routes: FastifyPluginAsync = async (app) => {
    * Key logic:
    * 1. Checks if the project exists and belongs to the user.
    * 2. Prevents toggling if the project is currently "running" or in an "error" state.
-   * 3. When activating a project ("active"), it validates that the user has not exceeded their plan's max daily runs.
+   * 3. When activating a project, validates the user has not exceeded their max active projects limit.
    * 4. Updates the project status in Firestore if all checks pass.
    */
   app.post(
@@ -814,7 +703,7 @@ const routes: FastifyPluginAsync = async (app) => {
           errorMessage = "Invalid status";
         }
 
-        // If attempting to activate, we must validate plan limits
+        // If attempting to activate, validate max active projects limit
         const activateNewProject = status === "active" && allowToggle;
         if (activateNewProject) {
           const userData = await getUserData(userId, db);
@@ -826,7 +715,7 @@ const routes: FastifyPluginAsync = async (app) => {
           );
 
           if (plan) {
-            // Check max active projects limit first
+            // Check max active projects limit
             const maxActiveProjects = plan.settingsMaxActiveProjects || 1;
             const currentActiveCount = activeProjects?.length || 0;
 
@@ -834,41 +723,15 @@ const routes: FastifyPluginAsync = async (app) => {
               errorCode = "max_active_projects";
               errorMessage = `You can only have ${maxActiveProjects} active project${maxActiveProjects === 1 ? "" : "s"} on your current plan. Please pause another project first, or upgrade your plan.`;
             } else {
-              // Simulate adding this project to the active list to check daily run limits
-              let newActivatedProjects: ProjectInfo[] = activeProjects
-                ? [...activeProjects]
-                : [];
-              newActivatedProjects.push(projectToToggle);
-
-              const allowToggle = validateActiveProjects(
-                plan,
-                newActivatedProjects
-              );
-
-              if (!allowToggle) {
-                errorCode = "max_daily_runs";
-                errorMessage =
-                  "User has reached the maximum number of daily runs. Please subscribe to a higher plan, if available.";
-              } else {
-              // calculate next run time if plan limit are already met
-              const analytics: UserAnalyticsDocument = await getUserAnalytics(
-                db,
-                userId
-              );
-              console.log("analytics", analytics);
-              const dailyResearch =
-                analytics.num_completed_daily_research_projects;
-              console.log("dailyResearch", dailyResearch);
+              // Calculate next run time for the project
               updates.nextRunAt = calculateNewRunAt(
                 projectToToggle.frequency,
                 projectToToggle.deliveryTime,
                 projectToToggle.timezone,
                 projectToToggle.dayOfWeek,
-                projectToToggle.dayOfMonth,
-                dailyResearch.length + 1 > plan.settingsMaxDailyRuns
+                projectToToggle.dayOfMonth
               );
               nStatus = status;
-              }
             }
           } else {
             errorCode = "user_plan_not_found";
