@@ -1,0 +1,92 @@
+# RelevX Backend Docker Compose
+#
+# All application secrets are loaded from AWS Secrets Manager at runtime.
+# You only need to provide AWS credentials to authenticate.
+#
+# Required: Set these environment variables before running:
+#   export AWS_ACCESS_KEY_ID=your_key
+#   export AWS_SECRET_ACCESS_KEY=your_secret
+#
+# Usage:
+#   docker-compose -f docker-compose.backend.yml up -d --build
+#
+# Secrets loaded from AWS Secrets Manager (secret name: relevx-backend-env):
+#   - FIREBASE_SERVICE_ACCOUNT_JSON
+#   - STRIPE_SECRET_KEY
+#   - STRIPE_WEBHOOK_SECRET
+#   - OPENAI_API_KEY
+#   - (and any other secrets stored in relevx-backend-env)
+
+networks:
+  internal:
+    external: false
+
+services:
+  relevx-backend:
+    build:
+      context: .
+      dockerfile: apps/backend/Dockerfile
+    image: relevx-backend:latest
+    container_name: relevx-backend
+    restart: always
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./scripts:/app/scripts:ro
+    environment:
+      # AWS credentials for Secrets Manager authentication
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - AWS_REGION=${AWS_REGION:-us-east-1}
+
+      # Runtime configuration
+      - REDIS_URL=redis://redis-server:6379
+      - NODE_ENV=production
+    depends_on:
+      - redis-server
+    networks:
+      - internal
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    deploy:
+      resources:
+        limits:
+          memory: 1g
+          cpus: "1.0"
+        reservations:
+          memory: 256m
+          cpus: "0.25"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "require('http').get('http://localhost:3000/healthz', (r) => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  redis-server:
+    image: redis:alpine
+    container_name: redis-server
+    restart: always
+    ports:
+      - "127.0.0.1:6379:6379"
+    networks:
+      - internal
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  redis-data:

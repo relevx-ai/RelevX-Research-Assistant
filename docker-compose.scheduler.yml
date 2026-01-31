@@ -1,0 +1,68 @@
+# RelevX Scheduler Docker Compose
+#
+# All application secrets are loaded from AWS Secrets Manager at runtime.
+# You only need to provide AWS credentials to authenticate.
+#
+# Required: Set these environment variables before running:
+#   export AWS_ACCESS_KEY_ID=your_key
+#   export AWS_SECRET_ACCESS_KEY=your_secret
+#
+# Usage:
+#   docker-compose -f docker-compose.scheduler.yml up -d --build
+#
+# Secrets loaded from AWS Secrets Manager (secret name: relevx-backend-env):
+#   - OPENAI_API_KEY
+#   - BRAVE_SEARCH_API_KEY
+#   - FIREBASE_SERVICE_ACCOUNT_JSON
+#   - RESEND_API_KEY
+#   - (and any other secrets stored in relevx-backend-env)
+
+services:
+  scheduler:
+    build:
+      context: .
+      dockerfile: services/scheduler/Dockerfile
+    image: relevx-scheduler:latest
+    container_name: relevx-scheduler
+    restart: always
+    environment:
+      # AWS credentials for Secrets Manager authentication
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - AWS_REGION=${AWS_REGION:-us-east-1}
+
+      # Runtime configuration
+      - NODE_ENV=production
+      - LOG_LEVEL=info
+
+      # Scheduler Configuration (optional overrides)
+      - SCHEDULER_ENABLED=true
+      - RUN_ON_STARTUP=${RUN_ON_STARTUP:-true}
+      - SCHEDULER_CHECK_WINDOW_MINUTES=${SCHEDULER_CHECK_WINDOW_MINUTES:-15}
+      - SCHEDULER_TIMEZONE=${SCHEDULER_TIMEZONE:-UTC}
+
+      # Research Configuration (optional overrides)
+      - MAX_CONCURRENT_RESEARCH_JOBS=${MAX_CONCURRENT_RESEARCH_JOBS:-3}
+      - RESEARCH_JOB_TIMEOUT_MS=${RESEARCH_JOB_TIMEOUT_MS:-300000}
+
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+    deploy:
+      resources:
+        limits:
+          memory: 1.8g
+          cpus: "1.0"
+        reservations:
+          memory: 512m
+          cpus: "0.5"
+
+    healthcheck:
+      test: ["CMD", "node", "-e", "console.log('healthy')"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
