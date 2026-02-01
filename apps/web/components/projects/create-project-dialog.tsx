@@ -57,6 +57,7 @@ export function CreateProjectDialog({
   const [excludedKeywords, setExcludedKeywords] = useState("");
   const [isCreating, setIsCreating] = useState(false);
   const [error, setError] = useState("");
+  const [titleError, setTitleError] = useState("");
   const [advancedOpen, setAdvancedOpen] = useState(false);
   const [isEnhancing, setIsEnhancing] = useState(false);
   const [suggestedDescription, setSuggestedDescription] = useState("");
@@ -101,6 +102,7 @@ export function CreateProjectDialog({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    setTitleError("");
 
     // Validation
     const trimmedTitle = title.trim();
@@ -112,9 +114,7 @@ export function CreateProjectDialog({
     if (
       projects.some((p) => p.title.toLowerCase() === trimmedTitle.toLowerCase())
     ) {
-      setError(
-        `Project "${trimmedTitle}" already exists. Please choose a unique title.`
-      );
+      setTitleError("A project with this name already exists. Please choose a different title.");
       return;
     }
 
@@ -191,9 +191,16 @@ export function CreateProjectDialog({
         setMaxActiveProjects(response.maxActiveProjects || 1);
         setPausedInfoDialogOpen(true);
       }
-    } catch (err) {
-      console.error("Failed to create project:", err);
-      setError("Failed to create project. Please try again.");
+    } catch (err: any) {
+      // Check if it's a duplicate title error from the backend
+      const errorMessage = err?.message || err?.toString() || "";
+      if (errorMessage.toLowerCase().includes("title already exists")) {
+        // Expected validation error - don't log as error
+        setTitleError("A project with this name already exists. Please choose a different title.");
+      } else {
+        console.error("Failed to create project:", err);
+        setError("Failed to create project. Please try again.");
+      }
     } finally {
       setIsCreating(false);
     }
@@ -221,6 +228,7 @@ export function CreateProjectDialog({
         setRequiredKeywords("");
         setExcludedKeywords("");
         setError("");
+        setTitleError("");
       }
     }
   };
@@ -262,9 +270,16 @@ export function CreateProjectDialog({
                   id="title"
                   placeholder="e.g., AI Research Updates"
                   value={title}
-                  onChange={(e) => setTitle(e.target.value)}
+                  onChange={(e) => {
+                    setTitle(e.target.value);
+                    if (titleError) setTitleError("");
+                  }}
                   disabled={isCreating}
+                  className={titleError ? "border-red-500 focus-visible:ring-red-500" : ""}
                 />
+                {titleError && (
+                  <p className="text-sm text-red-500 font-medium">{titleError}</p>
+                )}
               </div>
 
               {/* Description */}
