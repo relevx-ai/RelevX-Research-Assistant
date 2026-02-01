@@ -62,7 +62,11 @@ export async function createProject(data: NewProject): Promise<CreateProjectResp
 
     return response;
   } catch (error) {
-    console.error("Error creating project:", error);
+    // Don't log duplicate title errors as they're expected validation
+    const errorMessage = error instanceof Error ? error.message : "";
+    if (!errorMessage.toLowerCase().includes("title already exists")) {
+      console.error("Error creating project:", error);
+    }
     throw error;
   }
 }

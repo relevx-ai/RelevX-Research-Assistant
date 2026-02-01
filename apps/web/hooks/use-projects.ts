@@ -79,7 +79,7 @@ export function useProjects(
     async (data: Omit<NewProject, "userId">): Promise<CreateProjectResponse | null> => {
       if (!user?.uid) {
         setError("User must be logged in to create a project");
-        return null;
+        throw new Error("User must be logged in to create a project");
       }
 
       try {
@@ -89,7 +89,7 @@ export function useProjects(
         const errorMessage =
           err instanceof Error ? err.message : "Failed to create project";
         setError(errorMessage);
-        return null;
+        throw err; // Re-throw so callers can handle the error
       }
     },
     [user]
