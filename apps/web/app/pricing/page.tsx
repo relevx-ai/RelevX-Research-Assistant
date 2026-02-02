@@ -18,12 +18,20 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Check, X, ChevronDown, HelpCircle } from "lucide-react";
+import {
+  Check,
+  X,
+  ChevronDown,
+  HelpCircle,
+  Home,
+  ChevronRight,
+} from "lucide-react";
 import { useAuth } from "@/contexts/auth-context";
 import { signInWithGoogle } from "@/lib/auth";
 import { PlanInfo } from "core/models/plans";
 import { BillingPaymentLinkResponse } from "core/models/billing";
 import { useSearchParams, useRouter } from "next/navigation";
+import Link from "next/link";
 
 import { relevx_api } from "@/lib/client";
 
@@ -149,6 +157,22 @@ function PricingContent() {
   return (
     <>
       <div className="container py-6 sm:py-8 px-4 sm:px-6 max-w-5xl mx-auto">
+        {/* Breadcrumbs */}
+        <nav
+          aria-label="Breadcrumb"
+          className="flex items-center gap-1.5 text-sm text-muted-foreground mb-6 sm:mb-8"
+        >
+          <Link
+            href="/"
+            className="flex items-center gap-1 hover:text-foreground transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 focus-visible:ring-offset-background rounded-sm"
+          >
+            <Home className="w-4 h-4" />
+            <span className="hidden sm:inline">Home</span>
+          </Link>
+          <ChevronRight className="w-4 h-4 text-muted-foreground/50" />
+          <span className="text-foreground font-medium">Pricing</span>
+        </nav>
+
         <div className="text-center mb-8 sm:mb-10">
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight mb-2">
             <span className="gradient-text">Pricing</span> Plans
