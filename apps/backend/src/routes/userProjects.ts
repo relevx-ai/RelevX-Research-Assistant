@@ -466,6 +466,7 @@ const routes: FastifyPluginAsync = async (app) => {
           ...request.projectInfo,
           userId,
           status: createAsPaused ? "paused" : "active",
+          preparedDeliveryLogId: null,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         };
@@ -731,6 +732,7 @@ const routes: FastifyPluginAsync = async (app) => {
               projectToToggle.dayOfWeek,
               projectToToggle.dayOfMonth
             );
+            updates.preparedDeliveryLogId = null;
             nStatus = status;
           }
         }
