@@ -1,18 +1,88 @@
 "use client";
 
-import React, { useState, Suspense, useEffect } from "react";
+import React, { useState, Suspense } from "react";
 import { usePlans } from "@/hooks/use-plans";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Check } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Check, X, ChevronDown, HelpCircle } from "lucide-react";
 import { useAuth } from "@/contexts/auth-context";
 import { signInWithGoogle } from "@/lib/auth";
 import { PlanInfo } from "core/models/plans";
-import { ActivateFreeTrialRequest, BillingPaymentLinkResponse } from "core/models/billing";
+import { BillingPaymentLinkResponse } from "core/models/billing";
 import { useSearchParams, useRouter } from "next/navigation";
 
 import { relevx_api } from "@/lib/client";
+
+// Feature comparison data
+const featureComparison = [
+  { feature: "Active Projects", free: "1", pro: "5", enterprise: "Unlimited" },
+  {
+    feature: "Research Frequency",
+    free: "Daily, Weekly, Monthly",
+    pro: "Daily, Weekly, Monthly",
+    enterprise: "Daily, Weekly, Monthly",
+  },
+  { feature: "Email Delivery", free: true, pro: true, enterprise: true },
+  {
+    feature: "Delivery History",
+    free: "7 days",
+    pro: "90 days",
+    enterprise: "Unlimited",
+  },
+  { feature: "Priority Domains", free: true, pro: true, enterprise: true },
+  { feature: "Keyword Filtering", free: true, pro: true, enterprise: true },
+  {
+    feature: "AI-Enhanced Descriptions",
+    free: true,
+    pro: true,
+    enterprise: true,
+  },
+  { feature: "Priority Support", free: false, pro: true, enterprise: true },
+  { feature: "Custom Integrations", free: false, pro: false, enterprise: true },
+];
+
+// FAQ data
+const faqs = [
+  {
+    question: "How does the free trial work?",
+    answer:
+      "The free trial gives you full access to create and run 1 active research project. You can experience all the core features including AI-curated research briefs, email delivery, and source filtering. No credit card required to start.",
+  },
+  {
+    question: "Can I change my plan later?",
+    answer:
+      "Yes, you can upgrade or downgrade your plan at any time. When upgrading, you'll get immediate access to additional features. When downgrading, your current features remain until the end of your billing period.",
+  },
+  {
+    question: "What payment methods do you accept?",
+    answer:
+      "We accept all major credit cards (Visa, Mastercard, American Express) through our secure payment processor, Stripe. All transactions are encrypted and PCI-compliant.",
+  },
+  {
+    question: "Can I cancel my subscription anytime?",
+    answer:
+      "Absolutely. You can cancel your subscription at any time from your account settings. You'll continue to have access to your paid features until the end of your current billing period.",
+  },
+  {
+    question: "What happens to my data if I cancel?",
+    answer:
+      "Your research projects and delivery history remain accessible for 30 days after cancellation. You can export your data or reactivate your subscription within this period to retain everything.",
+  },
+];
 
 function PricingContent() {
   const { plans, loading, error } = usePlans();
@@ -40,7 +110,7 @@ function PricingContent() {
       signInWithGoogle();
       return;
     }
-    const plan = plans.find(p => p.id === planId);
+    const plan = plans.find((p) => p.id === planId);
     if (!plan) return;
 
     if (userProfile?.planId === planId) return;
@@ -78,7 +148,6 @@ function PricingContent() {
 
   return (
     <>
-
       <div className="container py-6 sm:py-8 px-4 sm:px-6 max-w-5xl mx-auto">
         <div className="text-center mb-8 sm:mb-10">
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight mb-2">
@@ -93,7 +162,9 @@ function PricingContent() {
           {plans.map((plan) => (
             <Card key={plan.id} className="flex flex-col glass-card">
               <CardHeader>
-                <CardTitle className="text-xl capitalize">{plan.infoName}</CardTitle>
+                <CardTitle className="text-xl capitalize">
+                  {plan.infoName}
+                </CardTitle>
                 <CardDescription className="text-muted-foreground/80">
                   {plan.infoDescription}
                 </CardDescription>
@@ -101,35 +172,51 @@ function PricingContent() {
               <CardContent className="flex-1">
                 <div className="space-y-4">
                   <div className="flex items-baseline justify-start pb-4">
-                    <span className="text-xl font-medium text-muted-foreground/60 mr-1 self-start">US</span>
+                    <span className="text-xl font-medium text-muted-foreground/60 mr-1 self-start">
+                      US
+                    </span>
                     <span className="text-5xl font-bold gradient-text">
                       ${plan.infoPrice ?? "0"}
                     </span>
                   </div>
 
                   {userProfile && userProfile.planId == plan.id ? (
-                    <Button className="rounded-lg px-6 bg-gradient-to-r from-green-600 to-emerald-600 text-white w-full shadow-[0_0_20px_rgba(16,185,129,0.3)]" disabled>
+                    <Button
+                      className="rounded-lg px-6 bg-gradient-to-r from-green-600 to-emerald-600 text-white w-full shadow-[0_0_20px_rgba(16,185,129,0.3)]"
+                      disabled
+                    >
                       Current Plan
                     </Button>
                   ) : (
                     <Button
-                      className={`rounded-lg px-6 text-white transition-all duration-300 w-full ${plan.infoPrice === 0 && userProfile?.freeTrailRedeemed
-                        ? "bg-muted/50 cursor-not-allowed opacity-70 shadow-none"
-                        : "bg-gradient-to-r from-teal-600 to-teal-500 hover:from-teal-500 hover:to-teal-400 shadow-glow-sm hover:shadow-glow-md hover:scale-105"
-                        }`}
+                      className={`rounded-lg px-6 text-white transition-all duration-300 w-full ${
+                        plan.infoPrice === 0 && userProfile?.freeTrailRedeemed
+                          ? "bg-muted/50 cursor-not-allowed opacity-70 shadow-none"
+                          : "bg-gradient-to-r from-teal-600 to-teal-500 hover:from-teal-500 hover:to-teal-400 shadow-glow-sm hover:shadow-glow-md hover:scale-105"
+                      }`}
                       onClick={() => {
-                        if (plan.infoPrice === 0 && userProfile?.freeTrailRedeemed) return;
+                        if (
+                          plan.infoPrice === 0 &&
+                          userProfile?.freeTrailRedeemed
+                        )
+                          return;
                         handleSelectPlanStart(plan.id);
                       }}
-                      disabled={plan.infoPrice === 0 && userProfile?.freeTrailRedeemed}
+                      disabled={
+                        plan.infoPrice === 0 && userProfile?.freeTrailRedeemed
+                      }
                     >
-                      {plan.infoPrice === 0 && userProfile?.freeTrailRedeemed ? "Trial Redeemed" : "Select Plan"}
+                      {plan.infoPrice === 0 && userProfile?.freeTrailRedeemed
+                        ? "Trial Redeemed"
+                        : "Select Plan"}
                     </Button>
                   )}
                 </div>
 
                 <div className="mt-6">
-                  <p className="font-semibold text-sm mb-3 text-teal-300">{plan.infoPerksHeader}</p>
+                  <p className="font-semibold text-sm mb-3 text-teal-300">
+                    {plan.infoPerksHeader}
+                  </p>
                   <ul className="space-y-3 text-sm">
                     {plan.infoPerks?.map((perk, i) => (
                       <li key={i} className="flex items-center gap-2">
@@ -145,7 +232,10 @@ function PricingContent() {
         </div>
 
         {/* Plan Selection / Payment Dialog */}
-        <Dialog open={!!selectedPlan} onOpenChange={(open) => !open && setSelectedPlan(null)}>
+        <Dialog
+          open={!!selectedPlan}
+          onOpenChange={(open) => !open && setSelectedPlan(null)}
+        >
           <DialogContent className="sm:max-w-[425px]">
             <DialogHeader>
               {(selectedPlan?.infoPrice ?? 0) > 0 ? (
@@ -174,10 +264,15 @@ function PricingContent() {
         </Dialog>
 
         {/* Success / Failure Status Dialog */}
-        <Dialog open={showStatusDialog} onOpenChange={(open) => !open && handleCloseStatusDialog()}>
+        <Dialog
+          open={showStatusDialog}
+          onOpenChange={(open) => !open && handleCloseStatusDialog()}
+        >
           <DialogContent className="sm:max-w-[425px]">
             <DialogHeader>
-              <DialogTitle>{isSuccess ? "Subscription Successful" : "Subscription Failed"}</DialogTitle>
+              <DialogTitle>
+                {isSuccess ? "Subscription Successful" : "Subscription Failed"}
+              </DialogTitle>
               <DialogDescription>
                 {isSuccess
                   ? "Thank you for subscribing! Your account has been updated and you now have access to all features of your selected plan."
@@ -204,14 +299,160 @@ function PricingContent() {
             No plans available at the moment.
           </div>
         )}
+
+        {/* Feature Comparison Table */}
+        <div className="mt-16">
+          <div className="text-center mb-8">
+            <h2 className="text-xl sm:text-2xl font-bold mb-2">
+              Compare <span className="gradient-text">Features</span>
+            </h2>
+            <p className="text-sm text-muted-foreground/80">
+              See what's included in each plan
+            </p>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full border-collapse">
+              <thead>
+                <tr className="border-b border-border/50">
+                  <th className="text-left py-4 px-4 font-semibold text-foreground">
+                    Feature
+                  </th>
+                  <th className="text-center py-4 px-4 font-semibold text-foreground">
+                    Free Trial
+                  </th>
+                  <th className="text-center py-4 px-4 font-semibold text-teal-400">
+                    Pro
+                  </th>
+                  <th className="text-center py-4 px-4 font-semibold text-coral-400">
+                    Enterprise
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {featureComparison.map((row, index) => (
+                  <tr
+                    key={row.feature}
+                    className={`border-b border-border/30 ${
+                      index % 2 === 0 ? "bg-muted/10" : ""
+                    }`}
+                  >
+                    <td className="py-3 px-4 text-sm text-foreground/90">
+                      {row.feature}
+                    </td>
+                    <td className="py-3 px-4 text-center">
+                      {typeof row.free === "boolean" ? (
+                        row.free ? (
+                          <Check className="w-5 h-5 text-teal-400 mx-auto" />
+                        ) : (
+                          <X className="w-5 h-5 text-muted-foreground/40 mx-auto" />
+                        )
+                      ) : (
+                        <span className="text-sm text-muted-foreground">
+                          {row.free}
+                        </span>
+                      )}
+                    </td>
+                    <td className="py-3 px-4 text-center">
+                      {typeof row.pro === "boolean" ? (
+                        row.pro ? (
+                          <Check className="w-5 h-5 text-teal-400 mx-auto" />
+                        ) : (
+                          <X className="w-5 h-5 text-muted-foreground/40 mx-auto" />
+                        )
+                      ) : (
+                        <span className="text-sm text-muted-foreground">
+                          {row.pro}
+                        </span>
+                      )}
+                    </td>
+                    <td className="py-3 px-4 text-center">
+                      {typeof row.enterprise === "boolean" ? (
+                        row.enterprise ? (
+                          <Check className="w-5 h-5 text-coral-400 mx-auto" />
+                        ) : (
+                          <X className="w-5 h-5 text-muted-foreground/40 mx-auto" />
+                        )
+                      ) : (
+                        <span className="text-sm text-coral-400 font-medium">
+                          {row.enterprise}
+                        </span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* FAQ Section */}
+        <div className="mt-16 mb-8">
+          <div className="text-center mb-8">
+            <h2 className="text-xl sm:text-2xl font-bold mb-2">
+              Frequently Asked <span className="gradient-text">Questions</span>
+            </h2>
+            <p className="text-sm text-muted-foreground/80">
+              Common questions about billing and subscriptions
+            </p>
+          </div>
+
+          <div className="max-w-3xl mx-auto space-y-3">
+            {faqs.map((faq, index) => (
+              <FAQItem
+                key={index}
+                question={faq.question}
+                answer={faq.answer}
+              />
+            ))}
+          </div>
+        </div>
       </div>
     </>
   );
 }
 
+// FAQ Item Component with expand/collapse
+function FAQItem({ question, answer }: { question: string; answer: string }) {
+  const [isOpen, setIsOpen] = useState(false);
+
+  return (
+    <div className="rounded-lg border border-border/50 bg-muted/20 overflow-hidden">
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full flex items-center justify-between p-4 text-left hover:bg-muted/30 transition-colors focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-inset"
+      >
+        <span className="font-medium text-foreground pr-4">{question}</span>
+        <ChevronDown
+          className={`w-5 h-5 text-muted-foreground shrink-0 transition-transform duration-300 ${
+            isOpen ? "rotate-180" : ""
+          }`}
+        />
+      </button>
+      <div
+        className={`grid transition-all duration-300 ease-in-out ${
+          isOpen ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
+        }`}
+      >
+        <div className="overflow-hidden">
+          <p className="px-4 pb-4 text-sm text-muted-foreground leading-relaxed">
+            {answer}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function PricingPage() {
   return (
-    <Suspense fallback={<div className="flex items-center justify-center min-h-[400px]">Loading...</div>}>
+    <Suspense
+      fallback={
+        <div className="flex items-center justify-center min-h-[400px]">
+          Loading...
+        </div>
+      }
+    >
       <PricingContent />
     </Suspense>
   );

@@ -28,10 +28,20 @@ import {
 import { useDeliveryLogs } from "@/hooks/use-delivery-logs";
 import { EditProjectSettingsDialog } from "./edit-project-settings-dialog";
 import ReactMarkdown from "react-markdown";
-import { DAY_OF_WEEK_LABELS, formatDayOfMonth } from "@/lib/utils";
+import {
+  DAY_OF_WEEK_LABELS,
+  formatDayOfMonth,
+  formatRelativeTime,
+} from "@/lib/utils";
 
-const formatDate = (timestamp: number | undefined, timezone?: string) => {
-  if (!timestamp) return "Not scheduled";
+const formatDate = (
+  timestamp: number | undefined,
+  timezone?: string,
+  isPaused?: boolean
+) => {
+  if (!timestamp) {
+    return isPaused ? "Paused - will run when activated" : "Not scheduled";
+  }
   const date = new Date(timestamp);
   return date.toLocaleString(undefined, {
     timeZone: timezone,
@@ -154,8 +164,10 @@ export function ProjectDetailModal({
                 }
                 setSettingsDialogOpen(true);
               }}
+              title="Project settings"
             >
               <Settings className="w-4 h-4" />
+              <span className="sr-only">Project settings</span>
             </Button>
           </div>
 
@@ -298,8 +310,18 @@ function OverviewTab({ project }: { project: ProjectInfo }) {
               <Calendar className="w-4 h-4 text-teal-400" />
               <span className="text-xs text-muted-foreground">Next Run</span>
             </div>
-            <p className="font-semibold text-foreground text-sm">
-              {formatDate(project.nextRunAt, project.timezone)}
+            <p
+              className={`font-semibold text-sm ${
+                project.status === "paused"
+                  ? "text-amber-400"
+                  : "text-foreground"
+              }`}
+            >
+              {formatDate(
+                project.nextRunAt,
+                project.timezone,
+                project.status === "paused"
+              )}
             </p>
           </div>
         </div>
@@ -308,19 +330,25 @@ function OverviewTab({ project }: { project: ProjectInfo }) {
       {/* Created/Updated Info */}
       <div className="pt-4 border-t border-border/30">
         <div className="flex items-center gap-6 text-sm">
-          <div className="flex items-center gap-2">
+          <div
+            className="flex items-center gap-2"
+            title={new Date(project.createdAt).toLocaleString()}
+          >
             <Calendar className="w-3.5 h-3.5 text-muted-foreground" />
             <span className="text-muted-foreground">Created:</span>
             <span className="text-foreground/80">
-              {new Date(project.createdAt).toLocaleDateString()}
+              {formatRelativeTime(project.createdAt)}
             </span>
           </div>
           {project.updatedAt && (
-            <div className="flex items-center gap-2">
+            <div
+              className="flex items-center gap-2"
+              title={new Date(project.updatedAt).toLocaleString()}
+            >
               <Clock className="w-3.5 h-3.5 text-muted-foreground" />
               <span className="text-muted-foreground">Last updated:</span>
               <span className="text-foreground/80">
-                {new Date(project.updatedAt).toLocaleDateString()}
+                {formatRelativeTime(project.updatedAt)}
               </span>
             </div>
           )}

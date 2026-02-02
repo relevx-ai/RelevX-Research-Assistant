@@ -1,7 +1,12 @@
 "use client";
 
 import React, { useState } from "react";
-import { ProjectInfo, Frequency, ImproveProjectDescriptionRequest, ImproveProjectDescriptionResponse } from "core";
+import {
+  ProjectInfo,
+  Frequency,
+  ImproveProjectDescriptionRequest,
+  ImproveProjectDescriptionResponse,
+} from "core";
 import {
   Dialog,
   DialogContent,
@@ -19,12 +24,21 @@ import { TimePicker } from "@/components/ui/time-picker";
 import { DayOfWeekPicker } from "@/components/ui/day-of-week-picker";
 import { DayOfMonthPicker } from "@/components/ui/day-of-month-picker";
 import {
+  Sparkles,
+  Calendar,
+  ChevronDown,
+  Settings,
+  Loader2,
+  Info,
+  ArrowRight,
+  HelpCircle,
+} from "lucide-react";
+import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { Sparkles, Calendar, ChevronDown, Settings, Loader2, Info, ArrowRight } from "lucide-react";
 import { useProjects } from "@/hooks/use-projects";
 import { relevx_api } from "@/lib/client";
 import Link from "next/link";
@@ -114,7 +128,9 @@ export function CreateProjectDialog({
     if (
       projects.some((p) => p.title.toLowerCase() === trimmedTitle.toLowerCase())
     ) {
-      setTitleError("A project with this name already exists. Please choose a different title.");
+      setTitleError(
+        "A project with this name already exists. Please choose a different title."
+      );
       return;
     }
 
@@ -145,8 +161,7 @@ export function CreateProjectDialog({
         searchParameters.excludedKeywords = excludedKeywordsList;
       }
 
-      const cprojectinfo: any =
-      {
+      const cprojectinfo: any = {
         title: title.trim(),
         description: String(description || "").trim(),
         frequency,
@@ -157,7 +172,7 @@ export function CreateProjectDialog({
           relevancyThreshold: 60,
           minResults: 5,
           maxResults: 20,
-        }
+        },
       };
 
       if (frequency === "weekly") {
@@ -196,7 +211,9 @@ export function CreateProjectDialog({
       const errorMessage = err?.message || err?.toString() || "";
       if (errorMessage.toLowerCase().includes("title already exists")) {
         // Expected validation error - don't log as error
-        setTitleError("A project with this name already exists. Please choose a different title.");
+        setTitleError(
+          "A project with this name already exists. Please choose a different title."
+        );
       } else {
         console.error("Failed to create project:", err);
         setError("Failed to create project. Please try again.");
@@ -245,12 +262,15 @@ export function CreateProjectDialog({
               <DialogTitle>Create New Project</DialogTitle>
             </div>
             <DialogDescription>
-              Set up a new research project. Our AI will automatically search and
-              deliver curated insights based on your schedule.
+              Set up a new research project. Our AI will automatically search
+              and deliver curated insights based on your schedule.
             </DialogDescription>
           </DialogHeader>
 
-          <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
+          <form
+            onSubmit={handleSubmit}
+            className="flex flex-col flex-1 min-h-0"
+          >
             {/* Error Message - Fixed at top */}
             {error && (
               <div className="mx-1 mt-4 mb-2 rounded-md bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 p-3">
@@ -275,10 +295,16 @@ export function CreateProjectDialog({
                     if (titleError) setTitleError("");
                   }}
                   disabled={isCreating}
-                  className={titleError ? "border-red-500 focus-visible:ring-red-500" : ""}
+                  className={
+                    titleError
+                      ? "border-red-500 focus-visible:ring-red-500"
+                      : ""
+                  }
                 />
                 {titleError && (
-                  <p className="text-sm text-red-500 font-medium">{titleError}</p>
+                  <p className="text-sm text-red-500 font-medium">
+                    {titleError}
+                  </p>
                 )}
               </div>
 
@@ -288,42 +314,52 @@ export function CreateProjectDialog({
                   <Label htmlFor="description">
                     What to Research <span className="text-destructive">*</span>
                   </Label>
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8"
-                          onClick={handleEnhanceDescription}
-                          disabled={isCreating || isEnhancing}
-                        >
-                          {isEnhancing ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : (
-                            <Sparkles className="h-4 w-4" />
-                          )}
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>Enhance with AI</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className={`h-8 gap-1.5 text-xs border-coral-400/30 hover:border-coral-400/50 hover:bg-coral-500/10 relative overflow-hidden ${
+                      isEnhancing ? "animate-shimmer" : ""
+                    }`}
+                    onClick={handleEnhanceDescription}
+                    disabled={isCreating || isEnhancing || !description.trim()}
+                  >
+                    {isEnhancing ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin text-coral-400" />
+                    ) : (
+                      <Sparkles className="h-3.5 w-3.5 text-coral-400" />
+                    )}
+                    {isEnhancing ? "Enhancing..." : "Enhance with AI"}
+                  </Button>
                 </div>
                 <Textarea
                   id="description"
                   placeholder="e.g., Latest developments in AI and machine learning, focusing on practical applications and breakthrough research"
                   value={description}
-                  onChange={(e) => setDescription(e.target.value)}
+                  onChange={(e) => {
+                    if (e.target.value.length <= 2000) {
+                      setDescription(e.target.value);
+                    }
+                  }}
                   disabled={isCreating}
                   rows={4}
+                  maxLength={2000}
                 />
-                <p className="text-xs text-muted-foreground">
-                  Be specific about what you want to track. The more detailed, the
-                  better the results.
-                </p>
+                <div className="flex items-center justify-between">
+                  <p className="text-xs text-muted-foreground">
+                    Be specific about what you want to track. The more detailed,
+                    the better the results.
+                  </p>
+                  <p
+                    className={`text-xs ${
+                      description.length > 1800
+                        ? "text-amber-400"
+                        : "text-muted-foreground"
+                    }`}
+                  >
+                    {description.length}/2000
+                  </p>
+                </div>
               </div>
 
               {/* Schedule Card */}
@@ -401,13 +437,17 @@ export function CreateProjectDialog({
                       onChange={(e) => setTimezone(e.target.value)}
                       disabled={isCreating}
                     >
-                      <option value="America/New_York">Eastern Time (ET)</option>
+                      <option value="America/New_York">
+                        Eastern Time (ET)
+                      </option>
                       <option value="America/Chicago">Central Time (CT)</option>
                       <option value="America/Denver">Mountain Time (MT)</option>
                       <option value="America/Los_Angeles">
                         Pacific Time (PT)
                       </option>
-                      <option value="America/Anchorage">Alaska Time (AKT)</option>
+                      <option value="America/Anchorage">
+                        Alaska Time (AKT)
+                      </option>
                       <option value="Pacific/Honolulu">Hawaii Time (HT)</option>
                       <option value="Europe/London">London (GMT/BST)</option>
                       <option value="Europe/Paris">Paris (CET/CEST)</option>
@@ -418,7 +458,9 @@ export function CreateProjectDialog({
                       <option value="Asia/Singapore">Singapore (SGT)</option>
                       <option value="Asia/Dubai">Dubai (GST)</option>
                       <option value="Asia/Kolkata">India (IST)</option>
-                      <option value="Australia/Sydney">Sydney (AEDT/AEST)</option>
+                      <option value="Australia/Sydney">
+                        Sydney (AEDT/AEST)
+                      </option>
                       <option value="Australia/Melbourne">
                         Melbourne (AEDT/AEST)
                       </option>
@@ -432,99 +474,184 @@ export function CreateProjectDialog({
               </div>
 
               {/* Advanced Settings Collapsible */}
-              <div className="rounded-lg border border-border bg-muted/30">
+              <div className="rounded-lg border border-border bg-muted/30 overflow-hidden">
                 <button
                   type="button"
                   onClick={() => setAdvancedOpen(!advancedOpen)}
-                  className="w-full flex items-center justify-between p-4 text-sm font-medium text-foreground hover:bg-muted/50 transition-colors rounded-lg"
+                  className="w-full flex items-center justify-between p-4 text-sm font-medium text-foreground hover:bg-muted/50 transition-colors rounded-lg focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-inset"
                 >
                   <div className="flex items-center gap-2">
                     <Settings className="w-4 h-4 text-muted-foreground" />
                     Advanced Settings
                   </div>
                   <ChevronDown
-                    className={`w-4 h-4 text-muted-foreground transition-transform duration-200 ${advancedOpen ? "rotate-180" : ""
-                      }`}
+                    className={`w-4 h-4 text-muted-foreground transition-transform duration-300 ${
+                      advancedOpen ? "rotate-180" : ""
+                    }`}
                   />
                 </button>
 
-                {advancedOpen && (
-                  <div className="px-4 pb-4 space-y-4 border-t border-border pt-4">
-                    {/* Priority Domains */}
-                    <div className="space-y-2">
-                      <Label htmlFor="priorityDomains">Priority Domains</Label>
-                      <Textarea
-                        id="priorityDomains"
-                        placeholder="e.g., example.com, news.site.com"
-                        value={priorityDomains}
-                        onChange={(e) => setPriorityDomains(e.target.value)}
-                        disabled={isCreating}
-                        rows={2}
-                      />
-                      <p className="text-xs text-muted-foreground">
-                        Domains to prioritize in search results (one per line or
-                        comma-separated). We will prioritize content from these
-                        domains.
-                      </p>
-                    </div>
+                <div
+                  className={`grid transition-all duration-300 ease-in-out ${
+                    advancedOpen
+                      ? "grid-rows-[1fr] opacity-100"
+                      : "grid-rows-[0fr] opacity-0"
+                  }`}
+                >
+                  <div className="overflow-hidden">
+                    <div className="px-4 pb-4 space-y-4 border-t border-border pt-4">
+                      {/* Priority Domains */}
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-1.5">
+                          <Label htmlFor="priorityDomains">
+                            Priority Domains
+                          </Label>
+                          <TooltipProvider delayDuration={0}>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <button type="button" className="inline-flex">
+                                  <HelpCircle className="w-3.5 h-3.5 text-muted-foreground/60 hover:text-muted-foreground cursor-help" />
+                                  <span className="sr-only">Help</span>
+                                </button>
+                              </TooltipTrigger>
+                              <TooltipContent
+                                side="right"
+                                className="max-w-[250px] z-[100]"
+                              >
+                                <p className="text-xs">
+                                  Results from these domains will be ranked
+                                  higher in your research brief. Useful for
+                                  trusted news sources or industry-specific
+                                  sites.
+                                </p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        </div>
+                        <Textarea
+                          id="priorityDomains"
+                          placeholder="e.g., reuters.com, techcrunch.com"
+                          value={priorityDomains}
+                          onChange={(e) => setPriorityDomains(e.target.value)}
+                          disabled={isCreating}
+                          rows={2}
+                        />
+                      </div>
 
-                    {/* Excluded Domains */}
-                    <div className="space-y-2">
-                      <Label htmlFor="excludedDomains">Excluded Domains</Label>
-                      <Textarea
-                        id="excludedDomains"
-                        placeholder="e.g., spam-site.com, unreliable.com"
-                        value={excludedDomains}
-                        onChange={(e) => setExcludedDomains(e.target.value)}
-                        disabled={isCreating}
-                        rows={2}
-                      />
-                      <p className="text-xs text-muted-foreground">
-                        Domains to exclude from search results (one per line or
-                        comma-separated). Results from these domains will be
-                        filtered out.
-                      </p>
-                    </div>
+                      {/* Excluded Domains */}
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-1.5">
+                          <Label htmlFor="excludedDomains">
+                            Excluded Domains
+                          </Label>
+                          <TooltipProvider delayDuration={0}>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <button type="button" className="inline-flex">
+                                  <HelpCircle className="w-3.5 h-3.5 text-muted-foreground/60 hover:text-muted-foreground cursor-help" />
+                                  <span className="sr-only">Help</span>
+                                </button>
+                              </TooltipTrigger>
+                              <TooltipContent
+                                side="right"
+                                className="max-w-[250px] z-[100]"
+                              >
+                                <p className="text-xs">
+                                  Results from these domains will be completely
+                                  filtered out. Use for blocking low-quality or
+                                  irrelevant sources.
+                                </p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        </div>
+                        <Textarea
+                          id="excludedDomains"
+                          placeholder="e.g., spam-site.com, clickbait.com"
+                          value={excludedDomains}
+                          onChange={(e) => setExcludedDomains(e.target.value)}
+                          disabled={isCreating}
+                          rows={2}
+                        />
+                      </div>
 
-                    {/* Required Keywords */}
-                    <div className="space-y-2">
-                      <Label htmlFor="requiredKeywords">
-                        Keywords to Search For
-                      </Label>
-                      <Textarea
-                        id="requiredKeywords"
-                        placeholder="e.g., machine learning, neural networks, AI"
-                        value={requiredKeywords}
-                        onChange={(e) => setRequiredKeywords(e.target.value)}
-                        disabled={isCreating}
-                        rows={2}
-                      />
-                      <p className="text-xs text-muted-foreground">
-                        Keywords to include in searches to improve result quality
-                        (one per line or comma-separated). These will be used to
-                        enhance search queries.
-                      </p>
-                    </div>
+                      {/* Required Keywords */}
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-1.5">
+                          <Label htmlFor="requiredKeywords">
+                            Keywords to Search For
+                          </Label>
+                          <TooltipProvider delayDuration={0}>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <button type="button" className="inline-flex">
+                                  <HelpCircle className="w-3.5 h-3.5 text-muted-foreground/60 hover:text-muted-foreground cursor-help" />
+                                  <span className="sr-only">Help</span>
+                                </button>
+                              </TooltipTrigger>
+                              <TooltipContent
+                                side="right"
+                                className="max-w-[250px] z-[100]"
+                              >
+                                <p className="text-xs">
+                                  These keywords will be added to search queries
+                                  to help find more relevant results. Think of
+                                  them as search refinements.
+                                </p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        </div>
+                        <Textarea
+                          id="requiredKeywords"
+                          placeholder="e.g., machine learning, neural networks"
+                          value={requiredKeywords}
+                          onChange={(e) => setRequiredKeywords(e.target.value)}
+                          disabled={isCreating}
+                          rows={2}
+                        />
+                      </div>
 
-                    {/* Excluded Keywords */}
-                    <div className="space-y-2">
-                      <Label htmlFor="excludedKeywords">Excluded Keywords</Label>
-                      <Textarea
-                        id="excludedKeywords"
-                        placeholder="e.g., advertisement, sponsored, clickbait"
-                        value={excludedKeywords}
-                        onChange={(e) => setExcludedKeywords(e.target.value)}
-                        disabled={isCreating}
-                        rows={2}
-                      />
-                      <p className="text-xs text-muted-foreground">
-                        Keywords to exclude from results (one per line or
-                        comma-separated). Content containing these keywords will
-                        be filtered out.
-                      </p>
+                      {/* Excluded Keywords */}
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-1.5">
+                          <Label htmlFor="excludedKeywords">
+                            Excluded Keywords
+                          </Label>
+                          <TooltipProvider delayDuration={0}>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <button type="button" className="inline-flex">
+                                  <HelpCircle className="w-3.5 h-3.5 text-muted-foreground/60 hover:text-muted-foreground cursor-help" />
+                                  <span className="sr-only">Help</span>
+                                </button>
+                              </TooltipTrigger>
+                              <TooltipContent
+                                side="right"
+                                className="max-w-[250px] z-[100]"
+                              >
+                                <p className="text-xs">
+                                  Content containing these keywords will be
+                                  filtered out from your results. Useful for
+                                  removing sponsored content or off-topic
+                                  articles.
+                                </p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        </div>
+                        <Textarea
+                          id="excludedKeywords"
+                          placeholder="e.g., sponsored, advertisement"
+                          value={excludedKeywords}
+                          onChange={(e) => setExcludedKeywords(e.target.value)}
+                          disabled={isCreating}
+                          rows={2}
+                        />
+                      </div>
                     </div>
                   </div>
-                )}
+                </div>
               </div>
             </div>
 
@@ -549,7 +676,10 @@ export function CreateProjectDialog({
         </DialogContent>
       </Dialog>
 
-      <Dialog open={isSuggestionDialogOpen} onOpenChange={setIsSuggestionDialogOpen}>
+      <Dialog
+        open={isSuggestionDialogOpen}
+        onOpenChange={setIsSuggestionDialogOpen}
+      >
         <DialogContent className="sm:max-w-[600px]">
           <DialogHeader>
             <div className="flex items-center gap-3 mb-2">
@@ -559,8 +689,8 @@ export function CreateProjectDialog({
               <DialogTitle>AI Improved Description</DialogTitle>
             </div>
             <DialogDescription>
-              Review the AI-enhanced description for your project. You can accept it
-              or ask the AI to try again.
+              Review the AI-enhanced description for your project. You can
+              accept it or ask the AI to try again.
             </DialogDescription>
           </DialogHeader>
 
@@ -569,7 +699,9 @@ export function CreateProjectDialog({
               {isEnhancing ? (
                 <div className="flex flex-col items-center justify-center h-full space-y-3 py-6">
                   <Loader2 className="h-6 w-6 animate-spin text-coral-500" />
-                  <p className="text-muted-foreground animate-pulse">Generating new suggestion...</p>
+                  <p className="text-muted-foreground animate-pulse">
+                    Generating new suggestion...
+                  </p>
                 </div>
               ) : (
                 suggestedDescription
@@ -611,7 +743,10 @@ export function CreateProjectDialog({
       </Dialog>
 
       {/* Paused Project Info Dialog */}
-      <Dialog open={pausedInfoDialogOpen} onOpenChange={setPausedInfoDialogOpen}>
+      <Dialog
+        open={pausedInfoDialogOpen}
+        onOpenChange={setPausedInfoDialogOpen}
+      >
         <DialogContent className="sm:max-w-[450px]">
           <DialogHeader>
             <div className="flex items-center gap-3 mb-2">
@@ -624,12 +759,12 @@ export function CreateProjectDialog({
 
           <div className="text-left space-y-3 text-sm text-muted-foreground">
             <p>
-              Your project has been created successfully, but it's currently <span className="font-medium text-foreground">paused</span> because 
-              you can only have {maxActiveProjects} active project{maxActiveProjects === 1 ? "" : "s"} on your current plan.
+              Your project has been created successfully, but it's currently{" "}
+              <span className="font-medium text-foreground">paused</span>{" "}
+              because you can only have {maxActiveProjects} active project
+              {maxActiveProjects === 1 ? "" : "s"} on your current plan.
             </p>
-            <p>
-              To activate this project, you can either:
-            </p>
+            <p>To activate this project, you can either:</p>
             <ul className="list-disc list-inside space-y-1">
               <li>Pause one of your currently active projects</li>
               <li>Upgrade your plan to run more projects simultaneously</li>

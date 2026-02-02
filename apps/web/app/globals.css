@@ -152,8 +152,7 @@
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
     border: 1px solid rgba(255, 255, 255, 0.08);
-    box-shadow: 
-      0 8px 32px rgba(0, 0, 0, 0.3),
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3),
       inset 0 1px 0 rgba(255, 255, 255, 0.05);
   }
 
@@ -166,8 +165,7 @@
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
     border: 1px solid rgba(20, 184, 166, 0.15);
-    box-shadow: 
-      0 8px 32px rgba(0, 0, 0, 0.4),
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4),
       0 0 0 1px rgba(255, 255, 255, 0.03),
       inset 0 1px 0 rgba(255, 255, 255, 0.03);
   }
@@ -181,53 +179,44 @@
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
     border: 1px solid rgba(20, 184, 166, 0.12);
-    box-shadow: 
-      0 4px 24px rgba(0, 0, 0, 0.25),
-      0 0 40px rgba(20, 184, 166, 0.03),
-      inset 0 1px 0 rgba(255, 255, 255, 0.04);
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.25),
+      0 0 40px rgba(20, 184, 166, 0.03), inset 0 1px 0 rgba(255, 255, 255, 0.04);
     transition: all 0.3s ease;
   }
 
   .glass-card:hover {
     border-color: rgba(20, 184, 166, 0.25);
-    box-shadow: 
-      0 8px 40px rgba(0, 0, 0, 0.3),
-      0 0 60px rgba(20, 184, 166, 0.08),
+    box-shadow: 0 8px 40px rgba(0, 0, 0, 0.3), 0 0 60px rgba(20, 184, 166, 0.08),
       inset 0 1px 0 rgba(255, 255, 255, 0.06);
     transform: translateY(-2px);
   }
 
-  /* Gradient Text */
+  /* Gradient Text - WCAG AA Compliant (4.5:1+ contrast on dark bg) */
   .gradient-text {
     background-clip: text;
     -webkit-background-clip: text;
     color: transparent;
     background-image: linear-gradient(
       135deg,
-      rgb(45, 212, 191) 0%,
-      rgb(20, 184, 166) 50%,
-      rgb(251, 146, 128) 100%
+      rgb(94, 234, 212) 0%,
+      rgb(45, 212, 191) 50%,
+      rgb(253, 186, 174) 100%
     );
   }
 
   /* Glow Effects */
   .glow-teal {
-    box-shadow: 
-      0 0 20px rgba(20, 184, 166, 0.3),
-      0 0 40px rgba(20, 184, 166, 0.15),
-      0 0 60px rgba(20, 184, 166, 0.08);
+    box-shadow: 0 0 20px rgba(20, 184, 166, 0.3),
+      0 0 40px rgba(20, 184, 166, 0.15), 0 0 60px rgba(20, 184, 166, 0.08);
   }
 
   .glow-coral {
-    box-shadow: 
-      0 0 20px rgba(251, 146, 128, 0.3),
-      0 0 40px rgba(251, 146, 128, 0.15),
-      0 0 60px rgba(251, 146, 128, 0.08);
+    box-shadow: 0 0 20px rgba(251, 146, 128, 0.3),
+      0 0 40px rgba(251, 146, 128, 0.15), 0 0 60px rgba(251, 146, 128, 0.08);
   }
 
   .glow-text {
-    text-shadow: 
-      0 0 20px rgba(20, 184, 166, 0.5),
+    text-shadow: 0 0 20px rgba(20, 184, 166, 0.5),
       0 0 40px rgba(20, 184, 166, 0.3);
   }
 
@@ -248,11 +237,8 @@
       rgba(45, 212, 191, 0.5) 50%,
       rgba(251, 146, 128, 0.3) 100%
     );
-    mask: 
-      linear-gradient(#fff 0 0) content-box, 
-      linear-gradient(#fff 0 0);
-    -webkit-mask: 
-      linear-gradient(#fff 0 0) content-box, 
+    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask: linear-gradient(#fff 0 0) content-box,
       linear-gradient(#fff 0 0);
     mask-composite: exclude;
     -webkit-mask-composite: xor;
@@ -302,27 +288,53 @@
   }
 
   .bg-glow-orb-teal {
-    background: radial-gradient(circle, rgba(20, 184, 166, 0.6) 0%, transparent 70%);
+    background: radial-gradient(
+      circle,
+      rgba(20, 184, 166, 0.6) 0%,
+      transparent 70%
+    );
   }
 
   .bg-glow-orb-coral {
-    background: radial-gradient(circle, rgba(251, 146, 128, 0.5) 0%, transparent 70%);
+    background: radial-gradient(
+      circle,
+      rgba(251, 146, 128, 0.5) 0%,
+      transparent 70%
+    );
   }
 
   .bg-glow-orb-purple {
-    background: radial-gradient(circle, rgba(139, 92, 246, 0.4) 0%, transparent 70%);
+    background: radial-gradient(
+      circle,
+      rgba(139, 92, 246, 0.4) 0%,
+      transparent 70%
+    );
   }
 
   .bg-glow-orb-blue {
-    background: radial-gradient(circle, rgba(59, 130, 246, 0.35) 0%, transparent 70%);
+    background: radial-gradient(
+      circle,
+      rgba(59, 130, 246, 0.35) 0%,
+      transparent 70%
+    );
   }
 
   .bg-glow-orb-warm {
-    background: radial-gradient(circle, rgba(239, 68, 68, 0.25) 0%, rgba(251, 146, 128, 0.15) 50%, transparent 70%);
+    background: radial-gradient(
+      circle,
+      rgba(239, 68, 68, 0.25) 0%,
+      rgba(251, 146, 128, 0.15) 50%,
+      transparent 70%
+    );
   }
 
   .bg-glow-orb-mixed {
-    background: radial-gradient(ellipse at center, rgba(251, 146, 128, 0.3) 0%, rgba(139, 92, 246, 0.2) 40%, transparent 70%);
+    background: radial-gradient(
+      ellipse at center,
+      rgba(251, 146, 128, 0.3) 0%,
+      rgba(139, 92, 246, 0.2) 40%,
+      transparent 70%
+    );
   }
 }
 
@@ -343,27 +355,83 @@
 
 /* Vignette effect */
 .bg-vignette {
-  background: radial-gradient(ellipse at center, transparent 0%, transparent 50%, rgba(0, 0, 0, 0.4) 100%);
+  background: radial-gradient(
+    ellipse at center,
+    transparent 0%,
+    transparent 50%,
+    rgba(0, 0, 0, 0.4) 100%
+  );
 }
 
 /* Starfield effect */
 .bg-stars {
-  background-image: 
-    radial-gradient(1px 1px at 20px 30px, rgba(255, 255, 255, 0.3), transparent),
+  background-image: radial-gradient(
+      1px 1px at 20px 30px,
+      rgba(255, 255, 255, 0.3),
+      transparent
+    ),
     radial-gradient(1px 1px at 40px 70px, rgba(255, 255, 255, 0.2), transparent),
-    radial-gradient(1px 1px at 50px 160px, rgba(255, 255, 255, 0.3), transparent),
+    radial-gradient(
+      1px 1px at 50px 160px,
+      rgba(255, 255, 255, 0.3),
+      transparent
+    ),
     radial-gradient(1px 1px at 90px 40px, rgba(255, 255, 255, 0.2), transparent),
-    radial-gradient(1px 1px at 130px 80px, rgba(255, 255, 255, 0.25), transparent),
-    radial-gradient(1px 1px at 160px 120px, rgba(255, 255, 255, 0.2), transparent),
-    radial-gradient(1.5px 1.5px at 200px 50px, rgba(255, 255, 255, 0.35), transparent),
-    radial-gradient(1px 1px at 220px 150px, rgba(255, 255, 255, 0.2), transparent),
-    radial-gradient(1px 1px at 250px 90px, rgba(255, 255, 255, 0.25), transparent),
-    radial-gradient(1.5px 1.5px at 280px 180px, rgba(255, 255, 255, 0.3), transparent),
-    radial-gradient(1px 1px at 320px 60px, rgba(255, 255, 255, 0.2), transparent),
-    radial-gradient(1px 1px at 350px 130px, rgba(255, 255, 255, 0.25), transparent),
-    radial-gradient(1px 1px at 380px 200px, rgba(255, 255, 255, 0.2), transparent),
-    radial-gradient(1.5px 1.5px at 420px 80px, rgba(255, 255, 255, 0.3), transparent),
-    radial-gradient(1px 1px at 450px 170px, rgba(255, 255, 255, 0.2), transparent);
+    radial-gradient(
+      1px 1px at 130px 80px,
+      rgba(255, 255, 255, 0.25),
+      transparent
+    ),
+    radial-gradient(
+      1px 1px at 160px 120px,
+      rgba(255, 255, 255, 0.2),
+      transparent
+    ),
+    radial-gradient(
+      1.5px 1.5px at 200px 50px,
+      rgba(255, 255, 255, 0.35),
+      transparent
+    ),
+    radial-gradient(
+      1px 1px at 220px 150px,
+      rgba(255, 255, 255, 0.2),
+      transparent
+    ),
+    radial-gradient(
+      1px 1px at 250px 90px,
+      rgba(255, 255, 255, 0.25),
+      transparent
+    ),
+    radial-gradient(
+      1.5px 1.5px at 280px 180px,
+      rgba(255, 255, 255, 0.3),
+      transparent
+    ),
+    radial-gradient(
+      1px 1px at 320px 60px,
+      rgba(255, 255, 255, 0.2),
+      transparent
+    ),
+    radial-gradient(
+      1px 1px at 350px 130px,
+      rgba(255, 255, 255, 0.25),
+      transparent
+    ),
+    radial-gradient(
+      1px 1px at 380px 200px,
+      rgba(255, 255, 255, 0.2),
+      transparent
+    ),
+    radial-gradient(
+      1.5px 1.5px at 420px 80px,
+      rgba(255, 255, 255, 0.3),
+      transparent
+    ),
+    radial-gradient(
+      1px 1px at 450px 170px,
+      rgba(255, 255, 255, 0.2),
+      transparent
+    );
   background-size: 500px 250px;
 }
 
@@ -378,12 +446,20 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  background: linear-gradient(180deg, rgba(20, 184, 166, 0.4) 0%, rgba(251, 146, 128, 0.4) 100%);
+  background: linear-gradient(
+    180deg,
+    rgba(20, 184, 166, 0.4) 0%,
+    rgba(251, 146, 128, 0.4) 100%
+  );
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(180deg, rgba(20, 184, 166, 0.6) 0%, rgba(251, 146, 128, 0.6) 100%);
+  background: linear-gradient(
+    180deg,
+    rgba(20, 184, 166, 0.6) 0%,
+    rgba(251, 146, 128, 0.6) 100%
+  );
 }
 
 /* Selection */
@@ -394,7 +470,8 @@
 
 /* Background gradient animation */
 @keyframes gradient-shift {
-  0%, 100% {
+  0%,
+  100% {
     transform: translate(0, 0) scale(1);
   }
   25% {
@@ -413,7 +490,8 @@
 }
 
 @keyframes pulse-glow {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 0.3;
   }
   50% {
@@ -423,4 +501,64 @@
 
 .animate-pulse-glow {
   animation: pulse-glow 4s ease-in-out infinite;
+}
+
+/* Focus States for Accessibility */
+*:focus-visible {
+  outline: none;
+}
+
+button:focus-visible,
+a:focus-visible,
+[role="button"]:focus-visible,
+[role="switch"]:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid rgb(20, 184, 166);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Override for elements that already have ring styles */
+.focus-visible\:ring-2:focus-visible {
+  outline: none;
+}
+
+/* Shimmer Animation for Loading States */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.animate-shimmer {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(251, 146, 128, 0.15) 50%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+}
+
+/* Collapsible Transition Utilities */
+.collapsible-content {
+  overflow: hidden;
+  transition: max-height 0.3s ease-out, opacity 0.2s ease-out;
+}
+
+.collapsible-content[data-state="closed"] {
+  max-height: 0;
+  opacity: 0;
+}
+
+.collapsible-content[data-state="open"] {
+  max-height: 1000px;
+  opacity: 1;
 }

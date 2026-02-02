@@ -1,7 +1,12 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import type { ProjectInfo, Frequency, ImproveProjectDescriptionRequest, ImproveProjectDescriptionResponse } from "core";
+import type {
+  ProjectInfo,
+  Frequency,
+  ImproveProjectDescriptionRequest,
+  ImproveProjectDescriptionResponse,
+} from "core";
 import {
   Dialog,
   DialogContent,
@@ -19,12 +24,19 @@ import { TimePicker } from "@/components/ui/time-picker";
 import { DayOfWeekPicker } from "@/components/ui/day-of-week-picker";
 import { DayOfMonthPicker } from "@/components/ui/day-of-month-picker";
 import {
+  Settings,
+  Calendar,
+  ChevronDown,
+  Sparkles,
+  Loader2,
+  HelpCircle,
+} from "lucide-react";
+import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { Settings, Calendar, ChevronDown, Sparkles, Loader2 } from "lucide-react";
 import { useProjects } from "@/hooks/use-projects";
 import { relevx_api } from "@/lib/client";
 
@@ -259,42 +271,52 @@ export function EditProjectSettingsDialog({
                 <Label htmlFor="edit-description">
                   What to Research <span className="text-destructive">*</span>
                 </Label>
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8"
-                        onClick={handleEnhanceDescription}
-                        disabled={isUpdating || isEnhancing}
-                      >
-                        {isEnhancing ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                          <Sparkles className="h-4 w-4" />
-                        )}
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Enhance with AI</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className={`h-8 gap-1.5 text-xs border-coral-400/30 hover:border-coral-400/50 hover:bg-coral-500/10 relative overflow-hidden ${
+                    isEnhancing ? "animate-shimmer" : ""
+                  }`}
+                  onClick={handleEnhanceDescription}
+                  disabled={isUpdating || isEnhancing || !description.trim()}
+                >
+                  {isEnhancing ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin text-coral-400" />
+                  ) : (
+                    <Sparkles className="h-3.5 w-3.5 text-coral-400" />
+                  )}
+                  {isEnhancing ? "Enhancing..." : "Enhance with AI"}
+                </Button>
               </div>
               <Textarea
                 id="edit-description"
                 placeholder="e.g., Latest developments in AI and machine learning, focusing on practical applications and breakthrough research"
                 value={description}
-                onChange={(e) => setDescription(e.target.value)}
+                onChange={(e) => {
+                  if (e.target.value.length <= 2000) {
+                    setDescription(e.target.value);
+                  }
+                }}
                 disabled={isUpdating}
                 rows={4}
+                maxLength={2000}
               />
-              <p className="text-xs text-muted-foreground">
-                Be specific about what you want to track. The more detailed, the
-                better the results.
-              </p>
+              <div className="flex items-center justify-between">
+                <p className="text-xs text-muted-foreground">
+                  Be specific about what you want to track. The more detailed,
+                  the better the results.
+                </p>
+                <p
+                  className={`text-xs ${
+                    description.length > 1800
+                      ? "text-amber-400"
+                      : "text-muted-foreground"
+                  }`}
+                >
+                  {description.length}/2000
+                </p>
+              </div>
             </div>
 
             {/* Schedule Card */}
@@ -403,106 +425,183 @@ export function EditProjectSettingsDialog({
             </div>
 
             {/* Advanced Settings Collapsible */}
-            <div className="rounded-lg border border-border bg-muted/30">
+            <div className="rounded-lg border border-border bg-muted/30 overflow-hidden">
               <button
                 type="button"
                 onClick={() => setAdvancedOpen(!advancedOpen)}
-                className="w-full flex items-center justify-between p-4 text-sm font-medium text-foreground hover:bg-muted/50 transition-colors rounded-lg"
+                className="w-full flex items-center justify-between p-4 text-sm font-medium text-foreground hover:bg-muted/50 transition-colors rounded-lg focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-inset"
               >
                 <div className="flex items-center gap-2">
                   <Settings className="w-4 h-4 text-muted-foreground" />
                   Advanced Settings
                 </div>
                 <ChevronDown
-                  className={`w-4 h-4 text-muted-foreground transition-transform duration-200 ${
+                  className={`w-4 h-4 text-muted-foreground transition-transform duration-300 ${
                     advancedOpen ? "rotate-180" : ""
                   }`}
                 />
               </button>
 
-              {advancedOpen && (
-                <div className="px-4 pb-4 space-y-4 border-t border-border pt-4">
-                  {/* Priority Domains */}
-                  <div className="space-y-2">
-                    <Label htmlFor="edit-priorityDomains">
-                      Priority Domains
-                    </Label>
-                    <Textarea
-                      id="edit-priorityDomains"
-                      placeholder="e.g., example.com, news.site.com"
-                      value={priorityDomains}
-                      onChange={(e) => setPriorityDomains(e.target.value)}
-                      disabled={isUpdating}
-                      rows={2}
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      Domains to prioritize in search results (one per line or
-                      comma-separated). We will prioritize content from these
-                      domains.
-                    </p>
-                  </div>
+              <div
+                className={`grid transition-all duration-300 ease-in-out ${
+                  advancedOpen
+                    ? "grid-rows-[1fr] opacity-100"
+                    : "grid-rows-[0fr] opacity-0"
+                }`}
+              >
+                <div className="overflow-hidden">
+                  <div className="px-4 pb-4 space-y-4 border-t border-border pt-4">
+                    {/* Priority Domains */}
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-1.5">
+                        <Label htmlFor="edit-priorityDomains">
+                          Priority Domains
+                        </Label>
+                        <TooltipProvider delayDuration={0}>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <button type="button" className="inline-flex">
+                                <HelpCircle className="w-3.5 h-3.5 text-muted-foreground/60 hover:text-muted-foreground cursor-help" />
+                                <span className="sr-only">Help</span>
+                              </button>
+                            </TooltipTrigger>
+                            <TooltipContent
+                              side="right"
+                              className="max-w-[250px] z-[100]"
+                            >
+                              <p className="text-xs">
+                                Results from these domains will be ranked higher
+                                in your research brief. Useful for trusted news
+                                sources or industry-specific sites.
+                              </p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      </div>
+                      <Textarea
+                        id="edit-priorityDomains"
+                        placeholder="e.g., reuters.com, techcrunch.com"
+                        value={priorityDomains}
+                        onChange={(e) => setPriorityDomains(e.target.value)}
+                        disabled={isUpdating}
+                        rows={2}
+                      />
+                    </div>
 
-                  {/* Excluded Domains */}
-                  <div className="space-y-2">
-                    <Label htmlFor="edit-excludedDomains">
-                      Excluded Domains
-                    </Label>
-                    <Textarea
-                      id="edit-excludedDomains"
-                      placeholder="e.g., spam-site.com, unreliable.com"
-                      value={excludedDomains}
-                      onChange={(e) => setExcludedDomains(e.target.value)}
-                      disabled={isUpdating}
-                      rows={2}
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      Domains to exclude from search results (one per line or
-                      comma-separated). Results from these domains will be
-                      filtered out.
-                    </p>
-                  </div>
+                    {/* Excluded Domains */}
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-1.5">
+                        <Label htmlFor="edit-excludedDomains">
+                          Excluded Domains
+                        </Label>
+                        <TooltipProvider delayDuration={0}>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <button type="button" className="inline-flex">
+                                <HelpCircle className="w-3.5 h-3.5 text-muted-foreground/60 hover:text-muted-foreground cursor-help" />
+                                <span className="sr-only">Help</span>
+                              </button>
+                            </TooltipTrigger>
+                            <TooltipContent
+                              side="right"
+                              className="max-w-[250px] z-[100]"
+                            >
+                              <p className="text-xs">
+                                Results from these domains will be completely
+                                filtered out. Use for blocking low-quality or
+                                irrelevant sources.
+                              </p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      </div>
+                      <Textarea
+                        id="edit-excludedDomains"
+                        placeholder="e.g., spam-site.com, clickbait.com"
+                        value={excludedDomains}
+                        onChange={(e) => setExcludedDomains(e.target.value)}
+                        disabled={isUpdating}
+                        rows={2}
+                      />
+                    </div>
 
-                  {/* Required Keywords */}
-                  <div className="space-y-2">
-                    <Label htmlFor="edit-requiredKeywords">
-                      Keywords to Search For
-                    </Label>
-                    <Textarea
-                      id="edit-requiredKeywords"
-                      placeholder="e.g., machine learning, neural networks, AI"
-                      value={requiredKeywords}
-                      onChange={(e) => setRequiredKeywords(e.target.value)}
-                      disabled={isUpdating}
-                      rows={2}
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      Keywords to include in searches to improve result quality
-                      (one per line or comma-separated). These will be used to
-                      enhance search queries.
-                    </p>
-                  </div>
+                    {/* Required Keywords */}
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-1.5">
+                        <Label htmlFor="edit-requiredKeywords">
+                          Keywords to Search For
+                        </Label>
+                        <TooltipProvider delayDuration={0}>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <button type="button" className="inline-flex">
+                                <HelpCircle className="w-3.5 h-3.5 text-muted-foreground/60 hover:text-muted-foreground cursor-help" />
+                                <span className="sr-only">Help</span>
+                              </button>
+                            </TooltipTrigger>
+                            <TooltipContent
+                              side="right"
+                              className="max-w-[250px] z-[100]"
+                            >
+                              <p className="text-xs">
+                                These keywords will be added to search queries
+                                to help find more relevant results. Think of
+                                them as search refinements.
+                              </p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      </div>
+                      <Textarea
+                        id="edit-requiredKeywords"
+                        placeholder="e.g., machine learning, neural networks"
+                        value={requiredKeywords}
+                        onChange={(e) => setRequiredKeywords(e.target.value)}
+                        disabled={isUpdating}
+                        rows={2}
+                      />
+                    </div>
 
-                  {/* Excluded Keywords */}
-                  <div className="space-y-2">
-                    <Label htmlFor="edit-excludedKeywords">
-                      Excluded Keywords
-                    </Label>
-                    <Textarea
-                      id="edit-excludedKeywords"
-                      placeholder="e.g., advertisement, sponsored, clickbait"
-                      value={excludedKeywords}
-                      onChange={(e) => setExcludedKeywords(e.target.value)}
-                      disabled={isUpdating}
-                      rows={2}
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      Keywords to exclude from results (one per line or
-                      comma-separated). Content containing these keywords will
-                      be filtered out.
-                    </p>
+                    {/* Excluded Keywords */}
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-1.5">
+                        <Label htmlFor="edit-excludedKeywords">
+                          Excluded Keywords
+                        </Label>
+                        <TooltipProvider delayDuration={0}>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <button type="button" className="inline-flex">
+                                <HelpCircle className="w-3.5 h-3.5 text-muted-foreground/60 hover:text-muted-foreground cursor-help" />
+                                <span className="sr-only">Help</span>
+                              </button>
+                            </TooltipTrigger>
+                            <TooltipContent
+                              side="right"
+                              className="max-w-[250px] z-[100]"
+                            >
+                              <p className="text-xs">
+                                Content containing these keywords will be
+                                filtered out from your results. Useful for
+                                removing sponsored content or off-topic
+                                articles.
+                              </p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      </div>
+                      <Textarea
+                        id="edit-excludedKeywords"
+                        placeholder="e.g., sponsored, advertisement"
+                        value={excludedKeywords}
+                        onChange={(e) => setExcludedKeywords(e.target.value)}
+                        disabled={isUpdating}
+                        rows={2}
+                      />
+                    </div>
                   </div>
                 </div>
-              )}
+              </div>
             </div>
 
             {/* Error Message */}

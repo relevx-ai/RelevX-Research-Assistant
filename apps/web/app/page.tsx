@@ -61,8 +61,7 @@ export default function HomePage() {
     {
       icon: Zap,
       title: "Summaries + Citations",
-      description:
-        "Direct, readable summaries with links to original sources",
+      description: "Direct, readable summaries with links to original sources",
     },
     {
       icon: Sparkles,
@@ -107,7 +106,8 @@ export default function HomePage() {
             transition={{ duration: 0.5, delay: 0.2 }}
             className="text-3xl sm:text-5xl md:text-7xl font-bold tracking-tight mb-6"
           >
-            Stay Informed, <span className="gradient-text glow-text">Effortlessly</span>
+            Stay Informed,{" "}
+            <span className="gradient-text glow-text">Effortlessly</span>
           </motion.h1>
 
           <motion.p
@@ -137,7 +137,16 @@ export default function HomePage() {
             className="flex flex-col items-center justify-center gap-8"
           >
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              {!userProfile && (
+              {userProfile ? (
+                <Button
+                  onClick={() => router.push("/projects")}
+                  size="lg"
+                  className="gap-2 text-lg px-8 hover:scale-105 transition-all duration-300 bg-gradient-to-r from-teal-600 to-teal-500 hover:from-teal-500 hover:to-teal-400 shadow-glow-md hover:shadow-glow-lg active:scale-95 border-0"
+                >
+                  Go to Projects
+                  <ArrowRight className="w-5 h-5" />
+                </Button>
+              ) : (
                 <Button
                   onClick={handleSignIn}
                   size="lg"
@@ -177,7 +186,8 @@ export default function HomePage() {
           className="text-center mb-16"
         >
           <h2 className="text-3xl md:text-4xl font-bold mb-4">
-            Powerful Features for <span className="gradient-text">Modern Researchers</span>
+            Powerful Features for{" "}
+            <span className="gradient-text">Modern Researchers</span>
           </h2>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
             Everything you need to stay on top of your research topics without
@@ -230,13 +240,15 @@ export default function HomePage() {
               </p>
             </div>
             <div className="rounded-xl glass-card p-5">
-              <p className="text-sm text-coral-400 mb-2 font-medium">Google Alerts</p>
-              <p className="font-semibold">
-                Raw links that still need reading
+              <p className="text-sm text-coral-400 mb-2 font-medium">
+                Google Alerts
               </p>
+              <p className="font-semibold">Raw links that still need reading</p>
             </div>
             <div className="rounded-xl glass-card p-5">
-              <p className="text-sm text-teal-400 mb-2 font-medium">Your Time</p>
+              <p className="text-sm text-teal-400 mb-2 font-medium">
+                Your Time
+              </p>
               <p className="font-semibold">Get answers in minutes, not hours</p>
             </div>
           </div>
@@ -247,19 +259,25 @@ export default function HomePage() {
       <section className="container-wide py-12">
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 text-center">
           <Card className="glass-card p-6 group hover:shadow-glow-sm transition-all duration-300">
-            <p className="text-3xl font-bold gradient-text glow-text mb-2">3-5 hrs</p>
+            <p className="text-3xl font-bold gradient-text glow-text mb-2">
+              3-5 hrs
+            </p>
             <p className="text-muted-foreground/80">
               Saved per week on manual research
             </p>
           </Card>
           <Card className="glass-card p-6 group hover:shadow-glow-coral-sm transition-all duration-300">
-            <p className="text-3xl font-bold gradient-text glow-text mb-2">Weekly</p>
+            <p className="text-3xl font-bold gradient-text glow-text mb-2">
+              Weekly
+            </p>
             <p className="text-muted-foreground/80">
               Briefs delivered on your schedule
             </p>
           </Card>
           <Card className="glass-card p-6 group hover:shadow-glow-sm transition-all duration-300">
-            <p className="text-3xl font-bold gradient-text glow-text mb-2">Cited</p>
+            <p className="text-3xl font-bold gradient-text glow-text mb-2">
+              Cited
+            </p>
             <p className="text-muted-foreground/80">
               Every insight links back to sources
             </p>
@@ -276,7 +294,9 @@ export default function HomePage() {
           viewport={{ once: true }}
           className="text-center mb-16"
         >
-          <h2 className="text-3xl md:text-4xl font-bold mb-4">How It <span className="gradient-text">Works</span></h2>
+          <h2 className="text-3xl md:text-4xl font-bold mb-4">
+            How It <span className="gradient-text">Works</span>
+          </h2>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
             Get started in minutes with our simple three-step process
           </p>
@@ -332,10 +352,11 @@ export default function HomePage() {
           <Card className="glass-card gradient-border text-center p-12 relative overflow-hidden">
             {/* Subtle glow accent */}
             <div className="absolute top-0 left-1/2 -translate-x-1/2 w-2/3 h-1/2 bg-glow-teal opacity-30 blur-3xl pointer-events-none" />
-            
+
             <CardHeader className="relative z-10">
               <CardTitle className="text-3xl md:text-4xl mb-4">
-                Ready to Transform Your <span className="gradient-text">Research</span>?
+                Ready to Transform Your{" "}
+                <span className="gradient-text">Research</span>?
               </CardTitle>
               <CardDescription className="text-lg mb-8 max-w-2xl mx-auto text-muted-foreground/80">
                 Join researchers and professionals who save hours every week
@@ -370,7 +391,7 @@ export default function HomePage() {
       {/* Footer */}
       <footer className="border-t border-border/30 py-8 mt-20">
         <div className="container-wide text-center text-sm text-muted-foreground/60">
-          <p>&copy; 2025 RelevX. All rights reserved.</p>
+          <p>&copy; 2026 RelevX. All rights reserved.</p>
         </div>
       </footer>
     </div>

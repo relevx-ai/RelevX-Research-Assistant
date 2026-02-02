@@ -27,11 +27,23 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
-import { MoreVertical, Settings, Trash2, Clock, Calendar, AlertCircle, ArrowRight } from "lucide-react";
+import {
+  MoreVertical,
+  Settings,
+  Trash2,
+  Clock,
+  Calendar,
+  AlertCircle,
+  ArrowRight,
+} from "lucide-react";
 import { DeleteProjectDialog } from "./delete-project-dialog";
 import { EditProjectSettingsDialog } from "./edit-project-settings-dialog";
 import { ProjectDetailModal } from "./project-detail-modal";
-import { DAY_OF_WEEK_LABELS, formatDayOfMonth } from "@/lib/utils";
+import {
+  DAY_OF_WEEK_LABELS,
+  formatDayOfMonth,
+  formatRelativeTime,
+} from "@/lib/utils";
 import Link from "next/link";
 
 interface ProjectCardProps {
@@ -97,7 +109,9 @@ export function ProjectCard({ project }: ProjectCardProps) {
         setErrorDialog({
           open: true,
           title: "Active Project Limit Reached",
-          message: err.errorMessage || "You have reached the maximum number of active projects on your current plan.",
+          message:
+            err.errorMessage ||
+            "You have reached the maximum number of active projects on your current plan.",
           type: "max_active_projects",
         });
       } else if (err.errorCode) {
@@ -142,14 +156,16 @@ export function ProjectCard({ project }: ProjectCardProps) {
     <>
       <Card
         className={`group glass-card hover:scale-[1.02] transition-all duration-300 h-full flex flex-col cursor-pointer ${
-          project.status === "running" ? "!border-teal-500 !border-2 shadow-glow-sm" : ""
+          project.status === "running"
+            ? "!border-teal-500 !border-2 shadow-glow-sm"
+            : ""
         }`}
         onClick={handleCardClick}
       >
-        <CardHeader>
+        <CardHeader className="p-4 sm:p-6">
           <div className="flex items-start justify-between gap-2">
             <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-2">
+              <div className="flex items-center gap-2 mb-1.5 sm:mb-2">
                 <Switch
                   checked={
                     project.status === "active" || project.status === "running"
@@ -158,7 +174,7 @@ export function ProjectCard({ project }: ProjectCardProps) {
                   disabled={isToggling}
                 />
               </div>
-              <CardTitle className="text-xl mb-2 line-clamp-2">
+              <CardTitle className="text-lg sm:text-xl mb-1.5 sm:mb-2 line-clamp-2">
                 {project.title}
               </CardTitle>
             </div>
@@ -169,13 +185,17 @@ export function ProjectCard({ project }: ProjectCardProps) {
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
+                  className="h-8 w-8 text-muted-foreground hover:text-foreground transition-colors focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                  title="Project options"
                 >
                   <MoreVertical className="w-4 h-4" />
                   <span className="sr-only">Open menu</span>
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="glass-card border-teal-500/20">
+              <DropdownMenuContent
+                align="end"
+                className="glass-card border-teal-500/20"
+              >
                 <DropdownMenuItem
                   className="gap-2 hover:bg-teal-500/10 focus:bg-teal-500/10"
                   onClick={(e) => {
@@ -210,22 +230,22 @@ export function ProjectCard({ project }: ProjectCardProps) {
             </DropdownMenu>
           </div>
 
-          <CardDescription className="line-clamp-3 text-muted-foreground/80 whitespace-pre-line">
+          <CardDescription className="line-clamp-2 sm:line-clamp-3 text-sm text-muted-foreground/80 whitespace-pre-line">
             {project.description}
           </CardDescription>
         </CardHeader>
 
-        <CardContent className="flex-1">
-          <div className="space-y-3">
-            <div className="flex items-center gap-2 text-sm">
-              <Clock className="w-4 h-4 text-teal-400/60" />
+        <CardContent className="flex-1 px-4 pb-4 sm:px-6 sm:pb-6 pt-0">
+          <div className="space-y-2 sm:space-y-3">
+            <div className="flex items-center gap-2 text-xs sm:text-sm">
+              <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-teal-400/60" />
               <span className="text-muted-foreground/70">Frequency:</span>
               <span className="font-medium">{getFrequencyDisplay()}</span>
             </div>
 
             {project.deliveryTime && project.timezone && (
-              <div className="flex items-center gap-2 text-sm">
-                <Clock className="w-4 h-4 text-teal-400/60" />
+              <div className="flex items-center gap-2 text-xs sm:text-sm">
+                <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-teal-400/60" />
                 <span className="text-muted-foreground/70">Time:</span>
                 <span className="font-medium">
                   {formatTime12Hour(project.deliveryTime)}{" "}
@@ -237,12 +257,13 @@ export function ProjectCard({ project }: ProjectCardProps) {
           </div>
         </CardContent>
 
-        <CardFooter className="border-t border-teal-500/10 pt-4">
-          <div className="flex items-center gap-2 text-xs text-muted-foreground/60">
+        <CardFooter className="border-t border-teal-500/10 px-4 py-3 sm:px-6 sm:py-4">
+          <div
+            className="flex items-center gap-2 text-xs text-muted-foreground/60"
+            title={new Date(project.createdAt).toLocaleString()}
+          >
             <Calendar className="w-3 h-3" />
-            <span>
-              Created {new Date(project.createdAt).toLocaleDateString()}
-            </span>
+            <span>Created {formatRelativeTime(project.createdAt)}</span>
           </div>
         </CardFooter>
       </Card>
@@ -313,11 +334,13 @@ export function ProjectCard({ project }: ProjectCardProps) {
 
           <div className="text-left space-y-3 text-sm text-muted-foreground">
             <p>
-              You can only have <span className="font-medium text-foreground">1 active project</span> on your current plan.
+              You can only have{" "}
+              <span className="font-medium text-foreground">
+                1 active project
+              </span>{" "}
+              on your current plan.
             </p>
-            <p>
-              To activate this project, you can either:
-            </p>
+            <p>To activate this project, you can either:</p>
             <ul className="list-disc list-inside space-y-1">
               <li>Pause your currently active project first</li>
               <li>Upgrade your plan to run more projects simultaneously</li>
@@ -328,7 +351,9 @@ export function ProjectCard({ project }: ProjectCardProps) {
             <Button
               type="button"
               variant="outline"
-              onClick={() => setErrorDialog((prev) => ({ ...prev, open: false }))}
+              onClick={() =>
+                setErrorDialog((prev) => ({ ...prev, open: false }))
+              }
             >
               Got it
             </Button>

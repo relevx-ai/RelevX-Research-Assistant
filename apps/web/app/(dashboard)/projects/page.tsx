@@ -2,11 +2,12 @@
 
 import React, { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, FolderOpen, RefreshCw } from "lucide-react";
+import { Plus, FolderOpen, RefreshCw, Home, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ProjectCard } from "@/components/projects/project-card";
 import { CreateProjectDialog } from "@/components/projects/create-project-dialog";
 import { useProjects } from "@/hooks/use-projects";
+import Link from "next/link";
 
 export default function ProjectsPage() {
   const { projects, loading, refresh } = useProjects();
@@ -15,7 +16,8 @@ export default function ProjectsPage() {
   const sortedProjects = useMemo(() => {
     return [...projects].sort((a, b) => {
       // Priority 1: Active status (active or running)
-      const isActive = (status: string) => ["active", "running"].includes(status?.toLowerCase());
+      const isActive = (status: string) =>
+        ["active", "running"].includes(status?.toLowerCase());
 
       const aActive = isActive(a.status);
       const bActive = isActive(b.status);
@@ -40,7 +42,23 @@ export default function ProjectsPage() {
   };
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6 sm:space-y-8">
+      {/* Breadcrumbs */}
+      <nav
+        aria-label="Breadcrumb"
+        className="flex items-center gap-1.5 text-sm text-muted-foreground"
+      >
+        <Link
+          href="/"
+          className="flex items-center gap-1 hover:text-foreground transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 focus-visible:ring-offset-background rounded-sm"
+        >
+          <Home className="w-4 h-4" />
+          <span className="hidden sm:inline">Home</span>
+        </Link>
+        <ChevronRight className="w-4 h-4 text-muted-foreground/50" />
+        <span className="text-foreground font-medium">Projects</span>
+      </nav>
+
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -83,10 +101,12 @@ export default function ProjectsPage() {
               size="icon"
               className="h-9 w-9 sm:h-10 sm:w-10 transition-all duration-300"
               onClick={() => refresh()}
+              title="Refresh projects"
             >
               <RefreshCw
                 className={`w-4 h-4 ${loading ? "animate-spin" : ""}`}
               />
+              <span className="sr-only">Refresh projects</span>
             </Button>
           </motion.div>
         </div>
@@ -96,7 +116,10 @@ export default function ProjectsPage() {
       {loading && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="h-64 rounded-xl bg-muted/30 animate-pulse border border-teal-500/10" />
+            <div
+              key={i}
+              className="h-64 rounded-xl bg-muted/30 animate-pulse border border-teal-500/10"
+            />
           ))}
         </div>
       )}
@@ -119,7 +142,10 @@ export default function ProjectsPage() {
             whileTap={{ scale: 0.95 }}
             transition={{ type: "spring", stiffness: 400, damping: 17 }}
           >
-            <Button onClick={() => handleCreateProject()} className="gap-2 shadow-glow-sm hover:shadow-glow-md transition-all duration-300">
+            <Button
+              onClick={() => handleCreateProject()}
+              className="gap-2 shadow-glow-sm hover:shadow-glow-md transition-all duration-300"
+            >
               <Plus className="w-4 h-4" />
               Create Project
             </Button>
