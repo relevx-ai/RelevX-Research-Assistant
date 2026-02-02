@@ -47,7 +47,8 @@ export async function saveDeliveryLog(
     status, // Can be "pending" for pre-runs, "success" for immediate delivery
     retryCount: 0,
     resultUrls,
-    deliveredAt: Date.now(),
+    createdAt: Date.now(), // When the log was created (during research)
+    // deliveredAt is only set when the email is actually sent (in the scheduler)
     timezone: project.timezone,
   };
 

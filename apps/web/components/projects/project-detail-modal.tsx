@@ -94,7 +94,9 @@ export function ProjectDetailModal({
                 <LayoutDashboard className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
               </div>
               <div className="min-w-0">
-                <h2 className="text-lg sm:text-xl font-semibold truncate">{project.title}</h2>
+                <h2 className="text-lg sm:text-xl font-semibold truncate">
+                  {project.title}
+                </h2>
                 <div className="flex items-center gap-2 mt-1">
                   {project.status === "active" ? (
                     <>
@@ -130,7 +132,9 @@ export function ProjectDetailModal({
                   }`}
                 >
                   {tab.icon}
-                  <span className="hidden xs:inline sm:inline">{tab.label}</span>
+                  <span className="hidden xs:inline sm:inline">
+                    {tab.label}
+                  </span>
                 </button>
               ))}
             </div>
@@ -242,7 +246,6 @@ function OverviewTab({ project }: { project: ProjectInfo }) {
       return tz;
     }
   };
-
 
   return (
     <div className="space-y-8">
@@ -429,7 +432,9 @@ function DeliveryHistoryTab({ project }: { project: ProjectInfo }) {
                 <div>
                   <p className="font-medium">{log.reportTitle}</p>
                   <p className="text-sm text-muted-foreground">
-                    {formatDate(log.deliveredAt, log.timezone)}
+                    {log.status === "pending"
+                      ? formatDate(project.nextRunAt, project.timezone)
+                      : formatDate(log.deliveredAt, log.timezone)}
                   </p>
                 </div>
               </div>
@@ -640,8 +645,16 @@ function DeliveryHistoryTab({ project }: { project: ProjectInfo }) {
                 {/* Metadata */}
                 <div className="grid grid-cols-2 gap-4 text-sm p-4 pt-0 border-t border-border/30 mt-4">
                   <div className="pt-4">
-                    <span className="text-muted-foreground">Delivered At:</span>
-                    <p>{formatDate(log.deliveredAt, log.timezone)}</p>
+                    <span className="text-muted-foreground">
+                      {log.status === "pending"
+                        ? "Scheduled For:"
+                        : "Delivered At:"}
+                    </span>
+                    <p>
+                      {log.status === "pending"
+                        ? formatDate(project.nextRunAt, project.timezone)
+                        : formatDate(log.deliveredAt, log.timezone)}
+                    </p>
                   </div>
                   {log.retryCount > 0 && (
                     <div>

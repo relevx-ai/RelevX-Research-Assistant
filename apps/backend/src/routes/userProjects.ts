@@ -347,15 +347,16 @@ const routes: FastifyPluginAsync = async (app) => {
         const total = allLogsSnapshot.data().count;
 
         // Now get the delivery logs for this specific project with pagination
+        // Order by createdAt since deliveredAt may not be set for pending logs
         let query = projectDoc.ref
           .collection("deliveryLogs")
-          .orderBy("deliveredAt", "desc");
+          .orderBy("createdAt", "desc");
 
         // Apply offset by fetching and skipping
         if (offset > 0) {
           const offsetSnapshot = await projectDoc.ref
             .collection("deliveryLogs")
-            .orderBy("deliveredAt", "desc")
+            .orderBy("createdAt", "desc")
             .limit(offset)
             .get();
           if (!offsetSnapshot.empty) {
