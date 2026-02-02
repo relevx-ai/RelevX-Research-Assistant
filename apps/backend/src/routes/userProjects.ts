@@ -141,7 +141,6 @@ function calculateNewRunAt(
   return nextRunUtc.getTime();
 }
 
-
 async function getAllUserProjectsFromCache(
   app: any,
   userId: string,
@@ -714,28 +713,25 @@ const routes: FastifyPluginAsync = async (app) => {
             (p) => p.id === (userData.user.planId || gFreePlanId)
           );
 
-          if (plan) {
-            // Check max active projects limit
-            const maxActiveProjects = plan.settingsMaxActiveProjects || 1;
-            const currentActiveCount = activeProjects?.length || 0;
+          // Default to 1 active project if plan not found (matches create endpoint behavior)
+          const maxActiveProjects = plan?.settingsMaxActiveProjects || 1;
+          const currentActiveCount = activeProjects?.length || 0;
 
-            if (currentActiveCount >= maxActiveProjects) {
-              errorCode = "max_active_projects";
-              errorMessage = `You can only have ${maxActiveProjects} active project${maxActiveProjects === 1 ? "" : "s"} on your current plan. Please pause another project first, or upgrade your plan.`;
-            } else {
-              // Calculate next run time for the project
-              updates.nextRunAt = calculateNewRunAt(
-                projectToToggle.frequency,
-                projectToToggle.deliveryTime,
-                projectToToggle.timezone,
-                projectToToggle.dayOfWeek,
-                projectToToggle.dayOfMonth
-              );
-              nStatus = status;
-            }
+          if (currentActiveCount >= maxActiveProjects) {
+            errorCode = "max_active_projects";
+            errorMessage = `You can only have ${maxActiveProjects} active project${
+              maxActiveProjects === 1 ? "" : "s"
+            } on your current plan. Please pause another project first, or upgrade your plan.`;
           } else {
-            errorCode = "user_plan_not_found";
-            errorMessage = "Could not find users plan.";
+            // Calculate next run time for the project
+            updates.nextRunAt = calculateNewRunAt(
+              projectToToggle.frequency,
+              projectToToggle.deliveryTime,
+              projectToToggle.timezone,
+              projectToToggle.dayOfWeek,
+              projectToToggle.dayOfMonth
+            );
+            nStatus = status;
           }
         }
 

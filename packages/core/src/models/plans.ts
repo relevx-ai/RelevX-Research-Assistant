@@ -7,18 +7,12 @@ export interface Plan {
   infoPerksHeader: string;
   infoPerks: string[];
   infoPrice: number;
-  settingsMaxDailyRuns: number;
   settingsMaxActiveProjects: number;
 }
 
-export interface PlanInfo
-  extends Omit<
-    Plan,
-    | "infoStripeSubscriptionId"
-  > { }
+export interface PlanInfo extends Omit<Plan, "infoStripeSubscriptionId"> {}
 
 export interface FetchPlansResponse {
   ok: boolean;
   plans: PlanInfo[];
 }
-

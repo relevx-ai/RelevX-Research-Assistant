@@ -33,7 +33,7 @@ services:
 
       # Runtime configuration
       - NODE_ENV=production
-      - LOG_LEVEL=info
+      - LOG_LEVEL=debug
 
       # Scheduler Configuration (optional overrides)
       - SCHEDULER_ENABLED=true
