@@ -37,30 +37,21 @@ import { relevx_api } from "@/lib/client";
 
 // Feature comparison data
 const featureComparison = [
-  { feature: "Active Projects", free: "1", pro: "5", enterprise: "Unlimited" },
+  { feature: "Active Projects", free: "1", pro: "5" },
   {
     feature: "Research Frequency",
     free: "Daily, Weekly, Monthly",
     pro: "Daily, Weekly, Monthly",
-    enterprise: "Daily, Weekly, Monthly",
   },
-  { feature: "Email Delivery", free: true, pro: true, enterprise: true },
-  {
-    feature: "Delivery History",
-    free: "7 days",
-    pro: "90 days",
-    enterprise: "Unlimited",
-  },
-  { feature: "Priority Domains", free: true, pro: true, enterprise: true },
-  { feature: "Keyword Filtering", free: true, pro: true, enterprise: true },
+  { feature: "Email Delivery", free: true, pro: true },
+  { feature: "Priority Domains", free: true, pro: true },
+  { feature: "Keyword Filtering", free: true, pro: true },
   {
     feature: "AI-Enhanced Descriptions",
     free: true,
     pro: true,
-    enterprise: true,
   },
-  { feature: "Priority Support", free: false, pro: true, enterprise: true },
-  { feature: "Custom Integrations", free: false, pro: false, enterprise: true },
+  { feature: "Priority Support", free: false, pro: true },
 ];
 
 // FAQ data
@@ -348,9 +339,6 @@ function PricingContent() {
                   <th className="text-center py-4 px-4 font-semibold text-teal-400">
                     Pro
                   </th>
-                  <th className="text-center py-4 px-4 font-semibold text-coral-400">
-                    Enterprise
-                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -387,19 +375,6 @@ function PricingContent() {
                       ) : (
                         <span className="text-sm text-muted-foreground">
                           {row.pro}
-                        </span>
-                      )}
-                    </td>
-                    <td className="py-3 px-4 text-center">
-                      {typeof row.enterprise === "boolean" ? (
-                        row.enterprise ? (
-                          <Check className="w-5 h-5 text-coral-400 mx-auto" />
-                        ) : (
-                          <X className="w-5 h-5 text-muted-foreground/40 mx-auto" />
-                        )
-                      ) : (
-                        <span className="text-sm text-coral-400 font-medium">
-                          {row.enterprise}
                         </span>
                       )}
                     </td>
