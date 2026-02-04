@@ -46,25 +46,26 @@ async function generateEmailHTML(
   });
 
   // Build summary section if available
-  const summarySection = options?.summary
-    ? `
-        <tr>
-          <td style="padding: 0 40px 30px 40px;">
-            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background: linear-gradient(135deg, #1e3a5f 0%, #0f172a 100%) !important; background-color: #1e3a5f !important; border-radius: 12px;">
-              <tr>
-                <td style="padding: 24px 28px;">
-                  <div class="text-sky" style="font-size: 11px; font-weight: 600; color: #38bdf8 !important; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px;">Summary</div>
-                  <div style="font-size: 15px; color: #e2e8f0 !important; line-height: 1.7;">${options.summary}</div>
-                </td>
-              </tr>
-            </table>
-          </td>
-        </tr>
-      `
-    : "";
+  // const summarySection = options?.summary
+  //   ? `
+  //       <tr>
+  //         <td style="padding: 0 40px 30px 40px;">
+  //           <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background: linear-gradient(135deg, #1e3a5f 0%, #0f172a 100%) !important; background-color: #1e3a5f !important; border-radius: 12px;">
+  //             <tr>
+  //               <td style="padding: 24px 28px;">
+  //                 <div class="text-sky" style="font-size: 11px; font-weight: 600; color: #38bdf8 !important; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px;">Summary</div>
+  //                 <div style="font-size: 15px; color: #e2e8f0 !important; line-height: 1.7;">${options.summary}</div>
+  //               </td>
+  //             </tr>
+  //           </table>
+  //         </td>
+  //       </tr>
+  //     `
+  //   : "";
+  const hasSummary = Boolean(options?.summary?.trim());
+  const summarySection = options?.summary?.trim() ?? "";
 
-  return `
-<!DOCTYPE html>
+  return `<!DOCTYPE html>
 <html lang="en" xmlns:v="urn:schemas-microsoft-com:vml">
 <head>
   <meta charset="utf-8">
@@ -82,227 +83,216 @@ async function generateEmailHTML(
     </xml>
   </noscript>
   <style>
-    td,th,div,p,a,h1,h2,h3,h4,h5,h6 {font-family: "Segoe UI", sans-serif; mso-line-height-rule: exactly;}
+    td,th,div,p,a,h1,h2,h3,h4,h5,h6,span,li,blockquote,code,pre {font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; mso-line-height-rule: exactly;}
   </style>
   <![endif]-->
   <style>
+    /* Single font stack for entire email */
+    body, table, td, th, div, p, a, h1, h2, h3, h4, h5, h6, span, li, blockquote, code, pre { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important; }
+    
     /* Reset styles */
     body, table, td, p, a, li, blockquote { -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; }
     table, td { mso-table-lspace: 0pt; mso-table-rspace: 0pt; }
     img { -ms-interpolation-mode: bicubic; border: 0; height: auto; line-height: 100%; outline: none; text-decoration: none; }
     body { height: 100% !important; margin: 0 !important; padding: 0 !important; width: 100% !important; background-color: #f1f5f9 !important; }
     
-    /* Dark mode prevention - force light mode colors */
-    :root { color-scheme: light only; supported-color-schemes: light only; }
+    /* RelevX light theme */
+    .bg-outer { background-color: #f1f5f9 !important; }
+    .bg-card { background-color: #ffffff !important; border: 1px solid #e2e8f0; }
     
-    /* Content styles */
-    .content-area h1 { color: #0f172a !important; font-size: 22px; font-weight: 700; line-height: 1.4; margin: 0 0 20px 0; }
-    .content-area h2 { color: #1e293b !important; font-size: 18px; font-weight: 700; line-height: 1.4; margin: 32px 0 16px 0; padding-bottom: 10px; border-bottom: 2px solid #e2e8f0; }
-    .content-area h3 { color: #334155 !important; font-size: 16px; font-weight: 600; line-height: 1.4; margin: 24px 0 12px 0; }
-    .content-area p { color: #475569 !important; font-size: 15px; line-height: 1.7; margin: 0 0 16px 0; }
-    .content-area a { color: #0284c7 !important; text-decoration: none; border-bottom: 1px solid #bae6fd; transition: border-color 0.2s; }
-    .content-area a:hover { border-bottom-color: #0284c7; }
+    /* Content styles - light theme, teal accents */
+    .content-area h1 { color: #0f172a !important; font-size: 28px; font-weight: 700; line-height: 1.3; margin: 0 0 20px 0; letter-spacing: -0.025em; }
+    .content-area h2 { color: #1e293b !important; font-size: 20px; font-weight: 700; line-height: 1.4; margin: 32px 0 16px 0; padding-bottom: 10px; border-bottom: 1px solid #e2e8f0; letter-spacing: -0.025em; }
+    .content-area h3 { color: #334155 !important; font-size: 18px; font-weight: 600; line-height: 1.4; margin: 24px 0 12px 0; letter-spacing: -0.025em; }
+    .content-area p { color: #475569 !important; font-size: 16px; line-height: 1.6; margin: 0 0 16px 0; }
+    .content-area a { color: #0d9488 !important; text-decoration: none; border-bottom: 1px solid #99f6e4; }
+    .content-area a:hover { border-bottom-color: #0d9488; }
     .content-area ul, .content-area ol { margin: 0 0 20px 0; padding-left: 24px; color: #475569 !important; }
-    .content-area li { margin-bottom: 8px; font-size: 15px; line-height: 1.6; color: #475569 !important; }
+    .content-area li { margin-bottom: 10px; font-size: 16px; line-height: 1.6; color: #475569 !important; }
     .content-area strong { color: #1e293b !important; font-weight: 600; }
-    .content-area blockquote { 
-      margin: 20px 0; 
-      padding: 16px 20px; 
-      background-color: #f8fafc !important; 
-      border-left: 4px solid #0284c7; 
+    .content-area blockquote {
+      margin: 20px 0;
+      padding: 16px 20px;
+      background-color: #f8fafc !important;
+      border-left: 4px solid #14b8a6;
       border-radius: 0 8px 8px 0;
       font-style: italic;
+      font-size: 16px;
       color: #64748b !important;
     }
-    .content-area img { 
-      max-width: 100%; 
-      height: auto; 
-      border-radius: 8px; 
-      margin: 20px 0; 
-      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+    .content-area img {
+      max-width: 100%;
+      height: auto;
+      border-radius: 8px;
+      margin: 20px 0;
+      border: 1px solid #e2e8f0;
     }
-    .content-area code { 
-      background-color: #f1f5f9 !important; 
-      padding: 2px 6px; 
-      border-radius: 4px; 
-      font-family: "SF Mono", Monaco, "Cascadia Code", monospace; 
-      font-size: 13px;
+    .content-area code {
+      background-color: #f1f5f9 !important;
+      padding: 3px 6px;
+      border-radius: 4px;
+      font-size: 14px;
       color: #0f172a !important;
     }
-    .content-area pre { 
-      background-color: #0f172a !important; 
-      padding: 20px; 
-      border-radius: 8px; 
-      overflow-x: auto; 
+    .content-area pre {
+      background-color: #1e293b !important;
+      padding: 20px;
+      border-radius: 8px;
+      overflow-x: auto;
       margin: 20px 0;
+      border: 1px solid #e2e8f0;
     }
     .content-area pre code {
       background: none !important;
       padding: 0;
       color: #e2e8f0 !important;
-      font-size: 13px;
+      font-size: 14px;
       line-height: 1.6;
     }
     
-    /* Background color classes for dark mode prevention */
-    .bg-outer { background-color: #f1f5f9 !important; }
-    .bg-white { background-color: #ffffff !important; }
+    /* Utility classes */
+    .text-foreground { color: #0f172a !important; }
+    .text-muted { color: #64748b !important; }
+    .text-teal { color: #0d9488 !important; }
+    .text-teal-strong { color: #14b8a6 !important; }
+    .text-white { color: #ffffff !important; }
     
-    /* Responsive styles */
+    /* Rounded wrapper - clips inner table so corners are actually curved (table border-radius is ignored in many clients) */
+    .rounded-wrapper {
+      border-radius: 16px;
+      -webkit-border-radius: 16px;
+      overflow: hidden;
+      max-width: 900px;
+      width: 100%;
+    }
+    
+    /* Responsive */
     @media only screen and (max-width: 600px) {
       .email-container { width: 100% !important; }
-      .mobile-padding { padding-left: 24px !important; padding-right: 24px !important; }
-      .content-area h1 { font-size: 20px !important; }
-      .content-area h2 { font-size: 17px !important; }
+      .mobile-padding { padding-left: 20px !important; padding-right: 20px !important; }
+      .content-area h1 { font-size: 24px !important; }
+      .content-area h2 { font-size: 18px !important; }
+      .content-area h3 { font-size: 16px !important; }
+      .content-area p { font-size: 15px !important; }
+      .content-area li { font-size: 15px !important; }
     }
     
-    /* Force light mode in dark mode - iOS/Apple Mail */
+    /* Force light theme only */
     @media (prefers-color-scheme: dark) {
       body, .bg-outer { background-color: #f1f5f9 !important; }
-      .bg-white { background-color: #ffffff !important; }
-      .content-area h1 { color: #0f172a !important; }
-      .content-area h2 { color: #1e293b !important; }
-      .content-area h3 { color: #334155 !important; }
-      .content-area p, .content-area ul, .content-area ol, .content-area li { color: #475569 !important; }
-      .content-area strong { color: #1e293b !important; }
-      .content-area a { color: #0284c7 !important; }
-      .content-area blockquote { background-color: #f8fafc !important; color: #64748b !important; }
-      .content-area code { background-color: #f1f5f9 !important; color: #0f172a !important; }
-      .content-area pre { background-color: #0f172a !important; }
-      .content-area pre code { color: #e2e8f0 !important; }
-      .text-dark { color: #0f172a !important; }
-      .text-gray { color: #475569 !important; }
-      .text-muted { color: #94a3b8 !important; }
-      .text-white { color: #ffffff !important; }
-      .text-cyan { color: #0891b2 !important; }
-      .text-sky { color: #38bdf8 !important; }
+      .bg-card { background-color: #ffffff !important; }
     }
-    
-    /* Samsung Mail / Android dark mode prevention */
-    [data-ogsc] .bg-outer { background-color: #f1f5f9 !important; }
-    [data-ogsc] .bg-white { background-color: #ffffff !important; }
   </style>
 </head>
-<body class="bg-outer" style="margin: 0; padding: 0; background-color: #f1f5f9 !important;">
+<body class="bg-outer" style="margin: 0; padding: 0; background-color: #f1f5f9 !important; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
   <!-- Preview text -->
   <div style="display: none; font-size: 1px; color: #f1f5f9; line-height: 1px; max-height: 0px; max-width: 0px; opacity: 0; overflow: hidden;">
-    ${report.title} - Your latest research insights from Relevx
+    Research Report - Your latest research insights from RelevX
   </div>
   
   <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" class="bg-outer" style="background-color: #f1f5f9 !important;">
     <tr>
-      <td align="center" style="padding: 40px 20px;">
+      <td align="center" style="padding: 40px 20px; background-color: #f1f5f9 !important; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
         
-        <!-- Email Container -->
-        <table role="presentation" class="email-container" width="640" cellspacing="0" cellpadding="0" border="0" style="max-width: 640px; width: 100%;">
-          
-          <!-- Header -->
+        <!-- Email Container: wrapper div creates actual rounded corners (table border-radius ignored in many clients) -->
+        <div class="rounded-wrapper" style="border-radius: 16px; -webkit-border-radius: 16px; overflow: hidden; max-width: 900px; width: 100%; margin: 0 auto;">
+          <table role="presentation" class="email-container" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width: 900px; width: 100%; border-collapse: collapse;">
+            
+            <!-- Header (teal gradient) -->
+            <tr>
+              <td style="padding: 32px 40px; background: linear-gradient(135deg, #0f766e 0%, #0d9488 50%, #14b8a6 100%); background-color: #0d9488 !important; border: 1px solid rgba(20, 184, 166, 0.3); border-bottom: none;">
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
+                  <tr>
+                    <td>
+                      <table role="presentation" cellspacing="0" cellpadding="0" border="0" align="left">
+                        <tr>
+                          <td style="padding-right: 12px; vertical-align: middle;">
+                            <table role="presentation" width="40" height="40" cellspacing="0" cellpadding="0" border="0" style="background: linear-gradient(135deg, #14b8a6 0%, #0d9488 100%); background-color: #14b8a6 !important; border-radius: 8px; -webkit-border-radius: 8px;">
+                              <tr>
+                                <td align="center" valign="middle" style="font-size: 20px; font-weight: 700; color: #0f172a !important;">R</td>
+                              </tr>
+                            </table>
+                          </td>
+                          <td style="vertical-align: middle;">
+                            <div style="font-size: 18px; font-weight: 700; color: #ffffff !important; letter-spacing: -0.5px;">RelevX</div>
+                            <div style="font-size: 10px; color: rgba(255,255,255,0.8) !important; text-transform: uppercase; letter-spacing: 1px;">AI-Powered Research Assistant</div>
+                          </td>
+                        </tr>
+                      </table>
+                    </td>
+                    <td align="right" style="vertical-align: middle;">
+                      <div style="font-size: 12px; color: rgba(255,255,255,0.85) !important;">${currentDate}</div>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+            
+            <!-- Report Title Section -->
+            <tr>
+              <td class="mobile-padding" style="padding: 40px 40px 24px 40px; background-color: #ffffff !important; border: 1px solid #e2e8f0; border-top: none;">
+                <div style="font-size: 11px; font-weight: 600; color: #0d9488 !important; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 12px;">Research Report</div>
+                <h1 style="font-size: 28px; font-weight: 700; color: #0f172a !important; line-height: 1.3; margin: 0; letter-spacing: -0.025em;">${report.title}</h1>
+              </td>
+            </tr>
+            
+            ${hasSummary ? `<!-- Summary Section -->
+            <tr>
+              <td class="mobile-padding" style="padding: 0 40px 30px 40px; background-color: #ffffff !important; border-left: 1px solid #e2e8f0; border-right: 1px solid #e2e8f0;">
+                <div style="background-color: #f8fafc !important; padding: 20px; border-radius: 8px; -webkit-border-radius: 8px; border-left: 4px solid #14b8a6;">
+                  <p style="font-size: 16px; line-height: 1.6; color: #475569 !important; margin: 0;">${summarySection}</p>
+                </div>
+              </td>
+            </tr>
+            ` : ""}
+            
+            <!-- Divider -->
+            <tr>
+              <td style="padding: 0 40px 30px 40px; background-color: #ffffff !important; border-left: 1px solid #e2e8f0; border-right: 1px solid #e2e8f0;">
+                <div style="height: 1px; background: linear-gradient(90deg, transparent 0%, #e2e8f0 20%, #e2e8f0 80%, transparent 100%);"></div>
+              </td>
+            </tr>
+            
+            <!-- Main Report Content -->
+            <tr>
+              <td class="mobile-padding content-area" style="padding: 0 40px 40px 40px; background-color: #ffffff !important; border: 1px solid #e2e8f0; border-top: none;">
+                ${markdownHtml}
+              </td>
+            </tr>
+            
+          </table>
+        </div>
+        
+        <!-- Footer (outside rounded wrapper) -->
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width: 900px; width: 100%; margin: 0 auto;">
           <tr>
-            <td style="padding: 0 0 24px 0;">
-              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background: linear-gradient(135deg, #0c4a6e 0%, #164e63 100%) !important; background-color: #0c4a6e !important; border-radius: 16px 16px 0 0;">
-                <tr>
-                  <td style="padding: 32px 40px;">
-                    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
-                      <tr>
-                        <td>
-                          <!-- Logo/Brand -->
-                          <table role="presentation" cellspacing="0" cellpadding="0" border="0">
-                            <tr>
-                              <td style="padding-right: 12px; vertical-align: middle;">
-                                <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #22d3ee 0%, #06b6d4 100%) !important; background-color: #22d3ee !important; border-radius: 10px; display: flex; align-items: center; justify-content: center;">
-                                  <table role="presentation" width="40" height="40" cellspacing="0" cellpadding="0" border="0">
-                                    <tr>
-                                      <td align="center" valign="middle" style="font-size: 20px; font-weight: 700; color: #0c4a6e !important;">R</td>
-                                    </tr>
-                                  </table>
-                                </div>
-                              </td>
-                              <td style="vertical-align: middle;">
-                                <div class="text-white" style="font-size: 24px; font-weight: 700; color: #ffffff !important; letter-spacing: -0.5px;">Relevx</div>
-                                <div class="text-muted" style="font-size: 12px; color: #94a3b8 !important; text-transform: uppercase; letter-spacing: 1px;">AI Research Assistant</div>
-                              </td>
-                            </tr>
-                          </table>
-                        </td>
-                        <td align="right" style="vertical-align: middle;">
-                          <div class="text-muted" style="font-size: 12px; color: #94a3b8 !important;">${currentDate}</div>
-                        </td>
-                      </tr>
-                    </table>
-                  </td>
-                </tr>
-              </table>
-            </td>
-          </tr>
-          
-          <!-- Main Content Card -->
-          <tr>
-            <td>
-              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" class="bg-white" style="background-color: #ffffff !important; border-radius: 0 0 16px 16px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);">
-                
-                <!-- Report Title Section -->
-                <tr>
-                  <td class="mobile-padding" style="padding: 40px 40px 24px 40px;">
-                    <div class="text-cyan" style="font-size: 11px; font-weight: 600; color: #0891b2 !important; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 12px;">Research Report</div>
-                    <h1 class="text-dark" style="font-size: 26px; font-weight: 700; color: #0f172a !important; line-height: 1.3; margin: 0;">${
-                      report.title
-                    }</h1>
-                  </td>
-                </tr>
-                
-                <!-- Summary Section -->
-                ${summarySection}
-                
-                <!-- Divider -->
-                <tr>
-                  <td style="padding: 0 40px 30px 40px;">
-                    <div style="height: 1px; background: linear-gradient(90deg, transparent 0%, #e2e8f0 20%, #e2e8f0 80%, transparent 100%);"></div>
-                  </td>
-                </tr>
-                
-                <!-- Main Report Content -->
-                <tr>
-                  <td class="mobile-padding content-area" style="padding: 0 40px 40px 40px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
-                    ${markdownHtml}
-                  </td>
-                </tr>
-                
-              </table>
-            </td>
-          </tr>
-          
-          <!-- Footer -->
-          <tr>
-            <td style="padding: 32px 40px;">
+            <td style="padding: 32px 40px; background-color: #f1f5f9 !important;">
               <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
                 <tr>
                   <td align="center">
-                    <!-- Footer Logo -->
-                    <table role="presentation" cellspacing="0" cellpadding="0" border="0">
+                    <table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center">
                       <tr>
                         <td style="padding-right: 8px; vertical-align: middle;">
-                          <div style="width: 24px; height: 24px; background: linear-gradient(135deg, #0891b2 0%, #0e7490 100%); border-radius: 6px;">
-                            <table role="presentation" width="24" height="24" cellspacing="0" cellpadding="0" border="0">
-                              <tr>
-                                <td align="center" valign="middle" class="text-white" style="font-size: 12px; font-weight: 700; color: #ffffff !important;">R</td>
-                              </tr>
-                            </table>
-                          </div>
+                          <table role="presentation" width="24" height="24" cellspacing="0" cellpadding="0" border="0" style="background: linear-gradient(135deg, #14b8a6 0%, #0d9488 100%); border-radius: 6px; -webkit-border-radius: 6px;">
+                            <tr>
+                              <td align="center" valign="middle" style="font-size: 12px; font-weight: 700; color: #ffffff !important;">R</td>
+                            </tr>
+                          </table>
                         </td>
                         <td style="vertical-align: middle;">
-                          <span class="text-gray" style="font-size: 14px; font-weight: 600; color: #64748b !important;">Relevx</span>
+                          <span style="font-size: 14px; font-weight: 600; color: #475569 !important;">RelevX</span>
                         </td>
                       </tr>
                     </table>
-                    <div class="text-muted" style="margin-top: 16px; font-size: 13px; color: #94a3b8 !important; line-height: 1.6;">
+                    <div style="margin-top: 16px; font-size: 14px; color: #64748b !important; line-height: 1.6;">
                       Automated research intelligence, delivered to your inbox.
                     </div>
                     <div style="margin-top: 20px;">
-                      <a href="https://relevx.ai/projects" class="text-white" style="display: inline-block; padding: 10px 24px; background-color: #0891b2 !important; color: #ffffff !important; font-size: 13px; font-weight: 600; text-decoration: none; border-radius: 6px;">Manage Project</a>
+                      <a href="https://relevx.ai/projects" style="display: inline-block; padding: 12px 24px; background: linear-gradient(135deg, #0d9488 0%, #14b8a6 100%); background-color: #0d9488 !important; color: #ffffff !important; font-size: 14px; font-weight: 600; text-decoration: none; border-radius: 8px; -webkit-border-radius: 8px;">Manage Project</a>
                     </div>
                     <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #e2e8f0;">
-                      <span class="text-muted" style="font-size: 11px; color: #94a3b8 !important;">
-                        &copy; ${new Date().getFullYear()} Relevx. All rights reserved.
+                      <span style="font-size: 12px; color: #64748b !important;">
+                        &copy; ${new Date().getFullYear()} RelevX. All rights reserved.
                       </span>
                     </div>
                   </td>
@@ -310,15 +300,13 @@ async function generateEmailHTML(
               </table>
             </td>
           </tr>
-          
         </table>
         
       </td>
     </tr>
   </table>
 </body>
-</html>
-  `;
+</html>`;
 }
 
 /**
