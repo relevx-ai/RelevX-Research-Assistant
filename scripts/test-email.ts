@@ -18,9 +18,7 @@ async function testEmail() {
   const mockReport: CompiledReport = {
     title: "Test Research Report",
     summary: "This is a test report generated to verify email functionality.",
-    markdown: `# Test Research Report
-    
-## Executive Overview
+    markdown: `## Executive Overview
 This is a **bold statement** about the future of AI. The interactions between *politics* and *economics* are complex.
 
 ### Key Findings
