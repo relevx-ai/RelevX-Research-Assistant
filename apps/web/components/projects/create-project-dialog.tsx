@@ -40,7 +40,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useProjects } from "@/hooks/use-projects";
-import { relevx_api } from "@/lib/client";
+import { relevx_api, ApiError } from "@/lib/client";
 import Link from "next/link";
 
 interface CreateProjectDialogProps {
@@ -214,6 +214,8 @@ export function CreateProjectDialog({
         setTitleError(
           "A project with this name already exists. Please choose a different title."
         );
+      } else if (err instanceof ApiError) {
+        setError(err.message);
       } else {
         console.error("Failed to create project:", err);
         setError("Failed to create project. Please try again.");

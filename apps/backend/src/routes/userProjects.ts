@@ -13,6 +13,7 @@ import {
   Frequency,
   getUserOneShotCount,
   kAnalyticsMonthlyDateKey,
+  validateProjectDescription,
 } from "core";
 import { set, isAfter, add } from "date-fns";
 import { toZonedTime, fromZonedTime } from "date-fns-tz";
@@ -432,6 +433,22 @@ const routes: FastifyPluginAsync = async (app) => {
             .send({ error: { message: "Project info is required" } });
         }
 
+        const desc = request.projectInfo.description?.trim() ?? "";
+        if (desc) {
+          const validation = await validateProjectDescription(
+            app.aiInterface,
+            desc
+          );
+          if (!validation.valid) {
+            return rep.status(400).send({
+              error: {
+                message:
+                  validation.reason || "Project description is not allowed.",
+              },
+            });
+          }
+        }
+
         // Check if project with same title already exists
         const existingProjectSnapshot = await db
           .collection("users")
@@ -670,6 +687,25 @@ const routes: FastifyPluginAsync = async (app) => {
             .status(404)
             .send({ error: { message: "Project not found" } });
         const docData = doc.data();
+
+        if (data?.description !== undefined) {
+          const desc = String(data.description ?? "").trim();
+          if (desc) {
+            const validation = await validateProjectDescription(
+              app.aiInterface,
+              desc
+            );
+            if (!validation.valid) {
+              return rep.status(400).send({
+                error: {
+                  message:
+                    validation.reason || "Project description is not allowed.",
+                },
+              });
+            }
+          }
+        }
+
         const updates: any = {
           ...data,
           updatedAt: new Date().toISOString(),

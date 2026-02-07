@@ -66,7 +66,10 @@ export {
 export type {
   ImproveProjectDescriptionRequest,
   ImproveProjectDescriptionResponse,
+  ValidateProjectDescriptionResult,
 } from "./models/ai";
+
+export { validateProjectDescription } from "./services/project-description-validation";
 
 export { OpenAIProvider, createOpenAIProvider } from "./services/llm";
 export type { LLMProvider } from "./interfaces/llm-provider";

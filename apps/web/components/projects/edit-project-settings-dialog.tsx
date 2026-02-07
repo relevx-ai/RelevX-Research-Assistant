@@ -38,7 +38,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useProjects } from "@/hooks/use-projects";
-import { relevx_api } from "@/lib/client";
+import { relevx_api, ApiError } from "@/lib/client";
 
 interface EditProjectSettingsDialogProps {
   project: ProjectInfo;
@@ -220,9 +220,11 @@ export function EditProjectSettingsDialog({
       } else {
         setError("Failed to update project. Please try again.");
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error("Failed to update project:", err);
-      setError("Failed to update project. Please try again.");
+      setError(
+        err instanceof ApiError ? err.message : "Failed to update project. Please try again."
+      );
     } finally {
       setIsUpdating(false);
     }
