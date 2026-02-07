@@ -202,6 +202,7 @@ export function EditProjectSettingsDialog({
         ...(frequency === "daily" && { dayOfWeek: null, dayOfMonth: null }),
         ...(frequency === "weekly" && { dayOfMonth: null }),
         ...(frequency === "monthly" && { dayOfWeek: null }),
+        ...(frequency === "once" && { dayOfWeek: null, dayOfMonth: null }),
       };
 
       // Only include searchParameters if it has any properties or we need to clear it
@@ -333,15 +334,21 @@ export function EditProjectSettingsDialog({
                   id="edit-frequency"
                   value={frequency}
                   onChange={(e) => setFrequency(e.target.value as Frequency)}
-                  disabled={isUpdating}
+                  disabled={isUpdating || project.frequency === "once"}
                 >
                   <option value="daily">Daily</option>
                   <option value="weekly">Weekly</option>
                   <option value="monthly">Monthly</option>
+                  <option value="once">Once</option>
                 </Select>
               </div>
 
-              {/* Scheduling Options Row */}
+              {/* Scheduling Options Row - hidden for Once */}
+              {frequency === "once" ? (
+                <p className="text-sm text-muted-foreground">
+                  Will run immediately
+                </p>
+              ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {/* Day of Week (for weekly frequency) */}
                 {frequency === "weekly" && (
@@ -422,6 +429,7 @@ export function EditProjectSettingsDialog({
                   </Select>
                 </div>
               </div>
+              )}
             </div>
 
             {/* Advanced Settings Collapsible */}

@@ -381,10 +381,16 @@ export function CreateProjectDialog({
                     <option value="daily">Daily</option>
                     <option value="weekly">Weekly</option>
                     <option value="monthly">Monthly</option>
+                    <option value="once">Once</option>
                   </Select>
                 </div>
 
-                {/* Scheduling Options Row */}
+                {/* Scheduling Options Row - hidden for Once */}
+                {frequency === "once" ? (
+                  <p className="text-sm text-muted-foreground">
+                    Will run immediately
+                  </p>
+                ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   {/* Day of Week (for weekly frequency) */}
                   {frequency === "weekly" && (
@@ -471,6 +477,7 @@ export function CreateProjectDialog({
                     </Select>
                   </div>
                 </div>
+                )}
               </div>
 
               {/* Advanced Settings Collapsible */}

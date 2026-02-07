@@ -62,7 +62,7 @@ export class GeminiProvider implements LLMProvider {
       tone?: "professional" | "casual" | "technical";
       maxLength?: number;
       projectTitle?: string;
-      frequency?: "daily" | "weekly" | "monthly";
+      frequency?: "daily" | "weekly" | "monthly" | "once";
     }
   ): Promise<CompiledReport> {
     throw new Error("Method not implemented.");
@@ -252,7 +252,7 @@ Snippet: ${r.description}
       tone?: "professional" | "casual" | "technical";
       maxLength?: number;
       projectTitle?: string;
-      frequency?: "daily" | "weekly" | "monthly";
+      frequency?: "daily" | "weekly" | "monthly" | "once";
       timezone?: string;
     }
   ): Promise<CompiledReport> {
