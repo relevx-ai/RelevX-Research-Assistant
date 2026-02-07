@@ -813,18 +813,37 @@ export async function executeResearchForProject(
           // Update report with translated content
           report.markdown = translatedMarkdown;
 
+          // Also translate title and summary (strip newlines — not allowed in email subjects)
+          report.title = (await llmProvider.translateText(report.title, searchLang, targetLang)).replace(/\n/g, ' ').trim();
+          const titleInputTokens = estimateTokens(report.title) + 50;
+          const titleOutputTokens = estimateTokens(report.title);
+          if (report.summary) {
+            report.summary = await llmProvider.translateText(report.summary, searchLang, targetLang);
+          }
+          const summaryInputTokens = report.summary ? estimateTokens(report.summary) + 50 : 0;
+          const summaryOutputTokens = report.summary ? estimateTokens(report.summary) : 0;
+
+          const extraInputTokens = titleInputTokens + summaryInputTokens;
+          const extraOutputTokens = titleOutputTokens + summaryOutputTokens;
+          tokenUsage.inputTokens += extraInputTokens;
+          tokenUsage.outputTokens += extraOutputTokens;
+          tokenUsage.totalTokens = tokenUsage.inputTokens + tokenUsage.outputTokens;
+
+          const totalTranslationInputTokens = translationInputTokens + extraInputTokens;
+          const totalTranslationOutputTokens = translationOutputTokens + extraOutputTokens;
+
           const translationDuration = Date.now() - startTranslation;
           console.log(`Translation completed in ${translationDuration}ms`);
 
           // Track translation stats
           translationStats.wasTranslated = true;
           translationStats.translatedToLanguage = targetLang;
-          translationStats.translationTokens = translationInputTokens + translationOutputTokens;
+          translationStats.translationTokens = totalTranslationInputTokens + totalTranslationOutputTokens;
           translationStats.translationCostUsd = estimateCost(
             {
-              inputTokens: translationInputTokens,
-              outputTokens: translationOutputTokens,
-              totalTokens: translationInputTokens + translationOutputTokens
+              inputTokens: totalTranslationInputTokens,
+              outputTokens: totalTranslationOutputTokens,
+              totalTokens: totalTranslationInputTokens + totalTranslationOutputTokens
             },
             llmProvider.getModel()
           );
@@ -859,14 +878,33 @@ export async function executeResearchForProject(
 
           report.markdown = translatedMarkdown;
 
+          // Also translate title and summary (strip newlines — not allowed in email subjects)
+          report.title = (await llmProvider.translateText(report.title, searchLang, 'en')).replace(/\n/g, ' ').trim();
+          const titleInputTokens = estimateTokens(report.title) + 50;
+          const titleOutputTokens = estimateTokens(report.title);
+          if (report.summary) {
+            report.summary = await llmProvider.translateText(report.summary, searchLang, 'en');
+          }
+          const summaryInputTokens = report.summary ? estimateTokens(report.summary) + 50 : 0;
+          const summaryOutputTokens = report.summary ? estimateTokens(report.summary) : 0;
+
+          const extraInputTokens = titleInputTokens + summaryInputTokens;
+          const extraOutputTokens = titleOutputTokens + summaryOutputTokens;
+          tokenUsage.inputTokens += extraInputTokens;
+          tokenUsage.outputTokens += extraOutputTokens;
+          tokenUsage.totalTokens = tokenUsage.inputTokens + tokenUsage.outputTokens;
+
+          const totalTranslationInputTokens = translationInputTokens + extraInputTokens;
+          const totalTranslationOutputTokens = translationOutputTokens + extraOutputTokens;
+
           translationStats.wasTranslated = true;
           translationStats.translatedToLanguage = 'en';
-          translationStats.translationTokens = translationInputTokens + translationOutputTokens;
+          translationStats.translationTokens = totalTranslationInputTokens + totalTranslationOutputTokens;
           translationStats.translationCostUsd = estimateCost(
             {
-              inputTokens: translationInputTokens,
-              outputTokens: translationOutputTokens,
-              totalTokens: translationInputTokens + translationOutputTokens
+              inputTokens: totalTranslationInputTokens,
+              outputTokens: totalTranslationOutputTokens,
+              totalTokens: totalTranslationInputTokens + totalTranslationOutputTokens
             },
             llmProvider.getModel()
           );
