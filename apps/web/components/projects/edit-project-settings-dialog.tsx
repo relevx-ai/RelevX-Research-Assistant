@@ -41,8 +41,8 @@ import {
 import { useProjects } from "@/hooks/use-projects";
 import { relevx_api } from "@/lib/client";
 import { SUPPORTED_LANGUAGES, SUPPORTED_REGIONS, OUTPUT_LANGUAGES } from '@/lib/constants/languages';
-import { PremiumFeatureWrapper } from '@/components/ui/premium-feature-wrapper';
-import { usePremium } from '@/hooks/use-premium';
+import { ProFeatureWrapper } from '@/components/ui/pro-feature-wrapper';
+import { usePro } from '@/hooks/use-pro';
 
 interface EditProjectSettingsDialogProps {
   project: ProjectInfo;
@@ -80,7 +80,7 @@ export function EditProjectSettingsDialog({
   const [advancedOpen, setAdvancedOpen] = useState(false);
   const [isEnhancing, setIsEnhancing] = useState(false);
 
-  const { isPremium } = usePremium();
+  const { isPro } = usePro();
 
   // Helper function to convert array to comma-separated string
   const arrayToString = (arr: string[] | undefined): string => {
@@ -202,7 +202,7 @@ export function EditProjectSettingsDialog({
       }
 
       // Premium parameters (only if user is premium)
-      if (isPremium) {
+      if (isPro) {
         if (searchLanguage) {
           searchParameters.language = searchLanguage;
         } else {
@@ -488,7 +488,7 @@ export function EditProjectSettingsDialog({
                 <div className="overflow-hidden">
                   <div className="px-4 pb-4 space-y-4 border-t border-border pt-4">
                     {/* Priority Domains */}
-                    <PremiumFeatureWrapper isPremium={isPremium} featureName="Priority Domains">
+                    <ProFeatureWrapper isPro={isPro} featureName="Priority Domains">
                       <div className="space-y-2">
                         <div className="flex items-center gap-1.5">
                           <Label htmlFor="edit-priorityDomains">
@@ -520,14 +520,14 @@ export function EditProjectSettingsDialog({
                           placeholder="e.g., reuters.com, techcrunch.com"
                           value={priorityDomains}
                           onChange={(e) => setPriorityDomains(e.target.value)}
-                          disabled={isUpdating || !isPremium}
+                          disabled={isUpdating || !isPro}
                           rows={2}
                         />
                       </div>
-                    </PremiumFeatureWrapper>
+                    </ProFeatureWrapper>
 
                     {/* Excluded Domains */}
-                    <PremiumFeatureWrapper isPremium={isPremium} featureName="Excluded Domains">
+                    <ProFeatureWrapper isPro={isPro} featureName="Excluded Domains">
                       <div className="space-y-2">
                         <div className="flex items-center gap-1.5">
                           <Label htmlFor="edit-excludedDomains">
@@ -559,14 +559,14 @@ export function EditProjectSettingsDialog({
                           placeholder="e.g., spam-site.com, clickbait.com"
                           value={excludedDomains}
                           onChange={(e) => setExcludedDomains(e.target.value)}
-                          disabled={isUpdating || !isPremium}
+                          disabled={isUpdating || !isPro}
                           rows={2}
                         />
                       </div>
-                    </PremiumFeatureWrapper>
+                    </ProFeatureWrapper>
 
                     {/* Required Keywords */}
-                    <PremiumFeatureWrapper isPremium={isPremium} featureName="Keyword Filters">
+                    <ProFeatureWrapper isPro={isPro} featureName="Keyword Filters">
                       <div className="space-y-2">
                         <div className="flex items-center gap-1.5">
                           <Label htmlFor="edit-requiredKeywords">
@@ -598,14 +598,14 @@ export function EditProjectSettingsDialog({
                           placeholder="e.g., machine learning, neural networks"
                           value={requiredKeywords}
                           onChange={(e) => setRequiredKeywords(e.target.value)}
-                          disabled={isUpdating || !isPremium}
+                          disabled={isUpdating || !isPro}
                           rows={2}
                         />
                       </div>
-                    </PremiumFeatureWrapper>
+                    </ProFeatureWrapper>
 
                     {/* Excluded Keywords */}
-                    <PremiumFeatureWrapper isPremium={isPremium} featureName="Keyword Filters">
+                    <ProFeatureWrapper isPro={isPro} featureName="Keyword Filters">
                       <div className="space-y-2">
                         <div className="flex items-center gap-1.5">
                           <Label htmlFor="edit-excludedKeywords">
@@ -638,14 +638,14 @@ export function EditProjectSettingsDialog({
                           placeholder="e.g., sponsored, advertisement"
                           value={excludedKeywords}
                           onChange={(e) => setExcludedKeywords(e.target.value)}
-                          disabled={isUpdating || !isPremium}
+                          disabled={isUpdating || !isPro}
                           rows={2}
                         />
                       </div>
-                    </PremiumFeatureWrapper>
+                    </ProFeatureWrapper>
 
                     {/* Search Language */}
-                    <PremiumFeatureWrapper isPremium={isPremium} featureName="Language Filter">
+                    <ProFeatureWrapper isPro={isPro} featureName="Language Filter">
                         <div className="space-y-2">
                           <div className="flex items-center gap-1.5">
                             <Label htmlFor="edit-searchLanguage">Search Language</Label>
@@ -669,7 +669,7 @@ export function EditProjectSettingsDialog({
                             id="edit-searchLanguage"
                             value={searchLanguage}
                             onChange={(e) => setSearchLanguage(e.target.value)}
-                            disabled={isUpdating || !isPremium}
+                            disabled={isUpdating || !isPro}
                           >
                             {SUPPORTED_LANGUAGES.map((lang) => (
                               <option key={lang.code} value={lang.code}>
@@ -678,10 +678,10 @@ export function EditProjectSettingsDialog({
                             ))}
                           </Select>
                         </div>
-                      </PremiumFeatureWrapper>
+                      </ProFeatureWrapper>
 
                       {/* Search Region */}
-                      <PremiumFeatureWrapper isPremium={isPremium} featureName="Location Filter">
+                      <ProFeatureWrapper isPro={isPro} featureName="Location Filter">
                         <div className="space-y-2">
                           <div className="flex items-center gap-1.5">
                             <Label htmlFor="edit-searchRegion">Search Region</Label>
@@ -705,7 +705,7 @@ export function EditProjectSettingsDialog({
                             id="edit-searchRegion"
                             value={searchRegion}
                             onChange={(e) => setSearchRegion(e.target.value)}
-                            disabled={isUpdating || !isPremium}
+                            disabled={isUpdating || !isPro}
                           >
                             {SUPPORTED_REGIONS.map((region) => (
                               <option key={region.code} value={region.code}>
@@ -714,10 +714,10 @@ export function EditProjectSettingsDialog({
                             ))}
                           </Select>
                         </div>
-                      </PremiumFeatureWrapper>
+                      </ProFeatureWrapper>
 
                       {/* Output Language */}
-                      <PremiumFeatureWrapper isPremium={isPremium} featureName="Report Translation">
+                      <ProFeatureWrapper isPro={isPro} featureName="Report Translation">
                         <div className="space-y-2">
                           <div className="flex items-center gap-1.5">
                             <Label htmlFor="edit-outputLanguage">Report Language</Label>
@@ -741,7 +741,7 @@ export function EditProjectSettingsDialog({
                             id="edit-outputLanguage"
                             value={outputLanguage}
                             onChange={(e) => setOutputLanguage(e.target.value)}
-                            disabled={isUpdating || !isPremium}
+                            disabled={isUpdating || !isPro}
                           >
                             {OUTPUT_LANGUAGES.map((lang) => (
                               <option key={lang.code} value={lang.code}>
@@ -750,7 +750,7 @@ export function EditProjectSettingsDialog({
                             ))}
                           </Select>
                         </div>
-                      </PremiumFeatureWrapper>
+                      </ProFeatureWrapper>
                   </div>
                 </div>
               </div>

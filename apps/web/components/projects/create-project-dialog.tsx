@@ -44,8 +44,8 @@ import { useProjects } from "@/hooks/use-projects";
 import { relevx_api } from "@/lib/client";
 import Link from "next/link";
 import { SUPPORTED_LANGUAGES, SUPPORTED_REGIONS, OUTPUT_LANGUAGES } from '@/lib/constants/languages';
-import { PremiumFeatureWrapper } from '@/components/ui/premium-feature-wrapper';
-import { usePremium } from '@/hooks/use-premium';
+import { ProFeatureWrapper } from '@/components/ui/pro-feature-wrapper';
+import { usePro } from '@/hooks/use-pro';
 
 interface CreateProjectDialogProps {
   open: boolean;
@@ -86,7 +86,7 @@ export function CreateProjectDialog({
   const [pausedInfoDialogOpen, setPausedInfoDialogOpen] = useState(false);
   const [maxActiveProjects, setMaxActiveProjects] = useState(1);
 
-  const { isPremium } = usePremium();
+  const { isPro } = usePro();
 
   // Helper function to parse comma-separated or newline-separated values
   const parseList = (value: string): string[] => {
@@ -171,7 +171,7 @@ export function CreateProjectDialog({
       }
 
       // Premium parameters (only if user is premium)
-      if (isPremium) {
+      if (isPro) {
         if (searchLanguage) searchParameters.language = searchLanguage;
         if (searchRegion) searchParameters.region = searchRegion;
         if (outputLanguage) searchParameters.outputLanguage = outputLanguage;
@@ -523,7 +523,7 @@ export function CreateProjectDialog({
                   <div className="overflow-hidden">
                     <div className="px-4 pb-4 space-y-4 border-t border-border pt-4">
                       {/* Priority Domains */}
-                      <PremiumFeatureWrapper isPremium={isPremium} featureName="Priority Domains">
+                      <ProFeatureWrapper isPro={isPro} featureName="Priority Domains">
                         <div className="space-y-2">
                           <div className="flex items-center gap-1.5">
                             <Label htmlFor="priorityDomains">
@@ -556,14 +556,14 @@ export function CreateProjectDialog({
                             placeholder="e.g., reuters.com, techcrunch.com"
                             value={priorityDomains}
                             onChange={(e) => setPriorityDomains(e.target.value)}
-                            disabled={isCreating || !isPremium}
+                            disabled={isCreating || !isPro}
                             rows={2}
                           />
                         </div>
-                      </PremiumFeatureWrapper>
+                      </ProFeatureWrapper>
 
                       {/* Excluded Domains */}
-                      <PremiumFeatureWrapper isPremium={isPremium} featureName="Excluded Domains">
+                      <ProFeatureWrapper isPro={isPro} featureName="Excluded Domains">
                         <div className="space-y-2">
                           <div className="flex items-center gap-1.5">
                             <Label htmlFor="excludedDomains">
@@ -595,14 +595,14 @@ export function CreateProjectDialog({
                             placeholder="e.g., spam-site.com, clickbait.com"
                             value={excludedDomains}
                             onChange={(e) => setExcludedDomains(e.target.value)}
-                            disabled={isCreating || !isPremium}
+                            disabled={isCreating || !isPro}
                             rows={2}
                           />
                         </div>
-                      </PremiumFeatureWrapper>
+                      </ProFeatureWrapper>
 
                       {/* Required Keywords */}
-                      <PremiumFeatureWrapper isPremium={isPremium} featureName="Keyword Filters">
+                      <ProFeatureWrapper isPro={isPro} featureName="Keyword Filters">
                         <div className="space-y-2">
                           <div className="flex items-center gap-1.5">
                             <Label htmlFor="requiredKeywords">
@@ -634,14 +634,14 @@ export function CreateProjectDialog({
                             placeholder="e.g., machine learning, neural networks"
                             value={requiredKeywords}
                             onChange={(e) => setRequiredKeywords(e.target.value)}
-                            disabled={isCreating || !isPremium}
+                            disabled={isCreating || !isPro}
                             rows={2}
                           />
                         </div>
-                      </PremiumFeatureWrapper>
+                      </ProFeatureWrapper>
 
                       {/* Excluded Keywords */}
-                      <PremiumFeatureWrapper isPremium={isPremium} featureName="Keyword Filters">
+                      <ProFeatureWrapper isPro={isPro} featureName="Keyword Filters">
                         <div className="space-y-2">
                           <div className="flex items-center gap-1.5">
                             <Label htmlFor="excludedKeywords">
@@ -674,14 +674,14 @@ export function CreateProjectDialog({
                             placeholder="e.g., sponsored, advertisement"
                             value={excludedKeywords}
                             onChange={(e) => setExcludedKeywords(e.target.value)}
-                            disabled={isCreating || !isPremium}
+                            disabled={isCreating || !isPro}
                             rows={2}
                           />
                         </div>
-                      </PremiumFeatureWrapper>
+                      </ProFeatureWrapper>
 
                       {/* Search Language */}
-                      <PremiumFeatureWrapper isPremium={isPremium} featureName="Language Filter">
+                      <ProFeatureWrapper isPro={isPro} featureName="Language Filter">
                           <div className="space-y-2">
                             <div className="flex items-center gap-1.5">
                               <Label htmlFor="searchLanguage">Search Language</Label>
@@ -705,7 +705,7 @@ export function CreateProjectDialog({
                               id="searchLanguage"
                               value={searchLanguage}
                               onChange={(e) => setSearchLanguage(e.target.value)}
-                              disabled={isCreating || !isPremium}
+                              disabled={isCreating || !isPro}
                             >
                               {SUPPORTED_LANGUAGES.map((lang) => (
                                 <option key={lang.code} value={lang.code}>
@@ -714,10 +714,10 @@ export function CreateProjectDialog({
                               ))}
                             </Select>
                           </div>
-                        </PremiumFeatureWrapper>
+                        </ProFeatureWrapper>
 
                         {/* Search Region */}
-                        <PremiumFeatureWrapper isPremium={isPremium} featureName="Location Filter">
+                        <ProFeatureWrapper isPro={isPro} featureName="Location Filter">
                           <div className="space-y-2">
                             <div className="flex items-center gap-1.5">
                               <Label htmlFor="searchRegion">Search Region</Label>
@@ -741,7 +741,7 @@ export function CreateProjectDialog({
                               id="searchRegion"
                               value={searchRegion}
                               onChange={(e) => setSearchRegion(e.target.value)}
-                              disabled={isCreating || !isPremium}
+                              disabled={isCreating || !isPro}
                             >
                               {SUPPORTED_REGIONS.map((region) => (
                                 <option key={region.code} value={region.code}>
@@ -750,10 +750,10 @@ export function CreateProjectDialog({
                               ))}
                             </Select>
                           </div>
-                        </PremiumFeatureWrapper>
+                        </ProFeatureWrapper>
 
                         {/* Output Language */}
-                        <PremiumFeatureWrapper isPremium={isPremium} featureName="Report Translation">
+                        <ProFeatureWrapper isPro={isPro} featureName="Report Translation">
                           <div className="space-y-2">
                             <div className="flex items-center gap-1.5">
                               <Label htmlFor="outputLanguage">Report Language</Label>
@@ -777,7 +777,7 @@ export function CreateProjectDialog({
                               id="outputLanguage"
                               value={outputLanguage}
                               onChange={(e) => setOutputLanguage(e.target.value)}
-                              disabled={isCreating || !isPremium}
+                              disabled={isCreating || !isPro}
                             >
                               {OUTPUT_LANGUAGES.map((lang) => (
                                 <option key={lang.code} value={lang.code}>
@@ -786,7 +786,7 @@ export function CreateProjectDialog({
                               ))}
                             </Select>
                           </div>
-                        </PremiumFeatureWrapper>
+                        </ProFeatureWrapper>
                     </div>
                   </div>
                 </div>

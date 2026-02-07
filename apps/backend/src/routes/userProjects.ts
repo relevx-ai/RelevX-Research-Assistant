@@ -12,7 +12,7 @@ import type {
 import { Frequency } from "core";
 import { set, isAfter, add } from "date-fns";
 import { toZonedTime, fromZonedTime } from "date-fns-tz";
-import { gFreePlanId } from "../utils/billing.js";
+import { getFreePlanId } from "../utils/billing.js";
 import { getUserData } from "../utils/user.js";
 import { Redis } from "ioredis";
 import { getPlans } from "./products.js";
@@ -441,13 +441,13 @@ const routes: FastifyPluginAsync = async (app) => {
         const userData = await getUserData(userId, db);
         const plans: Plan[] = await getPlans(remoteConfig);
         const plan: Plan | undefined = plans.find(
-          (p) => p.id === (userData.user.planId || gFreePlanId)
+          (p) => p.id === (userData.user.planId || getFreePlanId())
         );
 
         // Strip all advanced search parameters if user is on free plan
-        // All advanced settings (domain filtering, keyword filtering, language/region) are premium features
-        const isPremium = plan && plan.id !== gFreePlanId;
-        if (!isPremium && request.projectInfo.searchParameters) {
+        // All advanced settings (domain filtering, keyword filtering, language/region) are Pro features
+        const isPro = plan && plan.id !== getFreePlanId();
+        if (!isPro && request.projectInfo.searchParameters) {
           // Remove the entire searchParameters object for free users
           delete request.projectInfo.searchParameters;
 
@@ -569,17 +569,17 @@ const routes: FastifyPluginAsync = async (app) => {
             .send({ error: { message: "Project not found" } });
         const docData = doc.data();
 
-        // Get user's plan and check if premium
+        // Get user's plan and check if Pro
         const userData = await getUserData(userId, db);
         const plans: Plan[] = await getPlans(remoteConfig);
         const plan: Plan | undefined = plans.find(
-          (p) => p.id === (userData.user.planId || gFreePlanId)
+          (p) => p.id === (userData.user.planId || getFreePlanId())
         );
 
         // Strip all advanced search parameters if user is on free plan
-        // All advanced settings (domain filtering, keyword filtering, language/region) are premium features
-        const isPremium = plan && plan.id !== gFreePlanId;
-        if (!isPremium && data.searchParameters) {
+        // All advanced settings (domain filtering, keyword filtering, language/region) are Pro features
+        const isPro = plan && plan.id !== getFreePlanId();
+        if (!isPro && data.searchParameters) {
           // Remove the entire searchParameters object for free users
           delete data.searchParameters;
 
@@ -740,7 +740,7 @@ const routes: FastifyPluginAsync = async (app) => {
           // Find the user's correct plan.. if not on a plan assume they are on free mode
           const plans: Plan[] = await getPlans(remoteConfig);
           const plan: Plan | undefined = plans.find(
-            (p) => p.id === (userData.user.planId || gFreePlanId)
+            (p) => p.id === (userData.user.planId || getFreePlanId())
           );
 
           // Default to 1 active project if plan not found (matches create endpoint behavior)

@@ -2,14 +2,14 @@ import { ReactNode } from 'react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Lock } from 'lucide-react';
 
-interface PremiumFeatureWrapperProps {
+interface ProFeatureWrapperProps {
   children: ReactNode;
-  isPremium: boolean;
+  isPro: boolean;
   featureName: string;
 }
 
-export function PremiumFeatureWrapper({ children, isPremium, featureName }: PremiumFeatureWrapperProps) {
-  if (isPremium) {
+export function ProFeatureWrapper({ children, isPro, featureName }: ProFeatureWrapperProps) {
+  if (isPro) {
     return <>{children}</>;
   }
 
