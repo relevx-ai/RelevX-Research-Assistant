@@ -191,8 +191,11 @@ export { sendReportEmail } from "./services/email";
 
 export {
   getUserAnalytics,
+  getUserOneShotCount,
+  incrementUserOneShotRun,
   kAnalyticsCollectionTopDown,
   kAnalyticsUserCollection,
+  kAnalyticsUserMonthlyDoc,
   kAnalyticsDailyDateKey,
   kAnalyticsMonthlyDateKey,
 } from "./utils/analytics";

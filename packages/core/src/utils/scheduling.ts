@@ -33,12 +33,12 @@ export function validateFrequency(
 
 /**
  * Calculate the next run timestamp based on frequency, delivery time, and timezone
- * @param frequency - daily, weekly, or monthly
+ * @param frequency - daily, weekly, monthly, or once
  * @param deliveryTime - HH:MM format in user's timezone
  * @param timezone - IANA timezone identifier (e.g., "America/New_York")
  * @param dayOfWeek - 0-6 (Sunday-Saturday), used when frequency is "weekly"
  * @param dayOfMonth - 1-31, used when frequency is "monthly"
- * @returns Timestamp (milliseconds) for next execution
+ * @returns Timestamp (milliseconds) for next execution, or 0 for "once" (no next run)
  */
 export function calculateNextRunAt(
   frequency: Frequency,
@@ -47,6 +47,9 @@ export function calculateNextRunAt(
   dayOfWeek?: number,
   dayOfMonth?: number
 ): number {
+  if (frequency === "once") {
+    return 0;
+  }
   // Parse delivery time
   const [hours, minutes] = deliveryTime.split(":").map(Number);
 
@@ -149,6 +152,8 @@ function addFrequencyPeriod(date: Date, frequency: Frequency): Date {
       return add(date, { weeks: 1 });
     case "monthly":
       return add(date, { months: 1 });
+    case "once":
+      return date;
   }
 }
 

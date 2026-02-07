@@ -219,13 +219,15 @@ export function ProjectDetailModal({
 
 // Overview Tab Component
 function OverviewTab({ project }: { project: ProjectInfo }) {
-  const frequencyLabels = {
+  const frequencyLabels: Record<string, string> = {
     daily: "Daily",
     weekly: "Weekly",
     monthly: "Monthly",
+    once: "Once",
   };
 
   const getFrequencyDisplay = () => {
+    if (project.frequency === "once") return "Once";
     const baseLabel = frequencyLabels[project.frequency];
     if (project.frequency === "weekly" && project.dayOfWeek !== undefined) {
       return `${baseLabel} (${DAY_OF_WEEK_LABELS[project.dayOfWeek]})`;
@@ -233,7 +235,7 @@ function OverviewTab({ project }: { project: ProjectInfo }) {
     if (project.frequency === "monthly" && project.dayOfMonth !== undefined) {
       return `${baseLabel} (${formatDayOfMonth(project.dayOfMonth)})`;
     }
-    return baseLabel;
+    return baseLabel ?? project.frequency;
   };
 
   const formatTime12Hour = (time24: string) => {

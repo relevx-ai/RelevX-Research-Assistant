@@ -35,6 +35,7 @@ import {
   Calendar,
   AlertCircle,
   ArrowRight,
+  Play,
 } from "lucide-react";
 import { DeleteProjectDialog } from "./delete-project-dialog";
 import { EditProjectSettingsDialog } from "./edit-project-settings-dialog";
@@ -51,7 +52,7 @@ interface ProjectCardProps {
 }
 
 export function ProjectCard({ project }: ProjectCardProps) {
-  const { toggleProjectStatus, deleteProject } = useProjects({
+  const { toggleProjectStatus, deleteProject, runProjectNow } = useProjects({
     subscribe: false,
   });
 
@@ -59,6 +60,7 @@ export function ProjectCard({ project }: ProjectCardProps) {
   const [settingsDialogOpen, setSettingsDialogOpen] = useState(false);
   const [detailModalOpen, setDetailModalOpen] = useState(false);
   const [isToggling, setIsToggling] = useState(false);
+  const [isRunningNow, setIsRunningNow] = useState(false);
   const [errorDialog, setErrorDialog] = useState<{
     open: boolean;
     title: string;
@@ -71,13 +73,15 @@ export function ProjectCard({ project }: ProjectCardProps) {
     type: "generic",
   });
 
-  const frequencyLabels = {
+  const frequencyLabels: Record<string, string> = {
     daily: "Daily",
     weekly: "Weekly",
     monthly: "Monthly",
+    once: "Once",
   };
 
   const getFrequencyDisplay = () => {
+    if (project.frequency === "once") return "Once";
     const baseLabel = frequencyLabels[project.frequency];
     if (project.frequency === "weekly" && project.dayOfWeek !== undefined) {
       return `${baseLabel} (${DAY_OF_WEEK_LABELS[project.dayOfWeek]})`;
@@ -85,7 +89,7 @@ export function ProjectCard({ project }: ProjectCardProps) {
     if (project.frequency === "monthly" && project.dayOfMonth !== undefined) {
       return `${baseLabel} (${formatDayOfMonth(project.dayOfMonth)})`;
     }
-    return baseLabel;
+    return baseLabel ?? project.frequency;
   };
 
   const formatTime12Hour = (time24: string) => {
@@ -166,13 +170,31 @@ export function ProjectCard({ project }: ProjectCardProps) {
           <div className="flex items-start justify-between gap-2">
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-1.5 sm:mb-2">
-                <Switch
-                  checked={
-                    project.status === "active" || project.status === "running"
-                  }
-                  onCheckedChange={handleToggleActive}
-                  disabled={isToggling}
-                />
+                {project.frequency === "once" ? (
+                  <div
+                    className={`h-4 w-4 shrink-0 rounded-full ${
+                      project.status === "active" ||
+                      project.status === "running"
+                        ? "bg-green-500"
+                        : "bg-red-500"
+                    }`}
+                    title={
+                      project.status === "active" ||
+                      project.status === "running"
+                        ? "Active"
+                        : "Not active"
+                    }
+                  />
+                ) : (
+                  <Switch
+                    checked={
+                      project.status === "active" ||
+                      project.status === "running"
+                    }
+                    onCheckedChange={handleToggleActive}
+                    disabled={isToggling}
+                  />
+                )}
               </div>
               <CardTitle className="text-lg sm:text-xl mb-1.5 sm:mb-2 line-clamp-2">
                 {project.title}
@@ -215,6 +237,39 @@ export function ProjectCard({ project }: ProjectCardProps) {
                   <Settings className="w-4 h-4" />
                   Settings
                 </DropdownMenuItem>
+                {project.status !== "running" && (
+                    <DropdownMenuItem
+                      onClick={async (e) => {
+                        e.stopPropagation();
+                        setIsRunningNow(true);
+                        try {
+                          await runProjectNow(project.title);
+                        } catch (err: unknown) {
+                          const message =
+                            err instanceof Error
+                              ? err.message
+                              : "Run Now failed";
+                          setErrorDialog({
+                            open: true,
+                            title: "Run Now failed",
+                            message,
+                            type: "generic",
+                          });
+                        } finally {
+                          setIsRunningNow(false);
+                        }
+                      }}
+                      aria-disabled={isRunningNow}
+                      className={`gap-2 hover:bg-teal-500/10 focus:bg-teal-500/10${isRunningNow ? " opacity-60 pointer-events-none" : ""}`}
+                    >
+                      {isRunningNow ? (
+                        <Clock className="w-4 h-4 animate-pulse" />
+                      ) : (
+                        <Play className="w-4 h-4" />
+                      )}
+                      Run Now
+                    </DropdownMenuItem>
+                  )}
                 <DropdownMenuSeparator className="bg-teal-500/20" />
                 <DropdownMenuItem
                   className="gap-2 text-red-400 focus:text-red-300 hover:bg-red-500/10 focus:bg-red-500/10"

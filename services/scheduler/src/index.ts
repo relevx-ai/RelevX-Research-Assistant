@@ -17,10 +17,12 @@ import { Mutex } from "async-mutex";
 
 // Import types from core package
 import type { NewDeliveryLog, Project, RelevxUserProfile } from "core";
-import { sendReportEmail } from "core";
-
-// Import scheduling utility
-import { calculateNextRunAt } from "core";
+import {
+  sendReportEmail,
+  calculateNextRunAt,
+  incrementUserOneShotRun,
+  kAnalyticsMonthlyDateKey,
+} from "core";
 
 // Provider instances (initialized once at startup)
 let providersInitialized = false;
@@ -238,7 +240,7 @@ async function runResearchJob(scheduledJobNumber: number): Promise<void> {
     // Success - prepare project for delivery
     // The Delivery Job will update nextRunAt AFTER the email is sent successfully.
     await projectRef.update({
-      status: "active",
+      status: project.frequency === "once" ? "paused" : "active",
       researchStartedAt: null,
       lastError: null,
       preparedDeliveryLogId: result.deliveryLogId,
@@ -366,11 +368,12 @@ async function runDeliveryJob(scheduledJobNumber: number): Promise<void> {
     for (const userDoc of usersSnapshot.docs) {
       const userId = userDoc.id;
 
-      const userRef = await db.collection("users").doc(userId);
+      const userRef = db.collection("users").doc(userId);
       // Query active projects where nextRunAt <= now AND preparedDeliveryLogId is not null
       const projectsSnapshot = await userRef
         .collection("projects")
-        .where("status", "==", "active")
+        // .where("status", "==", "active") // one shot projects get set to paused after research...
+        .where("preparedDeliveryLogId", "!=", null)
         .where("nextRunAt", "<=", now)
         .get();
 
@@ -451,6 +454,7 @@ async function sendClientProjectReport(
 
 // for now we can only handle 2 emails a second before we hit rate limits
 async function runDeliveryQueue() {
+  const { db } = await import("core");
   const now = Date.now();
   for (let i = 0; i < 2 && gDeliveryQueue.isEmpty() === false; i++) {
     const deliveryItem = gDeliveryQueue.dequeue();
@@ -504,30 +508,86 @@ async function runDeliveryQueue() {
               deliveredAt: Date.now(),
             });
 
-            // Calculate next run time AFTER successful delivery
-            const nextRunAt = calculateNextRunAt(
-              project.frequency,
-              project.deliveryTime,
-              project.timezone,
-              project.dayOfWeek,
-              project.dayOfMonth
-            );
+            const monthKey = kAnalyticsMonthlyDateKey(new Date());
 
-            // Update project with next scheduled run time
-            await projectRef.update({
-              lastRunAt: now,
-              preparedDeliveryLogId: null,
-              nextRunAt,
-              deliveredAt: now,
-              updatedAt: Date.now(),
-            });
-
-            logger.info("Results delivered successfully", {
-              userId,
-              projectId: project.id,
-              deliveryLogId: project.preparedDeliveryLogId,
-              nextRunAt: new Date(nextRunAt).toISOString(),
-            });
+            if (project.frequency === "once") {
+              try {
+                await incrementUserOneShotRun(db, userId, monthKey);
+              } catch (analyticsErr: any) {
+                logger.error("Failed to increment one-shot analytics", {
+                  userId,
+                  projectId: project.id,
+                  monthKey,
+                  error: analyticsErr?.message ?? String(analyticsErr),
+                });
+              }
+              await projectRef.update({
+                status: "paused",
+                lastRunAt: now,
+                preparedDeliveryLogId: null,
+                nextRunAt: null,
+                deliveredAt: now,
+                updatedAt: Date.now(),
+              });
+              logger.info("Once project delivered and paused", {
+                userId,
+                projectId: project.id,
+                deliveryLogId: project.preparedDeliveryLogId,
+              });
+            } else if (project.thisRunIsOneShot === true) {
+              try {
+                await incrementUserOneShotRun(db, userId, monthKey);
+              } catch (analyticsErr: any) {
+                logger.error("Failed to increment one-shot analytics", {
+                  userId,
+                  projectId: project.id,
+                  monthKey,
+                  error: analyticsErr?.message ?? String(analyticsErr),
+                });
+              }
+              const nextRunAt = calculateNextRunAt(
+                project.frequency,
+                project.deliveryTime,
+                project.timezone,
+                project.dayOfWeek,
+                project.dayOfMonth
+              );
+              await projectRef.update({
+                lastRunAt: now,
+                preparedDeliveryLogId: null,
+                thisRunIsOneShot: null,
+                nextRunAt,
+                deliveredAt: now,
+                updatedAt: Date.now(),
+              });
+              logger.info("Results delivered successfully (one-shot run)", {
+                userId,
+                projectId: project.id,
+                deliveryLogId: project.preparedDeliveryLogId,
+                nextRunAt: new Date(nextRunAt).toISOString(),
+              });
+            } else {
+              const nextRunAt = calculateNextRunAt(
+                project.frequency,
+                project.deliveryTime,
+                project.timezone,
+                project.dayOfWeek,
+                project.dayOfMonth
+              );
+              await projectRef.update({
+                lastRunAt: now,
+                preparedDeliveryLogId: null,
+                nextRunAt,
+                deliveredAt: now,
+                updatedAt: Date.now(),
+              });
+              logger.info("Results delivered successfully", {
+                userId,
+                projectId: project.id,
+                deliveryLogId: project.preparedDeliveryLogId,
+                nextRunAt: new Date(nextRunAt).toISOString(),
+              });
+            }
           } else {
             // enqueue the delivery item again so it can be retried
             gDeliveryQueue.enqueue(deliveryItem);
