@@ -444,6 +444,16 @@ const routes: FastifyPluginAsync = async (app) => {
           (p) => p.id === (userData.user.planId || gFreePlanId)
         );
 
+        // Strip all advanced search parameters if user is on free plan
+        // All advanced settings (domain filtering, keyword filtering, language/region) are premium features
+        const isPremium = plan && plan.id !== gFreePlanId;
+        if (!isPremium && request.projectInfo.searchParameters) {
+          // Remove the entire searchParameters object for free users
+          delete request.projectInfo.searchParameters;
+
+          console.log('Removed all advanced search parameters for free user');
+        }
+
         let createAsPaused = false;
         // Default to 1 for free plan if not specified in remote config
         const maxActiveProjects = plan?.settingsMaxActiveProjects || 1;
@@ -558,6 +568,24 @@ const routes: FastifyPluginAsync = async (app) => {
             .status(404)
             .send({ error: { message: "Project not found" } });
         const docData = doc.data();
+
+        // Get user's plan and check if premium
+        const userData = await getUserData(userId, db);
+        const plans: Plan[] = await getPlans(remoteConfig);
+        const plan: Plan | undefined = plans.find(
+          (p) => p.id === (userData.user.planId || gFreePlanId)
+        );
+
+        // Strip all advanced search parameters if user is on free plan
+        // All advanced settings (domain filtering, keyword filtering, language/region) are premium features
+        const isPremium = plan && plan.id !== gFreePlanId;
+        if (!isPremium && data.searchParameters) {
+          // Remove the entire searchParameters object for free users
+          delete data.searchParameters;
+
+          console.log('Removed all advanced search parameters for free user during update');
+        }
+
         const updates: any = {
           ...data,
           updatedAt: new Date().toISOString(),

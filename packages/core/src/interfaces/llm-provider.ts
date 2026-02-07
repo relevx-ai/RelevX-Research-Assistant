@@ -110,4 +110,13 @@ export interface LLMProvider {
       timezone?: string;
     }
   ): Promise<CompiledReport>;
+
+  /**
+   * Translate text from source language to target language (optional)
+   */
+  translateText?(
+    text: string,
+    sourceLanguage: string,
+    targetLanguage: string
+  ): Promise<string>;
 }

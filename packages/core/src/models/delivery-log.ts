@@ -28,6 +28,12 @@ export interface DeliveryStats {
   freshnessUsed: string; // Final freshness value used (pd, pw, pm, py)
   freshnessExpanded: boolean; // Whether search timeframe was expanded
 
+  // Translation tracking
+  translationTokens?: number; // Tokens used for translation
+  translationCostUsd?: number; // Cost of translation
+  wasTranslated?: boolean; // Whether translation occurred
+  translatedToLanguage?: string; // Target language
+
   // Provider info
   llmProvider: string; // LLM provider used (e.g., "openai", "gemini")
   llmModel: string; // Specific model used (e.g., "gpt-4o-mini")

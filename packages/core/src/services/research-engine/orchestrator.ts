@@ -186,6 +186,16 @@ export async function executeResearchForProject(
   // Initialize token usage tracker for cost estimation
   const tokenUsage = createTokenUsageTracker();
 
+  // Translation tracking
+  let translationStats: {
+    wasTranslated: boolean;
+    translatedToLanguage?: string;
+    translationTokens?: number;
+    translationCostUsd?: number;
+  } = {
+    wasTranslated: false,
+  };
+
   try {
     // 1. Load project
     const projectRef = db
@@ -770,6 +780,103 @@ export async function executeResearchForProject(
       };
     }
 
+    // 9.5 Translate report if needed
+    if (report && project.searchParameters?.outputLanguage) {
+      const searchLang = project.searchParameters?.language || 'en';
+      const outputLang = project.searchParameters.outputLanguage;
+
+      // Only translate if output language is different from search language
+      // Default output to English if not specified
+      const targetLang = outputLang || 'en';
+
+      if (targetLang !== searchLang && llmProvider.translateText) {
+        console.log(`Translating report from ${searchLang} to ${targetLang}...`);
+
+        try {
+          const startTranslation = Date.now();
+
+          // Translate the markdown report
+          const translatedMarkdown = await llmProvider.translateText(
+            report.markdown,
+            searchLang,
+            targetLang
+          );
+
+          // Track translation token usage
+          const translationInputTokens = estimateTokens(report.markdown) + 50; // +50 for system prompt
+          const translationOutputTokens = estimateTokens(translatedMarkdown);
+
+          tokenUsage.inputTokens += translationInputTokens;
+          tokenUsage.outputTokens += translationOutputTokens;
+          tokenUsage.totalTokens = tokenUsage.inputTokens + tokenUsage.outputTokens;
+
+          // Update report with translated content
+          report.markdown = translatedMarkdown;
+
+          const translationDuration = Date.now() - startTranslation;
+          console.log(`Translation completed in ${translationDuration}ms`);
+
+          // Track translation stats
+          translationStats.wasTranslated = true;
+          translationStats.translatedToLanguage = targetLang;
+          translationStats.translationTokens = translationInputTokens + translationOutputTokens;
+          translationStats.translationCostUsd = estimateCost(
+            {
+              inputTokens: translationInputTokens,
+              outputTokens: translationOutputTokens,
+              totalTokens: translationInputTokens + translationOutputTokens
+            },
+            llmProvider.getModel()
+          );
+        } catch (error) {
+          console.error('Translation failed, delivering untranslated report:', error);
+          // Continue with untranslated report - don't fail the entire research
+          translationStats.wasTranslated = false;
+        }
+      } else if (targetLang === searchLang) {
+        console.log('Output language matches search language, skipping translation');
+      }
+    } else if (report && project.searchParameters?.language && project.searchParameters.language !== 'en') {
+      // No output language specified, default to English translation if search was not English
+      const searchLang = project.searchParameters.language;
+
+      if (llmProvider.translateText) {
+        console.log(`No output language specified, translating from ${searchLang} to English (default)...`);
+
+        try {
+          const translatedMarkdown = await llmProvider.translateText(
+            report.markdown,
+            searchLang,
+            'en'
+          );
+
+          const translationInputTokens = estimateTokens(report.markdown) + 50;
+          const translationOutputTokens = estimateTokens(translatedMarkdown);
+
+          tokenUsage.inputTokens += translationInputTokens;
+          tokenUsage.outputTokens += translationOutputTokens;
+          tokenUsage.totalTokens = tokenUsage.inputTokens + tokenUsage.outputTokens;
+
+          report.markdown = translatedMarkdown;
+
+          translationStats.wasTranslated = true;
+          translationStats.translatedToLanguage = 'en';
+          translationStats.translationTokens = translationInputTokens + translationOutputTokens;
+          translationStats.translationCostUsd = estimateCost(
+            {
+              inputTokens: translationInputTokens,
+              outputTokens: translationOutputTokens,
+              totalTokens: translationInputTokens + translationOutputTokens
+            },
+            llmProvider.getModel()
+          );
+        } catch (error) {
+          console.error('Default translation to English failed:', error);
+          translationStats.wasTranslated = false;
+        }
+      }
+    }
+
     // 10. Extract URLs for delivery log
     const resultUrls = sortedResults.map((r) => r.url);
 
@@ -797,6 +904,9 @@ export async function executeResearchForProject(
         // Search context
         freshnessUsed: currentFreshness,
         freshnessExpanded: freshnessExpanded,
+
+        // Translation tracking
+        ...translationStats,
 
         // Provider info
         llmProvider: llmProvider.getName(),

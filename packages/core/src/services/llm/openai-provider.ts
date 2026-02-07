@@ -210,6 +210,36 @@ export class OpenAIProvider implements LLMProvider {
 
     return report;
   }
+
+  /**
+   * Translate text from source language to target language
+   */
+  async translateText(
+    text: string,
+    sourceLanguage: string,
+    targetLanguage: string
+  ): Promise<string> {
+    this.ensureInitialized();
+    const client = getClient();
+
+    const systemPrompt = `You are a professional translator. Translate the following research report from ${sourceLanguage} to ${targetLanguage}. Preserve all markdown formatting, links, and structure exactly as they appear. Maintain technical accuracy and professional tone. Do not add any commentary or explanations - only return the translated text.`;
+
+    try {
+      const response = await client.chat.completions.create({
+        model: this.modelName,
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: text }
+        ],
+        temperature: 0.2, // Low temperature for consistent translation
+      });
+
+      return response.choices[0]?.message?.content || text;
+    } catch (error) {
+      console.error('Translation failed:', error);
+      throw error; // Re-throw to handle in orchestrator
+    }
+  }
 }
 
 /**
