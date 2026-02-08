@@ -51,12 +51,14 @@ interface CreateProjectDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   projects?: ProjectInfo[];
+  onProjectCreated?: () => void;
 }
 
 export function CreateProjectDialog({
   open,
   onOpenChange,
   projects = [],
+  onProjectCreated,
 }: CreateProjectDialogProps) {
   const { createProject } = useProjects({ subscribe: false });
 
@@ -219,6 +221,7 @@ export function CreateProjectDialog({
       setSearchRegion("");
       setOutputLanguage("");
       onOpenChange(false);
+      onProjectCreated?.();
 
       // Show paused info dialog if the project was created as paused
       if (response?.createdAsPaused) {

@@ -559,6 +559,9 @@ const routes: FastifyPluginAsync = async (app) => {
           .collection("projects");
         await projectRef.add(projectData);
 
+        // Invalidate cache so /list returns fresh data
+        try { await app.redis.del(userId); } catch (_) {}
+
         const { userId: _userId, ...projectInfo } = projectData;
 
         const response: CreateProjectResponse = {
@@ -662,7 +665,7 @@ const routes: FastifyPluginAsync = async (app) => {
         }
         await projectDoc.ref.update(updateData);
 
-        await app.redis.del(userId);
+        try { await app.redis.del(userId); } catch (_) {}
 
         return rep.status(200).send({ ok: true });
       } catch (err: any) {
@@ -813,6 +816,8 @@ const routes: FastifyPluginAsync = async (app) => {
 
         await doc.ref.update(updates);
 
+        try { await app.redis.del(userId); } catch (_) {}
+
         return rep.status(200).send({ ok: true });
       } catch (err: any) {
         req.log?.error(err, "/user/projects/update failed");
@@ -851,6 +856,9 @@ const routes: FastifyPluginAsync = async (app) => {
           status: "deleted",
           updatedAt: new Date().toISOString(),
         });
+
+        // Invalidate cache so /list returns fresh data
+        try { await app.redis.del(userId); } catch (_) {}
 
         return rep.status(200).send({ ok: true });
       } catch (err: any) {
@@ -989,6 +997,8 @@ const routes: FastifyPluginAsync = async (app) => {
                 });
               });
             });
+
+          try { await app.redis.del(userId); } catch (_) {}
         }
 
         app.log.info({

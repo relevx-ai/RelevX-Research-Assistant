@@ -49,9 +49,10 @@ import Link from "next/link";
 
 interface ProjectCardProps {
   project: ProjectInfo;
+  onProjectDeleted?: () => void;
 }
 
-export function ProjectCard({ project }: ProjectCardProps) {
+export function ProjectCard({ project, onProjectDeleted }: ProjectCardProps) {
   const { toggleProjectStatus, deleteProject, runProjectNow } = useProjects({
     subscribe: false,
   });
@@ -328,7 +329,11 @@ export function ProjectCard({ project }: ProjectCardProps) {
         project={project}
         open={deleteDialogOpen}
         onOpenChange={setDeleteDialogOpen}
-        onDelete={deleteProject}
+        onDelete={async (title) => {
+          const success = await deleteProject(title);
+          if (success) onProjectDeleted?.();
+          return success;
+        }}
       />
 
       {/* Edit Settings Dialog */}

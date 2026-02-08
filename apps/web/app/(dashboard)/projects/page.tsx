@@ -171,7 +171,7 @@ export default function ProjectsPage() {
                 transition={{ duration: 0.3, delay: index * 0.05 }}
                 layout
               >
-                <ProjectCard project={project} />
+                <ProjectCard project={project} onProjectDeleted={refresh} />
               </motion.div>
             ))}
           </AnimatePresence>
@@ -182,6 +182,7 @@ export default function ProjectsPage() {
       <CreateProjectDialog
         open={createDialogOpen}
         onOpenChange={setCreateDialogOpen}
+        onProjectCreated={refresh}
       />
     </div>
   );
