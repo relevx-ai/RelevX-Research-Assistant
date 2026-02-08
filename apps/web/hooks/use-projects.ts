@@ -11,6 +11,7 @@ import type {
   ProjectStatus,
   CreateProjectResponse,
 } from "../../../packages/core/src/models/project";
+import type { RunNowResponse } from "../lib/projects";
 import {
   subscribeToProjects,
   createProject as createProjectService,
@@ -38,7 +39,7 @@ interface UseProjectsResult {
     status: ProjectStatus
   ) => Promise<boolean>;
   deleteProject: (projectId: string) => Promise<boolean>;
-  runProjectNow: (projectTitle: string) => Promise<boolean>;
+  runProjectNow: (projectTitle: string) => Promise<RunNowResponse>;
   refresh: () => Promise<void>;
 }
 
