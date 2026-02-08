@@ -163,14 +163,13 @@ export function useProjects(
   );
 
   const runProjectNow = useCallback(
-    async (projectTitle: string): Promise<boolean> => {
+    async (projectTitle: string) => {
       if (!user?.uid) {
         setError("User must be logged in to run a project");
-        return false;
+        throw new Error("User must be logged in to run a project");
       }
       try {
-        await runProjectNowService(projectTitle);
-        return true;
+        return await runProjectNowService(projectTitle);
       } catch (err) {
         const errorMessage =
           err instanceof Error ? err.message : "Failed to run project now";

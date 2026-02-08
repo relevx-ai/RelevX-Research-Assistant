@@ -50,6 +50,7 @@ import {
   formatRelativeTime,
 } from "@/lib/utils";
 import Link from "next/link";
+import { usePro } from "@/hooks/use-pro";
 
 interface ProjectCardProps {
   project: ProjectInfo;
@@ -62,12 +63,15 @@ export function ProjectCard({ project, allProjects = [], onProjectDeleted, onPro
   const { toggleProjectStatus, deleteProject, runProjectNow, createProject } = useProjects({
     subscribe: false,
   });
+  const { isPro } = usePro();
 
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [settingsDialogOpen, setSettingsDialogOpen] = useState(false);
   const [detailModalOpen, setDetailModalOpen] = useState(false);
   const [isToggling, setIsToggling] = useState(false);
   const [isRunningNow, setIsRunningNow] = useState(false);
+  const [runNowDialogOpen, setRunNowDialogOpen] = useState(false);
+  const [runNowInfo, setRunNowInfo] = useState<{ remainingRuns: number; monthlyLimit: number } | null>(null);
   const [isDuplicating, setIsDuplicating] = useState(false);
   const [duplicateDialogOpen, setDuplicateDialogOpen] = useState(false);
   const [duplicateSuccess, setDuplicateSuccess] = useState(false);
@@ -329,7 +333,12 @@ export function ProjectCard({ project, allProjects = [], onProjectDeleted, onPro
                         e.stopPropagation();
                         setIsRunningNow(true);
                         try {
-                          await runProjectNow(project.title);
+                          const response = await runProjectNow(project.title);
+                          setRunNowInfo({
+                            remainingRuns: response.remainingRuns,
+                            monthlyLimit: response.monthlyLimit,
+                          });
+                          setRunNowDialogOpen(true);
                         } catch (err: unknown) {
                           const message =
                             err instanceof Error
@@ -471,6 +480,60 @@ export function ProjectCard({ project, allProjects = [], onProjectDeleted, onPro
             >
               OK
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Run Now Success Dialog */}
+      <Dialog open={runNowDialogOpen} onOpenChange={setRunNowDialogOpen}>
+        <DialogContent className="sm:max-w-[450px]">
+          <DialogHeader>
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-10 h-10 rounded-lg bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+                <Play className="w-5 h-5 text-green-600 dark:text-green-400" />
+              </div>
+              <DialogTitle>Research Started</DialogTitle>
+            </div>
+          </DialogHeader>
+
+          <div className="text-left space-y-3 text-sm text-muted-foreground">
+            <p>
+              Your research for <span className="font-medium text-foreground">"{project.title}"</span> is
+              now running. Results will be delivered to your email within a few minutes.
+            </p>
+            {runNowInfo && (
+              <p>
+                You have <span className="font-medium text-foreground">{runNowInfo.remainingRuns}</span> of{" "}
+                <span className="font-medium text-foreground">{runNowInfo.monthlyLimit}</span> Run
+                Now {runNowInfo.monthlyLimit === 1 ? "use" : "uses"} remaining this month.
+              </p>
+            )}
+            {!isPro && (
+              <p className="text-xs text-muted-foreground/80">
+                Upgrade to Pro for more monthly runs.
+              </p>
+            )}
+          </div>
+
+          <DialogFooter className="gap-3">
+            <Button
+              onClick={() => setRunNowDialogOpen(false)}
+              className="bg-gradient-to-r from-teal-600 to-teal-500 hover:from-teal-500 hover:to-teal-400 text-white shadow-md hover:shadow-xl hover:scale-105 transition-all duration-300"
+            >
+              OK
+            </Button>
+            {!isPro && (
+              <Button
+                asChild
+                variant="outline"
+                className="gap-2"
+              >
+                <Link href="/pricing">
+                  Upgrade
+                  <ArrowRight className="w-4 h-4" />
+                </Link>
+              </Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>

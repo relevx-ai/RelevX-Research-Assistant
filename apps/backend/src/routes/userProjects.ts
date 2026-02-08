@@ -667,7 +667,14 @@ const routes: FastifyPluginAsync = async (app) => {
 
         try { await app.redis.del(userId); } catch (_) {}
 
-        return rep.status(200).send({ ok: true });
+        // oneShotCount is the count *before* this run, so remaining = limit - count - 1
+        const remainingRuns = Math.max(0, oneShotLimit - oneShotCount - 1);
+
+        return rep.status(200).send({
+          ok: true,
+          remainingRuns,
+          monthlyLimit: oneShotLimit,
+        });
       } catch (err: any) {
         const isDev = process.env.NODE_ENV !== "production";
         const detail = err instanceof Error ? err.message : String(err);

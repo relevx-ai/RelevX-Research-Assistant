@@ -276,18 +276,25 @@ export async function deleteProject(projectTitle: string): Promise<void> {
   }
 }
 
+export interface RunNowResponse {
+  ok: boolean;
+  remainingRuns: number;
+  monthlyLimit: number;
+}
+
 /**
  * Run a recurring project once immediately (one-shot run).
  * Enforces monthly one-shot limit on the backend.
  */
-export async function runProjectNow(projectTitle: string): Promise<void> {
-  const response = await relevx_api.post<{ ok?: boolean }>(
+export async function runProjectNow(projectTitle: string): Promise<RunNowResponse> {
+  const response = await relevx_api.post<RunNowResponse>(
     "/api/v1/user/projects/run-now",
     { title: projectTitle }
   );
   if (!response) {
     throw new Error("Failed to schedule run");
   }
+  return response;
 }
 
 /**
