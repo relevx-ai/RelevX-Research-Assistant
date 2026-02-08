@@ -14,6 +14,8 @@ import {
   getUserOneShotCount,
   kAnalyticsMonthlyDateKey,
   validateProjectDescription,
+  sanitizeLanguageCode,
+  sanitizeRegionCode,
 } from "core";
 import { set, isAfter, add } from "date-fns";
 import { toZonedTime, fromZonedTime } from "date-fns-tz";
@@ -480,6 +482,14 @@ const routes: FastifyPluginAsync = async (app) => {
           console.log('Removed all advanced search parameters for free user');
         }
 
+        // Sanitize language/region codes to prevent prompt injection
+        if (request.projectInfo.searchParameters) {
+          const sp = request.projectInfo.searchParameters;
+          sp.language = sanitizeLanguageCode(sp.language) as any;
+          sp.region = sanitizeRegionCode(sp.region) as any;
+          sp.outputLanguage = sanitizeLanguageCode(sp.outputLanguage) as any;
+        }
+
         let createAsPaused = false;
         // Default to 1 for free plan if not specified in remote config
         const maxActiveProjects = plan?.settingsMaxActiveProjects || 1;
@@ -732,6 +742,14 @@ const routes: FastifyPluginAsync = async (app) => {
               });
             }
           }
+        }
+
+        // Sanitize language/region codes to prevent prompt injection
+        if (data.searchParameters) {
+          const sp = data.searchParameters;
+          sp.language = sanitizeLanguageCode(sp.language);
+          sp.region = sanitizeRegionCode(sp.region);
+          sp.outputLanguage = sanitizeLanguageCode(sp.outputLanguage);
         }
 
         const updates: any = {
