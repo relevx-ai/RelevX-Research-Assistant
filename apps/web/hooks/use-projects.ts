@@ -18,6 +18,7 @@ import {
   updateProjectStatus,
   deleteProject as deleteProjectService,
   listProjects,
+  runProjectNow as runProjectNowService,
 } from "../lib/projects";
 import { useAuth } from "../contexts/auth-context";
 
@@ -37,6 +38,7 @@ interface UseProjectsResult {
     status: ProjectStatus
   ) => Promise<boolean>;
   deleteProject: (projectId: string) => Promise<boolean>;
+  runProjectNow: (projectTitle: string) => Promise<boolean>;
   refresh: () => Promise<void>;
 }
 
@@ -160,6 +162,25 @@ export function useProjects(
     [user]
   );
 
+  const runProjectNow = useCallback(
+    async (projectTitle: string): Promise<boolean> => {
+      if (!user?.uid) {
+        setError("User must be logged in to run a project");
+        return false;
+      }
+      try {
+        await runProjectNowService(projectTitle);
+        return true;
+      } catch (err) {
+        const errorMessage =
+          err instanceof Error ? err.message : "Failed to run project now";
+        setError(errorMessage);
+        throw err;
+      }
+    },
+    [user]
+  );
+
   const refresh = useCallback(async () => {
     if (!user?.uid) return;
     setLoading(true);
@@ -181,6 +202,7 @@ export function useProjects(
     updateProject,
     toggleProjectStatus,
     deleteProject,
+    runProjectNow,
     refresh,
   };
 }

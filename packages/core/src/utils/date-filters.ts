@@ -49,6 +49,8 @@ export function calculateDateRangeByFrequency(
       return calculateDateRange(7, endDate);
     case "monthly":
       return calculateDateRange(30, endDate);
+    case "once":
+      return calculateDateRange(1, endDate);
   }
 }
 

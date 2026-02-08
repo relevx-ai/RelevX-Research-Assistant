@@ -5,3 +5,8 @@ export interface ImproveProjectDescriptionRequest {
 export interface ImproveProjectDescriptionResponse {
   description: string;
 }
+
+export interface ValidateProjectDescriptionResult {
+  valid: boolean;
+  reason?: string;
+}

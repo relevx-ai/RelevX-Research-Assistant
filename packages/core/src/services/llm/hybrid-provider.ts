@@ -41,7 +41,7 @@ export class HybridProvider implements LLMProvider {
   clusterByTopic?(results: ResultForReport[], options?: { similarityThreshold?: number; }): Promise<TopicCluster[]> {
     throw new Error("Method not implemented.");
   }
-  compileClusteredReport?(projectDescription: string, clusters: TopicCluster[], options?: { tone?: "professional" | "casual" | "technical"; maxLength?: number; projectTitle?: string; frequency?: "daily" | "weekly" | "monthly"; }): Promise<CompiledReport> {
+  compileClusteredReport?(projectDescription: string, clusters: TopicCluster[], options?: { tone?: "professional" | "casual" | "technical"; maxLength?: number; projectTitle?: string; frequency?: "daily" | "weekly" | "monthly" | "once"; }): Promise<CompiledReport> {
     throw new Error("Method not implemented.");
   }
 
@@ -90,7 +90,7 @@ export class HybridProvider implements LLMProvider {
       tone?: "professional" | "casual" | "technical";
       maxLength?: number;
       projectTitle?: string;
-      frequency?: "daily" | "weekly" | "monthly";
+      frequency?: "daily" | "weekly" | "monthly" | "once";
       timezone?: string;
     }
   ): Promise<CompiledReport> {

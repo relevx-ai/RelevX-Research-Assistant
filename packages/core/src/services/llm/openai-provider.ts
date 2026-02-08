@@ -49,7 +49,7 @@ export class OpenAIProvider implements LLMProvider {
       tone?: "professional" | "casual" | "technical";
       maxLength?: number;
       projectTitle?: string;
-      frequency?: "daily" | "weekly" | "monthly";
+      frequency?: "daily" | "weekly" | "monthly" | "once";
       timezone?: string;
     }
   ): Promise<CompiledReport> {
@@ -190,7 +190,7 @@ export class OpenAIProvider implements LLMProvider {
       tone?: "professional" | "casual" | "technical";
       maxLength?: number;
       projectTitle?: string;
-      frequency?: "daily" | "weekly" | "monthly";
+      frequency?: "daily" | "weekly" | "monthly" | "once";
       timezone?: string;
     }
   ): Promise<CompiledReport> {

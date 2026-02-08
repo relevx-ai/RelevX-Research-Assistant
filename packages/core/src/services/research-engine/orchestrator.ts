@@ -95,7 +95,7 @@ type Freshness = "pd" | "pw" | "pm" | "py";
  * - Monthly projects: search past month (pm)
  */
 function getFreshnessForFrequency(
-  frequency: "daily" | "weekly" | "monthly"
+  frequency: "daily" | "weekly" | "monthly" | "once"
 ): Freshness {
   switch (frequency) {
     case "daily":
@@ -104,6 +104,8 @@ function getFreshnessForFrequency(
       return "pw"; // Past week
     case "monthly":
       return "pm"; // Past month
+    case "once":
+      return "pd"; // Past day
   }
 }
 

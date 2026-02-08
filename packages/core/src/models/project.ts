@@ -4,7 +4,7 @@
  * Represents a research project that the user wants to track.
  */
 
-export type Frequency = "daily" | "weekly" | "monthly";
+export type Frequency = "daily" | "weekly" | "monthly" | "once";
 
 export type ResultsDestination = "email";
 
@@ -85,6 +85,8 @@ export interface Project {
   lastError?: string; // Error message from last failed execution
   preparedDeliveryLogId?: string; // ID of pre-run delivery log ready to send
   researchStartedAt?: number; // Timestamp when current research started (for "running" status)
+  /** True when this run was triggered by "Run Now" (recurring project); cleared after delivery. */
+  thisRunIsOneShot?: boolean;
 
   // Timestamps
   createdAt: string;

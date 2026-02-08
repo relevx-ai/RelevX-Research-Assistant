@@ -9,7 +9,12 @@ import type {
   DeliveryLog,
   ProjectDeliveryLogResponse,
 } from "core";
-import { Frequency } from "core";
+import {
+  Frequency,
+  getUserOneShotCount,
+  kAnalyticsMonthlyDateKey,
+  validateProjectDescription,
+} from "core";
 import { set, isAfter, add } from "date-fns";
 import { toZonedTime, fromZonedTime } from "date-fns-tz";
 import { getFreePlanId } from "../utils/billing.js";
@@ -39,6 +44,8 @@ function addFrequencyPeriod(date: Date, frequency: Frequency): Date {
       return add(date, { weeks: 1 });
     case "monthly":
       return add(date, { months: 1 });
+    case "once":
+      return date; // no next run
   }
 }
 
@@ -58,6 +65,9 @@ function calculateNewRunAt(
   dayOfWeek?: number,
   dayOfMonth?: number
 ): number {
+  if (frequency === "once") {
+    return Date.now();
+  }
   // Parse delivery time
   const [hours, minutes] = deliveryTime.split(":").map(Number);
 
@@ -423,6 +433,22 @@ const routes: FastifyPluginAsync = async (app) => {
             .send({ error: { message: "Project info is required" } });
         }
 
+        const desc = request.projectInfo.description?.trim() ?? "";
+        if (desc) {
+          const validation = await validateProjectDescription(
+            app.aiInterface,
+            desc
+          );
+          if (!validation.valid) {
+            return rep.status(400).send({
+              error: {
+                message:
+                  validation.reason || "Project description is not allowed.",
+              },
+            });
+          }
+        }
+
         // Check if project with same title already exists
         const existingProjectSnapshot = await db
           .collection("users")
@@ -473,6 +499,24 @@ const routes: FastifyPluginAsync = async (app) => {
           createAsPaused = true;
         }
 
+        // One-shot limit check for "once" frequency
+        if (
+          request.projectInfo.frequency === "once" &&
+          !createAsPaused
+        ) {
+          const oneShotLimit = plan?.settingsOneShotRunsPerMonth ?? 0;
+          const monthKey = kAnalyticsMonthlyDateKey(new Date());
+          const oneShotCount = await getUserOneShotCount(db, userId, monthKey);
+          if (oneShotCount >= oneShotLimit) {
+            return rep.status(400).send({
+              error: {
+                code: "one_shot_limit_reached",
+                message: `You have reached your monthly limit of ${oneShotLimit} one-shot run(s). Try again next month or upgrade your plan.`,
+              },
+            });
+          }
+        }
+
         const projectData: any = {
           ...request.projectInfo,
           userId,
@@ -482,12 +526,18 @@ const routes: FastifyPluginAsync = async (app) => {
           updatedAt: new Date().toISOString(),
         };
 
+        // Ensure Once projects have placeholder schedule fields for storage
+        if (projectData.frequency === "once") {
+          projectData.deliveryTime = projectData.deliveryTime || "09:00";
+          projectData.timezone = projectData.timezone || "UTC";
+        }
+
         // Only calculate nextRunAt if the project is active
         if (!createAsPaused) {
           projectData.nextRunAt = calculateNewRunAt(
             request.projectInfo.frequency,
-            request.projectInfo.deliveryTime,
-            request.projectInfo.timezone,
+            projectData.deliveryTime,
+            projectData.timezone,
             request.projectInfo.dayOfWeek,
             request.projectInfo.dayOfMonth
           );
@@ -542,6 +592,85 @@ const routes: FastifyPluginAsync = async (app) => {
   };
 
   /**
+   * Run Now: schedule a one-shot run (recurring or Once). Enforces monthly one-shot limit.
+   * For paused projects (e.g. Once after delivery), sets status to active so scheduler picks them up.
+   */
+  app.post(
+    "/run-now",
+    { preHandler: [app.rlPerRoute(10)] },
+    async (req: any, rep) => {
+      try {
+        const userId = req.user?.uid;
+        if (!userId) {
+          return rep
+            .status(401)
+            .send({ error: { message: "Unauthenticated" } });
+        }
+        const { title } = req.body as { title?: string };
+        if (!title) {
+          return rep
+            .status(400)
+            .send({ error: { message: "Title is required" } });
+        }
+
+        const projectDoc = await getProjectByTitle(userId, title);
+        if (!projectDoc) {
+          return rep.status(404).send({
+            error: { message: "Project not found" },
+          });
+        }
+
+        const project = projectDoc.data() as ProjectInfo & { userId: string };
+
+        const userData = await getUserData(userId, db);
+        const plans: Plan[] = await getPlans(remoteConfig);
+        const plan: Plan | undefined = plans.find(
+          (p) => p.id === (userData.user.planId || gFreePlanId)
+        );
+        const oneShotLimit = plan?.settingsOneShotRunsPerMonth ?? 0;
+        const monthKey = kAnalyticsMonthlyDateKey(new Date());
+        const oneShotCount = await getUserOneShotCount(db, userId, monthKey);
+        if (oneShotCount >= oneShotLimit) {
+          return rep.status(400).send({
+            error: {
+              code: "one_shot_limit_reached",
+              message: `You have reached your monthly limit of ${oneShotLimit} one-shot run(s). Try again next month or upgrade your plan.`,
+            },
+          });
+        }
+
+        const updateData: Record<string, unknown> = {
+          nextRunAt: Date.now(),
+          preparedDeliveryLogId: null,
+          updatedAt: new Date().toISOString(),
+        };
+        if (project.frequency !== "once") {
+          updateData.thisRunIsOneShot = true;
+        }
+        if (project.status === "paused") {
+          updateData.status = "active";
+        }
+        await projectDoc.ref.update(updateData);
+
+        await app.redis.del(userId);
+
+        return rep.status(200).send({ ok: true });
+      } catch (err: any) {
+        const isDev = process.env.NODE_ENV !== "production";
+        const detail = err instanceof Error ? err.message : String(err);
+        req.log?.error({ detail }, "/user/projects/run-now failed");
+        return rep.status(500).send({
+          error: {
+            code: "internal_error",
+            message: "Run Now failed",
+            ...(isDev ? { detail } : {}),
+          },
+        });
+      }
+    }
+  );
+
+  /**
    * Update a user's project settings.
    * If the project schedule is modified, recalculates the `nextRunAt` timestamp.
    * Prevents updates if the new run time is too close to the current time (within ~16 mins window).
@@ -585,6 +714,25 @@ const routes: FastifyPluginAsync = async (app) => {
 
           console.log('Removed all advanced search parameters for free user during update');
         }
+        
+        
+        if (data?.description !== undefined) {
+          const desc = String(data.description ?? "").trim();
+          if (desc) {
+            const validation = await validateProjectDescription(
+              app.aiInterface,
+              desc
+            );
+            if (!validation.valid) {
+              return rep.status(400).send({
+                error: {
+                  message:
+                    validation.reason || "Project description is not allowed.",
+                },
+              });
+            }
+          }
+        }
 
         const updates: any = {
           ...data,
@@ -600,27 +748,48 @@ const routes: FastifyPluginAsync = async (app) => {
           data.dayOfMonth !== undefined;
 
         if (isScheduleChanged && docData.status === "active") {
-          // Calculate the next run time based on the new schedule
-          const newRunAt = calculateNewRunAt(
-            data.frequency || docData.frequency,
-            data.deliveryTime || docData.deliveryTime,
-            data.timezone || docData.timezone,
-            data.dayOfWeek !== undefined ? data.dayOfWeek : docData.dayOfWeek,
-            data.dayOfMonth !== undefined ? data.dayOfMonth : docData.dayOfMonth
-          );
-
-          const now = Date.now();
-          const currentUtcTime = fromZonedTime(now, "UTC").getTime();
-
-          // Ensure we don't schedule a run too close to the current time (16 minute buffer)
-          const projectWithinDeliveryWindow =
-            newRunAt - currentUtcTime > 16 * 60 * 1000;
-          if (projectWithinDeliveryWindow) {
-            updates.nextRunAt = newRunAt;
-          } else {
-            throw new Error(
-              `Failed to update project. Please refrain from updating the project schedule too close to the current time (~16 min window).`
+          const effectiveFrequency = data.frequency || docData.frequency;
+          if (effectiveFrequency === "once") {
+            const userData = await getUserData(userId, db);
+            const plans: Plan[] = await getPlans(remoteConfig);
+            const plan: Plan | undefined = plans.find(
+              (p) => p.id === (userData.user.planId || gFreePlanId)
             );
+            const oneShotLimit = plan?.settingsOneShotRunsPerMonth ?? 0;
+            const monthKey = kAnalyticsMonthlyDateKey(new Date());
+            const oneShotCount = await getUserOneShotCount(db, userId, monthKey);
+            if (oneShotCount >= oneShotLimit) {
+              return rep.status(400).send({
+                error: {
+                  code: "one_shot_limit_reached",
+                  message: `You have reached your monthly limit of ${oneShotLimit} one-shot run(s). Try again next month or upgrade your plan.`,
+                },
+              });
+            }
+            updates.nextRunAt = Date.now();
+          } else {
+            // Calculate the next run time based on the new schedule
+            const newRunAt = calculateNewRunAt(
+              effectiveFrequency,
+              data.deliveryTime || docData.deliveryTime,
+              data.timezone || docData.timezone,
+              data.dayOfWeek !== undefined ? data.dayOfWeek : docData.dayOfWeek,
+              data.dayOfMonth !== undefined ? data.dayOfMonth : docData.dayOfMonth
+            );
+
+            const now = Date.now();
+            const currentUtcTime = fromZonedTime(now, "UTC").getTime();
+
+            // Ensure we don't schedule a run too close to the current time (16 minute buffer)
+            const projectWithinDeliveryWindow =
+              newRunAt - currentUtcTime > 16 * 60 * 1000;
+            if (projectWithinDeliveryWindow) {
+              updates.nextRunAt = newRunAt;
+            } else {
+              throw new Error(
+                `Failed to update project. Please refrain from updating the project schedule too close to the current time (~16 min window).`
+              );
+            }
           }
         }
 
@@ -752,6 +921,19 @@ const routes: FastifyPluginAsync = async (app) => {
             errorMessage = `You can only have ${maxActiveProjects} active project${
               maxActiveProjects === 1 ? "" : "s"
             } on your current plan. Please pause another project first, or upgrade your plan.`;
+          } else if (projectToToggle.frequency === "once") {
+            // One-shot limit check for activating a Once project
+            const oneShotLimit = plan?.settingsOneShotRunsPerMonth ?? 0;
+            const monthKey = kAnalyticsMonthlyDateKey(new Date());
+            const oneShotCount = await getUserOneShotCount(db, userId, monthKey);
+            if (oneShotCount >= oneShotLimit) {
+              errorCode = "one_shot_limit_reached";
+              errorMessage = `You have reached your monthly limit of ${oneShotLimit} one-shot run(s). Try again next month or upgrade your plan.`;
+            } else {
+              updates.nextRunAt = Date.now();
+              updates.preparedDeliveryLogId = null;
+              nStatus = status;
+            }
           } else {
             // Calculate next run time for the project
             updates.nextRunAt = calculateNewRunAt(
