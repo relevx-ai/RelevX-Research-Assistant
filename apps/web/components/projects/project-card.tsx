@@ -36,6 +36,10 @@ import {
   AlertCircle,
   ArrowRight,
   Play,
+  Copy,
+  Info,
+  Loader2,
+  CheckCircle2,
 } from "lucide-react";
 import { DeleteProjectDialog } from "./delete-project-dialog";
 import { ProjectDialog } from "./project-dialog";
@@ -49,11 +53,13 @@ import Link from "next/link";
 
 interface ProjectCardProps {
   project: ProjectInfo;
+  allProjects?: ProjectInfo[];
   onProjectDeleted?: () => void;
+  onProjectDuplicated?: () => void;
 }
 
-export function ProjectCard({ project, onProjectDeleted }: ProjectCardProps) {
-  const { toggleProjectStatus, deleteProject, runProjectNow } = useProjects({
+export function ProjectCard({ project, allProjects = [], onProjectDeleted, onProjectDuplicated }: ProjectCardProps) {
+  const { toggleProjectStatus, deleteProject, runProjectNow, createProject } = useProjects({
     subscribe: false,
   });
 
@@ -62,6 +68,12 @@ export function ProjectCard({ project, onProjectDeleted }: ProjectCardProps) {
   const [detailModalOpen, setDetailModalOpen] = useState(false);
   const [isToggling, setIsToggling] = useState(false);
   const [isRunningNow, setIsRunningNow] = useState(false);
+  const [isDuplicating, setIsDuplicating] = useState(false);
+  const [duplicateDialogOpen, setDuplicateDialogOpen] = useState(false);
+  const [duplicateSuccess, setDuplicateSuccess] = useState(false);
+  const [duplicatedTitle, setDuplicatedTitle] = useState("");
+  const [pausedInfoDialogOpen, setPausedInfoDialogOpen] = useState(false);
+  const [maxActiveProjects, setMaxActiveProjects] = useState(1);
   const [errorDialog, setErrorDialog] = useState<{
     open: boolean;
     title: string;
@@ -140,6 +152,79 @@ export function ProjectCard({ project, onProjectDeleted }: ProjectCardProps) {
       }
     } finally {
       setIsToggling(false);
+    }
+  };
+
+  const generateUniqueTitle = (baseTitle: string): string => {
+    const existingTitles = new Set(allProjects.map((p) => p.title.toLowerCase()));
+    const copyTitle = `${baseTitle} (Copy)`;
+    if (!existingTitles.has(copyTitle.toLowerCase())) return copyTitle;
+
+    let counter = 2;
+    while (existingTitles.has(`${baseTitle} (Copy ${counter})`.toLowerCase())) {
+      counter++;
+    }
+    return `${baseTitle} (Copy ${counter})`;
+  };
+
+  const handleDuplicate = async () => {
+    setIsDuplicating(true);
+    setDuplicateSuccess(false);
+    setDuplicateDialogOpen(true);
+    try {
+      const newTitle = generateUniqueTitle(project.title);
+      setDuplicatedTitle(newTitle);
+      const duplicateData: any = {
+        title: newTitle,
+        description: project.description,
+        frequency: project.frequency,
+        resultsDestination: "email",
+        deliveryTime: project.deliveryTime || "09:00",
+        timezone: project.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone,
+        settings: project.settings || {
+          relevancyThreshold: 60,
+          minResults: 5,
+          maxResults: 20,
+        },
+      };
+
+      if (project.frequency === "weekly" && project.dayOfWeek !== undefined) {
+        duplicateData.dayOfWeek = project.dayOfWeek;
+      }
+      if (project.frequency === "monthly" && project.dayOfMonth !== undefined) {
+        duplicateData.dayOfMonth = project.dayOfMonth;
+      }
+
+      if (project.searchParameters && Object.keys(project.searchParameters).length > 0) {
+        duplicateData.searchParameters = { ...project.searchParameters };
+      }
+
+      const response = await createProject(duplicateData);
+      setDuplicateSuccess(true);
+      onProjectDuplicated?.();
+
+      // Auto-close the success dialog after a brief moment
+      setTimeout(() => {
+        setDuplicateDialogOpen(false);
+        setDuplicateSuccess(false);
+
+        if (response?.createdAsPaused) {
+          setMaxActiveProjects(response.maxActiveProjects || 1);
+          setPausedInfoDialogOpen(true);
+        }
+      }, 1200);
+    } catch (err: any) {
+      console.error("Failed to duplicate project:", err);
+      setDuplicateDialogOpen(false);
+      setDuplicateSuccess(false);
+      setErrorDialog({
+        open: true,
+        title: "Duplicate Failed",
+        message: err?.message || "Failed to duplicate project. Please try again.",
+        type: "generic",
+      });
+    } finally {
+      setIsDuplicating(false);
     }
   };
 
@@ -271,6 +356,21 @@ export function ProjectCard({ project, onProjectDeleted }: ProjectCardProps) {
                       Run Now
                     </DropdownMenuItem>
                   )}
+                <DropdownMenuItem
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDuplicate();
+                  }}
+                  aria-disabled={isDuplicating}
+                  className={`gap-2 hover:bg-teal-500/10 focus:bg-teal-500/10${isDuplicating ? " opacity-60 pointer-events-none" : ""}`}
+                >
+                  {isDuplicating ? (
+                    <Copy className="w-4 h-4 animate-pulse" />
+                  ) : (
+                    <Copy className="w-4 h-4" />
+                  )}
+                  {isDuplicating ? "Duplicating..." : "Duplicate"}
+                </DropdownMenuItem>
                 <DropdownMenuSeparator className="bg-teal-500/20" />
                 <DropdownMenuItem
                   className="gap-2 text-red-400 focus:text-red-300 hover:bg-red-500/10 focus:bg-red-500/10"
@@ -370,6 +470,94 @@ export function ProjectCard({ project, onProjectDeleted }: ProjectCardProps) {
               className="bg-gradient-to-r from-teal-600 to-teal-500 hover:from-teal-500 hover:to-teal-400 text-white shadow-md hover:shadow-xl hover:scale-105 transition-all duration-300"
             >
               OK
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Duplicate Progress Dialog */}
+      <Dialog
+        open={duplicateDialogOpen}
+        onOpenChange={(open: boolean) => {
+          if (!isDuplicating) setDuplicateDialogOpen(open);
+        }}
+      >
+        <DialogContent className="sm:max-w-[350px]">
+          <div className="flex flex-col items-center justify-center py-6 space-y-4">
+            {duplicateSuccess ? (
+              <>
+                <div className="w-12 h-12 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+                  <CheckCircle2 className="w-6 h-6 text-green-600 dark:text-green-400" />
+                </div>
+                <div className="text-center">
+                  <p className="font-semibold text-foreground">Project Duplicated</p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    "{duplicatedTitle}" has been created.
+                  </p>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="w-12 h-12 rounded-full bg-teal-100 dark:bg-teal-900/30 flex items-center justify-center">
+                  <Loader2 className="w-6 h-6 text-teal-600 dark:text-teal-400 animate-spin" />
+                </div>
+                <div className="text-center">
+                  <p className="font-semibold text-foreground">Duplicating Project</p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Creating a copy of "{project.title}"...
+                  </p>
+                </div>
+              </>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Duplicate Paused Info Dialog */}
+      <Dialog
+        open={pausedInfoDialogOpen}
+        onOpenChange={setPausedInfoDialogOpen}
+      >
+        <DialogContent className="sm:max-w-[450px]">
+          <DialogHeader>
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-10 h-10 rounded-lg bg-teal-100 dark:bg-teal-900/30 flex items-center justify-center">
+                <Info className="w-5 h-5 text-teal-600 dark:text-teal-400" />
+              </div>
+              <DialogTitle>Project Created as Paused</DialogTitle>
+            </div>
+          </DialogHeader>
+
+          <div className="text-left space-y-3 text-sm text-muted-foreground">
+            <p>
+              Your project has been duplicated successfully, but it's currently{" "}
+              <span className="font-medium text-foreground">paused</span>{" "}
+              because you can only have {maxActiveProjects} active project
+              {maxActiveProjects === 1 ? "" : "s"} on your current plan.
+            </p>
+            <p>To activate this project, you can either:</p>
+            <ul className="list-disc list-inside space-y-1">
+              <li>Pause one of your currently active projects</li>
+              <li>Upgrade your plan to run more projects simultaneously</li>
+            </ul>
+          </div>
+
+          <DialogFooter className="gap-3">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setPausedInfoDialogOpen(false)}
+            >
+              Got it
+            </Button>
+            <Button
+              asChild
+              className="gap-2 bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-400 hover:to-teal-500 text-white shadow-md hover:shadow-lg transition-all duration-300"
+            >
+              <Link href="/pricing">
+                View Plans
+                <ArrowRight className="w-4 h-4" />
+              </Link>
             </Button>
           </DialogFooter>
         </DialogContent>

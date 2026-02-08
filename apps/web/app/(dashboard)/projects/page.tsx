@@ -171,7 +171,7 @@ export default function ProjectsPage() {
                 transition={{ duration: 0.3, delay: index * 0.05 }}
                 layout
               >
-                <ProjectCard project={project} onProjectDeleted={refresh} />
+                <ProjectCard project={project} allProjects={projects} onProjectDeleted={refresh} onProjectDuplicated={refresh} />
               </motion.div>
             ))}
           </AnimatePresence>
