@@ -119,4 +119,14 @@ export interface LLMProvider {
     sourceLanguage: string,
     targetLanguage: string
   ): Promise<string>;
+
+  /**
+   * Translate a short text (title, summary) with a constrained prompt (optional)
+   * Uses a tight token cap to prevent LLM hallucination/expansion
+   */
+  translateShortText?(
+    text: string,
+    sourceLanguage: string,
+    targetLanguage: string
+  ): Promise<string>;
 }

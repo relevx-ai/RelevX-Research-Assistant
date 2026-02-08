@@ -240,6 +240,38 @@ export class OpenAIProvider implements LLMProvider {
       throw error; // Re-throw to handle in orchestrator
     }
   }
+
+  /**
+   * Translate a short text (title, summary) with a constrained prompt and hard token cap
+   * Prevents the LLM from hallucinating/expanding short inputs
+   */
+  async translateShortText(
+    text: string,
+    sourceLanguage: string,
+    targetLanguage: string
+  ): Promise<string> {
+    this.ensureInitialized();
+    const client = getClient();
+
+    const systemPrompt = `You are a translator. Translate the following short text from ${sourceLanguage} to ${targetLanguage}. Return ONLY the translated text, nothing else. Do not add explanations, formatting, or extra content.`;
+
+    try {
+      const response = await client.chat.completions.create({
+        model: this.modelName,
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: text }
+        ],
+        temperature: 0.2,
+        max_tokens: 200,
+      });
+
+      return response.choices[0]?.message?.content || text;
+    } catch (error) {
+      console.error('Short text translation failed:', error);
+      throw error;
+    }
+  }
 }
 
 /**
