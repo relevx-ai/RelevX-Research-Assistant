@@ -207,3 +207,10 @@ export type {
 } from "./models/ai";
 
 export { validateProjectDescription } from "./services/project-description-validation";
+
+export {
+  VALID_LANGUAGE_CODES,
+  VALID_REGION_CODES,
+  sanitizeLanguageCode,
+  sanitizeRegionCode,
+} from "./utils/language-validation";

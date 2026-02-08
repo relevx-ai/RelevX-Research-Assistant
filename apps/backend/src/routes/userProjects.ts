@@ -14,10 +14,12 @@ import {
   getUserOneShotCount,
   kAnalyticsMonthlyDateKey,
   validateProjectDescription,
+  sanitizeLanguageCode,
+  sanitizeRegionCode,
 } from "core";
 import { set, isAfter, add } from "date-fns";
 import { toZonedTime, fromZonedTime } from "date-fns-tz";
-import { gFreePlanId } from "../utils/billing.js";
+import { getFreePlanId } from "../utils/billing.js";
 import { getUserData } from "../utils/user.js";
 import { Redis } from "ioredis";
 import { getPlans } from "./products.js";
@@ -467,8 +469,26 @@ const routes: FastifyPluginAsync = async (app) => {
         const userData = await getUserData(userId, db);
         const plans: Plan[] = await getPlans(remoteConfig);
         const plan: Plan | undefined = plans.find(
-          (p) => p.id === (userData.user.planId || gFreePlanId)
+          (p) => p.id === (userData.user.planId || getFreePlanId())
         );
+
+        // Strip all advanced search parameters if user is on free plan
+        // All advanced settings (domain filtering, keyword filtering, language/region) are Pro features
+        const isPro = plan && plan.id !== getFreePlanId();
+        if (!isPro && request.projectInfo.searchParameters) {
+          // Remove the entire searchParameters object for free users
+          delete request.projectInfo.searchParameters;
+
+          console.log('Removed all advanced search parameters for free user');
+        }
+
+        // Sanitize language/region codes to prevent prompt injection
+        if (request.projectInfo.searchParameters) {
+          const sp = request.projectInfo.searchParameters;
+          sp.language = sanitizeLanguageCode(sp.language) as any;
+          sp.region = sanitizeRegionCode(sp.region) as any;
+          sp.outputLanguage = sanitizeLanguageCode(sp.outputLanguage) as any;
+        }
 
         let createAsPaused = false;
         // Default to 1 for free plan if not specified in remote config
@@ -688,6 +708,24 @@ const routes: FastifyPluginAsync = async (app) => {
             .send({ error: { message: "Project not found" } });
         const docData = doc.data();
 
+        // Get user's plan and check if Pro
+        const userData = await getUserData(userId, db);
+        const plans: Plan[] = await getPlans(remoteConfig);
+        const plan: Plan | undefined = plans.find(
+          (p) => p.id === (userData.user.planId || getFreePlanId())
+        );
+
+        // Strip all advanced search parameters if user is on free plan
+        // All advanced settings (domain filtering, keyword filtering, language/region) are Pro features
+        const isPro = plan && plan.id !== getFreePlanId();
+        if (!isPro && data.searchParameters) {
+          // Remove the entire searchParameters object for free users
+          delete data.searchParameters;
+
+          console.log('Removed all advanced search parameters for free user during update');
+        }
+        
+        
         if (data?.description !== undefined) {
           const desc = String(data.description ?? "").trim();
           if (desc) {
@@ -704,6 +742,14 @@ const routes: FastifyPluginAsync = async (app) => {
               });
             }
           }
+        }
+
+        // Sanitize language/region codes to prevent prompt injection
+        if (data.searchParameters) {
+          const sp = data.searchParameters;
+          sp.language = sanitizeLanguageCode(sp.language);
+          sp.region = sanitizeRegionCode(sp.region);
+          sp.outputLanguage = sanitizeLanguageCode(sp.outputLanguage);
         }
 
         const updates: any = {
@@ -881,7 +927,7 @@ const routes: FastifyPluginAsync = async (app) => {
           // Find the user's correct plan.. if not on a plan assume they are on free mode
           const plans: Plan[] = await getPlans(remoteConfig);
           const plan: Plan | undefined = plans.find(
-            (p) => p.id === (userData.user.planId || gFreePlanId)
+            (p) => p.id === (userData.user.planId || getFreePlanId())
           );
 
           // Default to 1 active project if plan not found (matches create endpoint behavior)

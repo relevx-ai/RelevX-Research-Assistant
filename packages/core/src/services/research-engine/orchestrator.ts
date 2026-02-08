@@ -188,6 +188,16 @@ export async function executeResearchForProject(
   // Initialize token usage tracker for cost estimation
   const tokenUsage = createTokenUsageTracker();
 
+  // Translation tracking
+  let translationStats: {
+    wasTranslated: boolean;
+    translatedToLanguage?: string;
+    translationTokens?: number;
+    translationCostUsd?: number;
+  } = {
+    wasTranslated: false,
+  };
+
   try {
     // 1. Load project
     const projectRef = db
@@ -237,6 +247,7 @@ export async function executeResearchForProject(
     );
 
     // 5. Prepare base search filters (freshness will be set per iteration)
+    // Note: Only 'language' (search language) is sent to Brave. 'outputLanguage' is only used for post-search translation.
     const baseSearchFilters: Omit<SearchFilters, "freshness"> = {
       country: project.searchParameters?.region,
       language: project.searchParameters?.language,
@@ -245,6 +256,7 @@ export async function executeResearchForProject(
       count: resultsPerQuery, // From config or options
       safesearch: searchConfig.safeSearch,
     };
+    console.log(`[Search Filters] Brave search_lang=${project.searchParameters?.language || '(none)'}, country=${project.searchParameters?.region || '(none)'}, outputLanguage=${project.searchParameters?.outputLanguage || '(none)'} (used only for post-search translation)`);
 
     // 5.1 Determine initial freshness based on project frequency
     let currentFreshness: Freshness = getFreshnessForFrequency(
@@ -772,6 +784,164 @@ export async function executeResearchForProject(
       };
     }
 
+    // 9.5 Translate report if needed
+    console.log(`[Translation] Decision inputs:`);
+    console.log(`  report exists: ${!!report}`);
+    console.log(`  project.searchParameters: ${JSON.stringify(project.searchParameters || null)}`);
+    console.log(`  project.searchParameters?.language: ${project.searchParameters?.language || '(not set)'}`);
+    console.log(`  project.searchParameters?.outputLanguage: ${project.searchParameters?.outputLanguage || '(not set)'}`);
+    console.log(`  llmProvider.translateText available: ${!!llmProvider.translateText}`);
+
+    if (report && project.searchParameters?.outputLanguage) {
+      const searchLang = project.searchParameters?.language || 'en';
+      const outputLang = project.searchParameters.outputLanguage;
+
+      // Only translate if output language is different from search language
+      // Default output to English if not specified
+      const targetLang = outputLang || 'en';
+
+      console.log(`[Translation] Branch 1 (explicit outputLanguage): searchLang=${searchLang}, outputLang=${outputLang}, targetLang=${targetLang}`);
+
+      // Always translate when outputLanguage is explicitly set, even if it matches searchLanguage.
+      // Brave returns mixed-language results, so we need the LLM to ensure the full report is in the target language.
+      if (llmProvider.translateText) {
+        console.log(`[Translation] Translating report to ${targetLang} (ensuring full report is in target language)...`);
+
+        try {
+          const startTranslation = Date.now();
+
+          // Translate the markdown report
+          const translatedMarkdown = await llmProvider.translateText(
+            report.markdown,
+            searchLang,
+            targetLang
+          );
+
+          // Track translation token usage
+          const translationInputTokens = estimateTokens(report.markdown) + 50; // +50 for system prompt
+          const translationOutputTokens = estimateTokens(translatedMarkdown);
+
+          tokenUsage.inputTokens += translationInputTokens;
+          tokenUsage.outputTokens += translationOutputTokens;
+          tokenUsage.totalTokens = tokenUsage.inputTokens + tokenUsage.outputTokens;
+
+          // Update report with translated content
+          report.markdown = translatedMarkdown;
+
+          // Also translate title and summary using the short-text translator to avoid bloated output
+          const translateShort = llmProvider.translateShortText?.bind(llmProvider) || llmProvider.translateText!.bind(llmProvider);
+          report.title = (await translateShort(report.title, searchLang, targetLang)).replace(/\n/g, ' ').trim();
+          // Safety: truncate title if it somehow exceeds 200 chars
+          if (report.title.length > 200) {
+            report.title = report.title.slice(0, 200);
+          }
+          const titleInputTokens = estimateTokens(report.title) + 50;
+          const titleOutputTokens = estimateTokens(report.title);
+          if (report.summary) {
+            report.summary = await translateShort(report.summary, searchLang, targetLang);
+          }
+          const summaryInputTokens = report.summary ? estimateTokens(report.summary) + 50 : 0;
+          const summaryOutputTokens = report.summary ? estimateTokens(report.summary) : 0;
+
+          const extraInputTokens = titleInputTokens + summaryInputTokens;
+          const extraOutputTokens = titleOutputTokens + summaryOutputTokens;
+          tokenUsage.inputTokens += extraInputTokens;
+          tokenUsage.outputTokens += extraOutputTokens;
+          tokenUsage.totalTokens = tokenUsage.inputTokens + tokenUsage.outputTokens;
+
+          const totalTranslationInputTokens = translationInputTokens + extraInputTokens;
+          const totalTranslationOutputTokens = translationOutputTokens + extraOutputTokens;
+
+          const translationDuration = Date.now() - startTranslation;
+          console.log(`[Translation] Completed in ${translationDuration}ms`);
+
+          // Track translation stats
+          translationStats.wasTranslated = true;
+          translationStats.translatedToLanguage = targetLang;
+          translationStats.translationTokens = totalTranslationInputTokens + totalTranslationOutputTokens;
+          translationStats.translationCostUsd = estimateCost(
+            {
+              inputTokens: totalTranslationInputTokens,
+              outputTokens: totalTranslationOutputTokens,
+              totalTokens: totalTranslationInputTokens + totalTranslationOutputTokens
+            },
+            llmProvider.getModel()
+          );
+        } catch (error) {
+          console.error('Translation failed, delivering untranslated report:', error);
+          // Continue with untranslated report - don't fail the entire research
+          translationStats.wasTranslated = false;
+        }
+      } else {
+        console.log(`[Translation] SKIPPED: llmProvider.translateText is not available`);
+      }
+    } else if (report && project.searchParameters?.language && project.searchParameters.language !== 'en') {
+      // No output language specified, default to English translation if search was not English
+      const searchLang = project.searchParameters.language;
+
+      console.log(`[Translation] Branch 2 (default-to-English): searchLang=${searchLang}, no outputLanguage set`);
+
+      if (llmProvider.translateText) {
+        console.log(`No output language specified, translating from ${searchLang} to English (default)...`);
+
+        try {
+          const translatedMarkdown = await llmProvider.translateText(
+            report.markdown,
+            searchLang,
+            'en'
+          );
+
+          const translationInputTokens = estimateTokens(report.markdown) + 50;
+          const translationOutputTokens = estimateTokens(translatedMarkdown);
+
+          tokenUsage.inputTokens += translationInputTokens;
+          tokenUsage.outputTokens += translationOutputTokens;
+          tokenUsage.totalTokens = tokenUsage.inputTokens + tokenUsage.outputTokens;
+
+          report.markdown = translatedMarkdown;
+
+          // Also translate title and summary using the short-text translator to avoid bloated output
+          const translateShort = llmProvider.translateShortText?.bind(llmProvider) || llmProvider.translateText!.bind(llmProvider);
+          report.title = (await translateShort(report.title, searchLang, 'en')).replace(/\n/g, ' ').trim();
+          // Safety: truncate title if it somehow exceeds 200 chars
+          if (report.title.length > 200) {
+            report.title = report.title.slice(0, 200);
+          }
+          const titleInputTokens = estimateTokens(report.title) + 50;
+          const titleOutputTokens = estimateTokens(report.title);
+          if (report.summary) {
+            report.summary = await translateShort(report.summary, searchLang, 'en');
+          }
+          const summaryInputTokens = report.summary ? estimateTokens(report.summary) + 50 : 0;
+          const summaryOutputTokens = report.summary ? estimateTokens(report.summary) : 0;
+
+          const extraInputTokens = titleInputTokens + summaryInputTokens;
+          const extraOutputTokens = titleOutputTokens + summaryOutputTokens;
+          tokenUsage.inputTokens += extraInputTokens;
+          tokenUsage.outputTokens += extraOutputTokens;
+          tokenUsage.totalTokens = tokenUsage.inputTokens + tokenUsage.outputTokens;
+
+          const totalTranslationInputTokens = translationInputTokens + extraInputTokens;
+          const totalTranslationOutputTokens = translationOutputTokens + extraOutputTokens;
+
+          translationStats.wasTranslated = true;
+          translationStats.translatedToLanguage = 'en';
+          translationStats.translationTokens = totalTranslationInputTokens + totalTranslationOutputTokens;
+          translationStats.translationCostUsd = estimateCost(
+            {
+              inputTokens: totalTranslationInputTokens,
+              outputTokens: totalTranslationOutputTokens,
+              totalTokens: totalTranslationInputTokens + totalTranslationOutputTokens
+            },
+            llmProvider.getModel()
+          );
+        } catch (error) {
+          console.error('Default translation to English failed:', error);
+          translationStats.wasTranslated = false;
+        }
+      }
+    }
+
     // 10. Extract URLs for delivery log
     const resultUrls = sortedResults.map((r) => r.url);
 
@@ -799,6 +969,9 @@ export async function executeResearchForProject(
         // Search context
         freshnessUsed: currentFreshness,
         freshnessExpanded: freshnessExpanded,
+
+        // Translation tracking
+        ...translationStats,
 
         // Provider info
         llmProvider: llmProvider.getName(),

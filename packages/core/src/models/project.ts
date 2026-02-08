@@ -29,6 +29,7 @@ export interface SearchParameters {
   region?: string; // ISO region code (e.g., "US", "GB")
   requiredKeywords?: string[]; // Keywords that must appear in results
   excludedKeywords?: string[]; // Keywords to exclude from results
+  outputLanguage?: string; // ISO language code for report delivery (e.g., "en", "de")
   customParameters?: Record<string, any>; // Extensible for future parameters
 }
 

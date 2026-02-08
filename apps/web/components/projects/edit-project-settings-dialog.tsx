@@ -30,6 +30,7 @@ import {
   Sparkles,
   Loader2,
   HelpCircle,
+  Lock,
 } from "lucide-react";
 import {
   Tooltip,
@@ -38,6 +39,9 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useProjects } from "@/hooks/use-projects";
+import { SUPPORTED_LANGUAGES, SUPPORTED_REGIONS, OUTPUT_LANGUAGES } from '@/lib/constants/languages';
+import { ProFeatureWrapper } from '@/components/ui/pro-feature-wrapper';
+import { usePro } from '@/hooks/use-pro';
 import { relevx_api, ApiError } from "@/lib/client";
 
 interface EditProjectSettingsDialogProps {
@@ -68,10 +72,15 @@ export function EditProjectSettingsDialog({
   const [excludedDomains, setExcludedDomains] = useState("");
   const [requiredKeywords, setRequiredKeywords] = useState("");
   const [excludedKeywords, setExcludedKeywords] = useState("");
+  const [searchLanguage, setSearchLanguage] = useState("");
+  const [searchRegion, setSearchRegion] = useState("");
+  const [outputLanguage, setOutputLanguage] = useState("");
   const [isUpdating, setIsUpdating] = useState(false);
   const [error, setError] = useState("");
   const [advancedOpen, setAdvancedOpen] = useState(false);
   const [isEnhancing, setIsEnhancing] = useState(false);
+
+  const { isPro } = usePro();
 
   // Helper function to convert array to comma-separated string
   const arrayToString = (arr: string[] | undefined): string => {
@@ -134,6 +143,9 @@ export function EditProjectSettingsDialog({
       setExcludedKeywords(
         arrayToString(project.searchParameters?.excludedKeywords)
       );
+      setSearchLanguage(project.searchParameters?.language || "");
+      setSearchRegion(project.searchParameters?.region || "");
+      setOutputLanguage(project.searchParameters?.outputLanguage || "");
       setError("");
     }
   }, [open, project]);
@@ -187,6 +199,30 @@ export function EditProjectSettingsDialog({
         searchParameters.excludedKeywords = excludedKeywordsList;
       } else {
         delete searchParameters.excludedKeywords;
+      }
+
+      // Premium parameters (only if user is premium)
+      if (isPro) {
+        if (searchLanguage) {
+          searchParameters.language = searchLanguage;
+        } else {
+          delete searchParameters.language;
+        }
+        if (searchRegion) {
+          searchParameters.region = searchRegion;
+        } else {
+          delete searchParameters.region;
+        }
+        if (outputLanguage) {
+          searchParameters.outputLanguage = outputLanguage;
+        } else {
+          delete searchParameters.outputLanguage;
+        }
+      } else {
+        // Strip premium parameters if user is not premium
+        delete searchParameters.language;
+        delete searchParameters.region;
+        delete searchParameters.outputLanguage;
       }
 
       const updateData: any = {
@@ -462,153 +498,269 @@ export function EditProjectSettingsDialog({
                 <div className="overflow-hidden">
                   <div className="px-4 pb-4 space-y-4 border-t border-border pt-4">
                     {/* Priority Domains */}
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-1.5">
-                        <Label htmlFor="edit-priorityDomains">
-                          Priority Domains
-                        </Label>
-                        <TooltipProvider delayDuration={0}>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <button type="button" className="inline-flex">
-                                <HelpCircle className="w-3.5 h-3.5 text-muted-foreground/60 hover:text-muted-foreground cursor-help" />
-                                <span className="sr-only">Help</span>
-                              </button>
-                            </TooltipTrigger>
-                            <TooltipContent
-                              side="right"
-                              className="max-w-[250px] z-[100]"
-                            >
-                              <p className="text-xs">
-                                Results from these domains will be ranked higher
-                                in your research brief. Useful for trusted news
-                                sources or industry-specific sites.
-                              </p>
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
+                    <ProFeatureWrapper isPro={isPro} featureName="Priority Domains">
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-1.5">
+                          <Label htmlFor="edit-priorityDomains">
+                            Priority Domains
+                          </Label>
+                          <TooltipProvider delayDuration={0}>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <button type="button" className="inline-flex">
+                                  <HelpCircle className="w-3.5 h-3.5 text-muted-foreground/60 hover:text-muted-foreground cursor-help" />
+                                  <span className="sr-only">Help</span>
+                                </button>
+                              </TooltipTrigger>
+                              <TooltipContent
+                                side="right"
+                                className="max-w-[250px] z-[100]"
+                              >
+                                <p className="text-xs">
+                                  Results from these domains will be ranked higher
+                                  in your research brief. Useful for trusted news
+                                  sources or industry-specific sites.
+                                </p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        </div>
+                        <Textarea
+                          id="edit-priorityDomains"
+                          placeholder="e.g., reuters.com, techcrunch.com"
+                          value={priorityDomains}
+                          onChange={(e) => setPriorityDomains(e.target.value)}
+                          disabled={isUpdating || !isPro}
+                          rows={2}
+                        />
                       </div>
-                      <Textarea
-                        id="edit-priorityDomains"
-                        placeholder="e.g., reuters.com, techcrunch.com"
-                        value={priorityDomains}
-                        onChange={(e) => setPriorityDomains(e.target.value)}
-                        disabled={isUpdating}
-                        rows={2}
-                      />
-                    </div>
+                    </ProFeatureWrapper>
 
                     {/* Excluded Domains */}
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-1.5">
-                        <Label htmlFor="edit-excludedDomains">
-                          Excluded Domains
-                        </Label>
-                        <TooltipProvider delayDuration={0}>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <button type="button" className="inline-flex">
-                                <HelpCircle className="w-3.5 h-3.5 text-muted-foreground/60 hover:text-muted-foreground cursor-help" />
-                                <span className="sr-only">Help</span>
-                              </button>
-                            </TooltipTrigger>
-                            <TooltipContent
-                              side="right"
-                              className="max-w-[250px] z-[100]"
-                            >
-                              <p className="text-xs">
-                                Results from these domains will be completely
-                                filtered out. Use for blocking low-quality or
-                                irrelevant sources.
-                              </p>
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
+                    <ProFeatureWrapper isPro={isPro} featureName="Excluded Domains">
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-1.5">
+                          <Label htmlFor="edit-excludedDomains">
+                            Excluded Domains
+                          </Label>
+                          <TooltipProvider delayDuration={0}>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <button type="button" className="inline-flex">
+                                  <HelpCircle className="w-3.5 h-3.5 text-muted-foreground/60 hover:text-muted-foreground cursor-help" />
+                                  <span className="sr-only">Help</span>
+                                </button>
+                              </TooltipTrigger>
+                              <TooltipContent
+                                side="right"
+                                className="max-w-[250px] z-[100]"
+                              >
+                                <p className="text-xs">
+                                  Results from these domains will be completely
+                                  filtered out. Use for blocking low-quality or
+                                  irrelevant sources.
+                                </p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        </div>
+                        <Textarea
+                          id="edit-excludedDomains"
+                          placeholder="e.g., spam-site.com, clickbait.com"
+                          value={excludedDomains}
+                          onChange={(e) => setExcludedDomains(e.target.value)}
+                          disabled={isUpdating || !isPro}
+                          rows={2}
+                        />
                       </div>
-                      <Textarea
-                        id="edit-excludedDomains"
-                        placeholder="e.g., spam-site.com, clickbait.com"
-                        value={excludedDomains}
-                        onChange={(e) => setExcludedDomains(e.target.value)}
-                        disabled={isUpdating}
-                        rows={2}
-                      />
-                    </div>
+                    </ProFeatureWrapper>
 
                     {/* Required Keywords */}
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-1.5">
-                        <Label htmlFor="edit-requiredKeywords">
-                          Keywords to Search For
-                        </Label>
-                        <TooltipProvider delayDuration={0}>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <button type="button" className="inline-flex">
-                                <HelpCircle className="w-3.5 h-3.5 text-muted-foreground/60 hover:text-muted-foreground cursor-help" />
-                                <span className="sr-only">Help</span>
-                              </button>
-                            </TooltipTrigger>
-                            <TooltipContent
-                              side="right"
-                              className="max-w-[250px] z-[100]"
-                            >
-                              <p className="text-xs">
-                                These keywords will be added to search queries
-                                to help find more relevant results. Think of
-                                them as search refinements.
-                              </p>
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
+                    <ProFeatureWrapper isPro={isPro} featureName="Keyword Filters">
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-1.5">
+                          <Label htmlFor="edit-requiredKeywords">
+                            Keywords to Search For
+                          </Label>
+                          <TooltipProvider delayDuration={0}>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <button type="button" className="inline-flex">
+                                  <HelpCircle className="w-3.5 h-3.5 text-muted-foreground/60 hover:text-muted-foreground cursor-help" />
+                                  <span className="sr-only">Help</span>
+                                </button>
+                              </TooltipTrigger>
+                              <TooltipContent
+                                side="right"
+                                className="max-w-[250px] z-[100]"
+                              >
+                                <p className="text-xs">
+                                  These keywords will be added to search queries
+                                  to help find more relevant results. Think of
+                                  them as search refinements.
+                                </p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        </div>
+                        <Textarea
+                          id="edit-requiredKeywords"
+                          placeholder="e.g., machine learning, neural networks"
+                          value={requiredKeywords}
+                          onChange={(e) => setRequiredKeywords(e.target.value)}
+                          disabled={isUpdating || !isPro}
+                          rows={2}
+                        />
                       </div>
-                      <Textarea
-                        id="edit-requiredKeywords"
-                        placeholder="e.g., machine learning, neural networks"
-                        value={requiredKeywords}
-                        onChange={(e) => setRequiredKeywords(e.target.value)}
-                        disabled={isUpdating}
-                        rows={2}
-                      />
-                    </div>
+                    </ProFeatureWrapper>
 
                     {/* Excluded Keywords */}
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-1.5">
-                        <Label htmlFor="edit-excludedKeywords">
-                          Excluded Keywords
-                        </Label>
-                        <TooltipProvider delayDuration={0}>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <button type="button" className="inline-flex">
-                                <HelpCircle className="w-3.5 h-3.5 text-muted-foreground/60 hover:text-muted-foreground cursor-help" />
-                                <span className="sr-only">Help</span>
-                              </button>
-                            </TooltipTrigger>
-                            <TooltipContent
-                              side="right"
-                              className="max-w-[250px] z-[100]"
-                            >
-                              <p className="text-xs">
-                                Content containing these keywords will be
-                                filtered out from your results. Useful for
-                                removing sponsored content or off-topic
-                                articles.
-                              </p>
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
+                    <ProFeatureWrapper isPro={isPro} featureName="Keyword Filters">
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-1.5">
+                          <Label htmlFor="edit-excludedKeywords">
+                            Excluded Keywords
+                          </Label>
+                          <TooltipProvider delayDuration={0}>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <button type="button" className="inline-flex">
+                                  <HelpCircle className="w-3.5 h-3.5 text-muted-foreground/60 hover:text-muted-foreground cursor-help" />
+                                  <span className="sr-only">Help</span>
+                                </button>
+                              </TooltipTrigger>
+                              <TooltipContent
+                                side="right"
+                                className="max-w-[250px] z-[100]"
+                              >
+                                <p className="text-xs">
+                                  Content containing these keywords will be
+                                  filtered out from your results. Useful for
+                                  removing sponsored content or off-topic
+                                  articles.
+                                </p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        </div>
+                        <Textarea
+                          id="edit-excludedKeywords"
+                          placeholder="e.g., sponsored, advertisement"
+                          value={excludedKeywords}
+                          onChange={(e) => setExcludedKeywords(e.target.value)}
+                          disabled={isUpdating || !isPro}
+                          rows={2}
+                        />
                       </div>
-                      <Textarea
-                        id="edit-excludedKeywords"
-                        placeholder="e.g., sponsored, advertisement"
-                        value={excludedKeywords}
-                        onChange={(e) => setExcludedKeywords(e.target.value)}
-                        disabled={isUpdating}
-                        rows={2}
-                      />
-                    </div>
+                    </ProFeatureWrapper>
+
+                    {/* Search Language */}
+                    <ProFeatureWrapper isPro={isPro} featureName="Language Filter">
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-1.5">
+                            <Label htmlFor="edit-searchLanguage">Search Language</Label>
+                            <TooltipProvider delayDuration={0}>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <button type="button" className="inline-flex">
+                                    <HelpCircle className="w-3.5 h-3.5 text-muted-foreground/60 hover:text-muted-foreground cursor-help" />
+                                    <span className="sr-only">Help</span>
+                                  </button>
+                                </TooltipTrigger>
+                                <TooltipContent side="right" className="max-w-[250px] z-[100]">
+                                  <p className="text-xs">
+                                    Filter search results to only include content in the specified language.
+                                  </p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          </div>
+                          <Select
+                            id="edit-searchLanguage"
+                            value={searchLanguage}
+                            onChange={(e) => setSearchLanguage(e.target.value)}
+                            disabled={isUpdating || !isPro}
+                          >
+                            {SUPPORTED_LANGUAGES.map((lang) => (
+                              <option key={lang.code} value={lang.code}>
+                                {lang.name}
+                              </option>
+                            ))}
+                          </Select>
+                        </div>
+                      </ProFeatureWrapper>
+
+                      {/* Search Region */}
+                      <ProFeatureWrapper isPro={isPro} featureName="Location Filter">
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-1.5">
+                            <Label htmlFor="edit-searchRegion">Search Region</Label>
+                            <TooltipProvider delayDuration={0}>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <button type="button" className="inline-flex">
+                                    <HelpCircle className="w-3.5 h-3.5 text-muted-foreground/60 hover:text-muted-foreground cursor-help" />
+                                    <span className="sr-only">Help</span>
+                                  </button>
+                                </TooltipTrigger>
+                                <TooltipContent side="right" className="max-w-[250px] z-[100]">
+                                  <p className="text-xs">
+                                    Filter search results to only include content from the specified country/region.
+                                  </p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          </div>
+                          <Select
+                            id="edit-searchRegion"
+                            value={searchRegion}
+                            onChange={(e) => setSearchRegion(e.target.value)}
+                            disabled={isUpdating || !isPro}
+                          >
+                            {SUPPORTED_REGIONS.map((region) => (
+                              <option key={region.code} value={region.code}>
+                                {region.name}
+                              </option>
+                            ))}
+                          </Select>
+                        </div>
+                      </ProFeatureWrapper>
+
+                      {/* Output Language */}
+                      <ProFeatureWrapper isPro={isPro} featureName="Report Translation">
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-1.5">
+                            <Label htmlFor="edit-outputLanguage">Report Language</Label>
+                            <TooltipProvider delayDuration={0}>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <button type="button" className="inline-flex">
+                                    <HelpCircle className="w-3.5 h-3.5 text-muted-foreground/60 hover:text-muted-foreground cursor-help" />
+                                    <span className="sr-only">Help</span>
+                                  </button>
+                                </TooltipTrigger>
+                                <TooltipContent side="right" className="max-w-[250px] z-[100]">
+                                  <p className="text-xs">
+                                    Language for your email report. Defaults to English if not specified.
+                                  </p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          </div>
+                          <Select
+                            id="edit-outputLanguage"
+                            value={outputLanguage}
+                            onChange={(e) => setOutputLanguage(e.target.value)}
+                            disabled={isUpdating || !isPro}
+                          >
+                            {OUTPUT_LANGUAGES.map((lang) => (
+                              <option key={lang.code} value={lang.code}>
+                                {lang.name}
+                              </option>
+                            ))}
+                          </Select>
+                        </div>
+                      </ProFeatureWrapper>
                   </div>
                 </div>
               </div>

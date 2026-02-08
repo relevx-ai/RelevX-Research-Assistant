@@ -26,6 +26,7 @@ export interface CreateProfileResponse
         | "billing"
     > {
     ok: boolean;
+    isPro: boolean;
 }
 
 export interface RelevxUser
@@ -34,5 +35,6 @@ export interface RelevxUser
         | "billing"
     > {
     uid: string;
+    isPro: boolean;
 }
 

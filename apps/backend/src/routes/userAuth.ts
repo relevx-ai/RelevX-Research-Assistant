@@ -2,7 +2,7 @@ import type { FastifyPluginAsync } from "fastify";
 import type Stripe from "stripe";
 import type { RelevxUserProfile, CreateProfileResponse, Plan } from "core";
 import { getPlans } from "./products.js";
-import { gFreePlanId } from "../utils/billing.js";
+import { getFreePlanId } from "../utils/billing.js";
 
 // API key management routes: create/list/revoke. All routes rely on the auth
 // plugin to populate req.userId and tenant authorization.
@@ -46,7 +46,7 @@ const routes: FastifyPluginAsync = async (app) => {
             displayName: user.displayName || "",
             photoURL: user.photoURL || null,
             phoneNumber: user.phoneNumber || null,
-            planId: gFreePlanId, // free plan
+            planId: getFreePlanId(), // free plan
             freeTrailRedeemed: false,
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
@@ -64,6 +64,7 @@ const routes: FastifyPluginAsync = async (app) => {
           response = {
             ...userResponse,
             ok: true,
+            isPro: false,
           };
         } else {
           const userData = userDoc.data() as RelevxUserProfile;
@@ -114,17 +115,20 @@ const routes: FastifyPluginAsync = async (app) => {
               }
             }
           } else {
-            updateFields.planId = gFreePlanId;
+            updateFields.planId = getFreePlanId();
             updateFields["billing.stripeSubscriptionId"] = "";
           }
 
           // Update user document in Firestore
           await userRef.update(updateFields);
 
+          const resolvedPlanId = updateFields.planId ?? userData.planId;
           const { billing, ...userResponse } = userData;
           response = {
             ...userResponse,
+            planId: resolvedPlanId,
             ok: true,
+            isPro: resolvedPlanId !== getFreePlanId(),
           };
         }
 

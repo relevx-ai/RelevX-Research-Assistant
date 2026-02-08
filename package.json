@@ -13,7 +13,9 @@
     "test:extract": "tsx scripts/test-content-extraction.ts",
     "test:research": "tsx scripts/test-research.ts",
     "test:email": "tsx scripts/test-email.ts",
-    "test:queries": "tsx scripts/test-query-generation.ts"
+    "test:queries": "tsx scripts/test-query-generation.ts",
+    "test:pro": "tsx scripts/test-pro-features.ts",
+    "force:pro": "tsx scripts/force-research-pro.ts"
   },
   "packageManager": "pnpm@10.25.0",
   "engines": {

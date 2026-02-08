@@ -22,6 +22,7 @@ import { filterSearchResultsSafe } from "./search-filtering";
 import { initializeOpenAI as initOpenAI, getClient } from "./client";
 import { ChatCompletionMessageParam } from "openai/resources/chat/completions";
 import { LLMProvider } from "./../../interfaces";
+import { VALID_LANGUAGE_CODES } from "./../../utils/language-validation";
 
 /**
  * OpenAI implementation of LLMProvider
@@ -73,6 +74,17 @@ export class OpenAIProvider implements LLMProvider {
   /**
    * Ensure the provider is initialized
    */
+  /**
+   * Validate that a language code is in the whitelist to prevent prompt injection.
+   * Throws if the code is not a recognized language.
+   */
+  private validateLanguageCode(code: string): string {
+    if (!VALID_LANGUAGE_CODES.has(code)) {
+      throw new Error(`Invalid language code: ${code}`);
+    }
+    return code;
+  }
+
   private ensureInitialized(): void {
     if (!this.initialized) {
       try {
@@ -209,6 +221,74 @@ export class OpenAIProvider implements LLMProvider {
     );
 
     return report;
+  }
+
+  /**
+   * Translate text from source language to target language
+   */
+  async translateText(
+    text: string,
+    sourceLanguage: string,
+    targetLanguage: string
+  ): Promise<string> {
+    this.ensureInitialized();
+    const client = getClient();
+
+    const safeSrc = this.validateLanguageCode(sourceLanguage);
+    const safeTgt = this.validateLanguageCode(targetLanguage);
+
+    const systemPrompt = `You are a professional translator. Translate the following research report from ${safeSrc} to ${safeTgt}. Preserve all markdown formatting, links, and structure exactly as they appear. Maintain technical accuracy and professional tone. Do not add any commentary or explanations - only return the translated text.`;
+
+    try {
+      const response = await client.chat.completions.create({
+        model: this.modelName,
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: text }
+        ],
+        temperature: 0.2, // Low temperature for consistent translation
+      });
+
+      return response.choices[0]?.message?.content || text;
+    } catch (error) {
+      console.error('Translation failed:', error);
+      throw error; // Re-throw to handle in orchestrator
+    }
+  }
+
+  /**
+   * Translate a short text (title, summary) with a constrained prompt and hard token cap
+   * Prevents the LLM from hallucinating/expanding short inputs
+   */
+  async translateShortText(
+    text: string,
+    sourceLanguage: string,
+    targetLanguage: string
+  ): Promise<string> {
+    this.ensureInitialized();
+    const client = getClient();
+
+    const safeSrc = this.validateLanguageCode(sourceLanguage);
+    const safeTgt = this.validateLanguageCode(targetLanguage);
+
+    const systemPrompt = `You are a translator. Translate the following short text from ${safeSrc} to ${safeTgt}. Return ONLY the translated text, nothing else. Do not add explanations, formatting, or extra content.`;
+
+    try {
+      const response = await client.chat.completions.create({
+        model: this.modelName,
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: text }
+        ],
+        temperature: 0.2,
+        max_tokens: 200,
+      });
+
+      return response.choices[0]?.message?.content || text;
+    } catch (error) {
+      console.error('Short text translation failed:', error);
+      throw error;
+    }
   }
 }
 

@@ -44,13 +44,16 @@ const featureComparison = [
     pro: "Daily, Weekly, Monthly",
   },
   { feature: "Email Delivery", free: true, pro: true },
-  { feature: "Priority Domains", free: true, pro: true },
-  { feature: "Keyword Filtering", free: true, pro: true },
   {
     feature: "AI-Enhanced Descriptions",
     free: true,
     pro: true,
   },
+  { feature: "Advanced Domain Filtering", free: false, pro: true },
+  { feature: "Advanced Keyword Filtering", free: false, pro: true },
+  { feature: "Language Search Filter", free: false, pro: true },
+  { feature: "Location/Region Search Filter", free: false, pro: true },
+  { feature: "Multi-Language Report Translation", free: false, pro: true },
   { feature: "Priority Support", free: false, pro: true },
 ];
 

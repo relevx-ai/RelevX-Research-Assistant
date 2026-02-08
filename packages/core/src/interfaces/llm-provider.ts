@@ -110,4 +110,23 @@ export interface LLMProvider {
       timezone?: string;
     }
   ): Promise<CompiledReport>;
+
+  /**
+   * Translate text from source language to target language (optional)
+   */
+  translateText?(
+    text: string,
+    sourceLanguage: string,
+    targetLanguage: string
+  ): Promise<string>;
+
+  /**
+   * Translate a short text (title, summary) with a constrained prompt (optional)
+   * Uses a tight token cap to prevent LLM hallucination/expansion
+   */
+  translateShortText?(
+    text: string,
+    sourceLanguage: string,
+    targetLanguage: string
+  ): Promise<string>;
 }
