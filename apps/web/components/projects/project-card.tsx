@@ -38,7 +38,7 @@ import {
   Play,
 } from "lucide-react";
 import { DeleteProjectDialog } from "./delete-project-dialog";
-import { EditProjectSettingsDialog } from "./edit-project-settings-dialog";
+import { ProjectDialog } from "./project-dialog";
 import { ProjectDetailModal } from "./project-detail-modal";
 import {
   DAY_OF_WEEK_LABELS,
@@ -337,7 +337,7 @@ export function ProjectCard({ project, onProjectDeleted }: ProjectCardProps) {
       />
 
       {/* Edit Settings Dialog */}
-      <EditProjectSettingsDialog
+      <ProjectDialog
         project={project}
         open={settingsDialogOpen}
         onOpenChange={setSettingsDialogOpen}

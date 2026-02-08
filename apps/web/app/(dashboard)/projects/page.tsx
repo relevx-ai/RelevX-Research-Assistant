@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Plus, FolderOpen, RefreshCw, Home, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ProjectCard } from "@/components/projects/project-card";
-import { CreateProjectDialog } from "@/components/projects/create-project-dialog";
+import { ProjectDialog } from "@/components/projects/project-dialog";
 import { useProjects } from "@/hooks/use-projects";
 import Link from "next/link";
 
@@ -179,7 +179,7 @@ export default function ProjectsPage() {
       )}
 
       {/* Create Project Dialog */}
-      <CreateProjectDialog
+      <ProjectDialog
         open={createDialogOpen}
         onOpenChange={setCreateDialogOpen}
         onProjectCreated={refresh}

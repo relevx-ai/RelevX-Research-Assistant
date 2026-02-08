@@ -26,7 +26,7 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { useDeliveryLogs } from "@/hooks/use-delivery-logs";
-import { EditProjectSettingsDialog } from "./edit-project-settings-dialog";
+import { ProjectDialog } from "./project-dialog";
 import ReactMarkdown from "react-markdown";
 import {
   DAY_OF_WEEK_LABELS,
@@ -183,7 +183,7 @@ export function ProjectDetailModal({
       </Dialog>
 
       {/* Settings Dialog */}
-      <EditProjectSettingsDialog
+      <ProjectDialog
         project={project}
         open={settingsDialogOpen}
         onOpenChange={setSettingsDialogOpen}
