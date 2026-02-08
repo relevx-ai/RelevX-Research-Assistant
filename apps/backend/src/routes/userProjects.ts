@@ -635,7 +635,7 @@ const routes: FastifyPluginAsync = async (app) => {
         const userData = await getUserData(userId, db);
         const plans: Plan[] = await getPlans(remoteConfig);
         const plan: Plan | undefined = plans.find(
-          (p) => p.id === (userData.user.planId || gFreePlanId)
+          (p) => p.id === (userData.user.planId || getFreePlanId())
         );
         const oneShotLimit = plan?.settingsOneShotRunsPerMonth ?? 0;
         const monthKey = kAnalyticsMonthlyDateKey(new Date());
@@ -771,7 +771,7 @@ const routes: FastifyPluginAsync = async (app) => {
             const userData = await getUserData(userId, db);
             const plans: Plan[] = await getPlans(remoteConfig);
             const plan: Plan | undefined = plans.find(
-              (p) => p.id === (userData.user.planId || gFreePlanId)
+              (p) => p.id === (userData.user.planId || getFreePlanId())
             );
             const oneShotLimit = plan?.settingsOneShotRunsPerMonth ?? 0;
             const monthKey = kAnalyticsMonthlyDateKey(new Date());
