@@ -11,6 +11,7 @@ import type {
   ProjectStatus,
   CreateProjectResponse,
 } from "../../../packages/core/src/models/project";
+import type { RunNowResponse } from "../lib/projects";
 import {
   subscribeToProjects,
   createProject as createProjectService,
@@ -38,7 +39,7 @@ interface UseProjectsResult {
     status: ProjectStatus
   ) => Promise<boolean>;
   deleteProject: (projectId: string) => Promise<boolean>;
-  runProjectNow: (projectTitle: string) => Promise<boolean>;
+  runProjectNow: (projectTitle: string) => Promise<RunNowResponse>;
   refresh: () => Promise<void>;
 }
 
@@ -163,14 +164,13 @@ export function useProjects(
   );
 
   const runProjectNow = useCallback(
-    async (projectTitle: string): Promise<boolean> => {
+    async (projectTitle: string) => {
       if (!user?.uid) {
         setError("User must be logged in to run a project");
-        return false;
+        throw new Error("User must be logged in to run a project");
       }
       try {
-        await runProjectNowService(projectTitle);
-        return true;
+        return await runProjectNowService(projectTitle);
       } catch (err) {
         const errorMessage =
           err instanceof Error ? err.message : "Failed to run project now";
