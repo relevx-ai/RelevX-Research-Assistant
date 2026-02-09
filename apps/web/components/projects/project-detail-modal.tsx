@@ -24,6 +24,7 @@ import {
   ChevronUp,
   ChevronLeft,
   ChevronRight,
+  Download,
 } from "lucide-react";
 import { useDeliveryLogs } from "@/hooks/use-delivery-logs";
 import { ProjectDialog } from "./project-dialog";
@@ -33,6 +34,7 @@ import {
   formatDayOfMonth,
   formatRelativeTime,
 } from "@/lib/utils";
+import { exportAsMarkdown } from "@/lib/export-utils";
 
 const formatDate = (
   timestamp: number | undefined,
@@ -450,12 +452,20 @@ function DeliveryHistoryTab({ project }: { project: ProjectInfo }) {
         {logs.map((log, index) => (
           <div
             key={index}
-            className="border border-border/50 rounded-lg overflow-hidden"
+            className="border border-border/50 rounded-lg"
           >
             {/* Log Header */}
-            <button
+            <div
+              role="button"
+              tabIndex={0}
               onClick={() => toggleExpand(index)}
-              className="w-full flex items-center justify-between p-4 hover:bg-muted/50 transition-colors text-left"
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  toggleExpand(index);
+                }
+              }}
+              className="w-full flex items-center justify-between p-4 hover:bg-muted/50 transition-colors text-left cursor-pointer"
             >
               <div className="flex items-center gap-3">
                 {getStatusIcon(log.status)}
@@ -480,13 +490,23 @@ function DeliveryHistoryTab({ project }: { project: ProjectInfo }) {
                 >
                   {getStatusLabel(log.status)}
                 </span>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    exportAsMarkdown(log);
+                  }}
+                  className="p-1.5 rounded-md hover:bg-muted/80 transition-colors text-muted-foreground hover:text-foreground"
+                  title="Export as Markdown"
+                >
+                  <Download className="w-4 h-4" />
+                </button>
                 {expandedLogIndex === index ? (
                   <ChevronUp className="w-4 h-4 text-muted-foreground" />
                 ) : (
                   <ChevronDown className="w-4 h-4 text-muted-foreground" />
                 )}
               </div>
-            </button>
+            </div>
 
             {/* Expanded Content */}
             {expandedLogIndex === index && (
