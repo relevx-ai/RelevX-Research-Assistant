@@ -495,7 +495,7 @@ function DeliveryHistoryTab({ project }: { project: ProjectInfo }) {
                     e.stopPropagation();
                     exportAsMarkdown(log);
                   }}
-                  className="p-1.5 rounded-md hover:bg-muted/80 transition-colors text-muted-foreground hover:text-foreground"
+                  className="p-1.5 rounded-md hover:bg-muted/80 transition-colors text-muted-foreground hover:text-foreground cursor-pointer"
                   title="Export as Markdown"
                 >
                   <Download className="w-4 h-4" />
