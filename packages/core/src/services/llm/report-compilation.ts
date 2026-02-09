@@ -51,8 +51,13 @@ export async function compileReport(
     };
   }
 
-  // Sort results by score
-  const sortedResults = [...results].sort((a, b) => b.score - a.score);
+  // Sort results by date (newest first), falling back to score
+  const sortedResults = [...results].sort((a, b) => {
+    const dateA = a.publishedDate ? new Date(a.publishedDate).getTime() : 0;
+    const dateB = b.publishedDate ? new Date(b.publishedDate).getTime() : 0;
+    if (dateA !== dateB) return dateB - dateA;
+    return b.score - a.score;
+  });
 
   const resultsFormatted = sortedResults
     .map((r, idx) => {
@@ -211,6 +216,23 @@ ${snippetsFormatted}
 }
 
 /**
+ * Get the most recent published date from an array of sources as a timestamp.
+ * Returns 0 if no sources have a valid date.
+ */
+function getMostRecentDate(
+  sources: { publishedDate?: string }[]
+): number {
+  let max = 0;
+  for (const s of sources) {
+    if (s.publishedDate) {
+      const t = new Date(s.publishedDate).getTime();
+      if (t > max) max = t;
+    }
+  }
+  return max;
+}
+
+/**
  * Compile clustered results into a markdown report
  * Uses topic clusters to consolidate similar articles
  */
@@ -237,10 +259,13 @@ export async function compileClusteredReport(
     };
   }
 
-  // Sort clusters by average score
-  const sortedClusters = [...clusters].sort(
-    (a, b) => b.averageScore - a.averageScore
-  );
+  // Sort clusters by most recent date (newest first), falling back to average score
+  const sortedClusters = [...clusters].sort((a, b) => {
+    const mostRecentA = getMostRecentDate(a.allSources);
+    const mostRecentB = getMostRecentDate(b.allSources);
+    if (mostRecentA !== mostRecentB) return mostRecentB - mostRecentA;
+    return b.averageScore - a.averageScore;
+  });
 
   // Format clusters for prompt
   const clustersFormatted = sortedClusters
