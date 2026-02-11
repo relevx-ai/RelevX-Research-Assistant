@@ -109,9 +109,18 @@ export class SerperSearchProvider implements SearchProvider {
     }
 
     if (filters.dateFrom && filters.dateTo) {
-      // Serper uses custom date ranges: qdr:d, qdr:w, qdr:m, qdr:y
-      // For custom ranges, we'll use the dateFrom/dateTo directly
-      return `${filters.dateFrom}to${filters.dateTo}`;
+      // Convert ISO dates (YYYY-MM-DD) to Google custom date range format
+      // Format: cdr:1,cd_min:MM/DD/YYYY,cd_max:MM/DD/YYYY
+      const fromParts = filters.dateFrom.split("-"); // [YYYY, MM, DD]
+      const toParts = filters.dateTo.split("-"); // [YYYY, MM, DD]
+
+      // Build MM/DD/YYYY format (Google expects American date format)
+      const cdMin = `${fromParts[1]}/${fromParts[2]}/${fromParts[0]}`;
+      const cdMax = `${toParts[1]}/${toParts[2]}/${toParts[0]}`;
+
+      // Return Google custom date range format
+      // cdr:1 means custom date range enabled
+      return `cdr:1,cd_min:${cdMin},cd_max:${cdMax}`;
     }
 
     if (filters.dateFrom) {
@@ -229,7 +238,10 @@ export class SerperSearchProvider implements SearchProvider {
 
     // Add optional parameters
     if (freshness) {
-      requestBody.tbs = `qdr:${freshness}`;
+      // Custom date ranges already have cdr: prefix, predefined ranges need qdr:
+      requestBody.tbs = freshness.startsWith("cdr:")
+        ? freshness
+        : `qdr:${freshness}`;
     }
 
     if (filters?.country) {
@@ -240,8 +252,20 @@ export class SerperSearchProvider implements SearchProvider {
       requestBody.hl = filters.language.toLowerCase();
     }
 
+    if (filters?.safesearch) {
+      requestBody.safesearch = filters.safesearch;
+    }
+
     if (filters?.offset) {
-      requestBody.page = Math.floor(filters.offset / (filters.count || 20)) + 1;
+      const count = filters.count || 20;
+      // Warn if offset is not aligned with page boundaries
+      if (filters.offset % count !== 0) {
+        console.warn(
+          `Serper: Offset ${filters.offset} is not aligned with count ${count}. ` +
+          `Results may not match expected pagination.`
+        );
+      }
+      requestBody.page = Math.floor(filters.offset / count) + 1;
     }
 
     try {
