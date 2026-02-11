@@ -244,13 +244,16 @@ export class RedisCache {
     }
 
     try {
-      const info = await this.client.info("stats");
+      // Get stats section for hits/misses
+      const statsInfo = await this.client.info("stats");
+      // Get memory section for memory usage
+      const memoryInfo = await this.client.info("memory");
       const dbsize = await this.client.dbsize();
 
       // Parse stats from INFO command
-      const hitsMatch = info.match(/keyspace_hits:(\d+)/);
-      const missesMatch = info.match(/keyspace_misses:(\d+)/);
-      const memoryMatch = info.match(/used_memory_human:([^\r\n]+)/);
+      const hitsMatch = statsInfo.match(/keyspace_hits:(\d+)/);
+      const missesMatch = statsInfo.match(/keyspace_misses:(\d+)/);
+      const memoryMatch = memoryInfo.match(/used_memory_human:([^\r\n]+)/);
 
       return {
         keys: dbsize,

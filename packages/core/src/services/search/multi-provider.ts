@@ -142,26 +142,39 @@ export class MultiSearchProvider implements SearchProvider {
   }
 
   /**
-   * Select the best available provider
+   * Select the best available provider, excluding already-attempted ones
    */
-  private selectProvider(): {
+  private selectProvider(
+    excludeProviders: Set<string> = new Set()
+  ): {
     name: string;
     provider: SearchProvider;
   } | null {
-    // Try primary first
-    if (this.isProviderHealthy("primary")) {
+    // Try primary first (if not already attempted and healthy)
+    if (
+      !excludeProviders.has("primary") &&
+      this.isProviderHealthy("primary")
+    ) {
       return { name: "primary", provider: this.providers.primary };
     }
 
-    // Try fallback if available
-    if (this.providers.fallback && this.isProviderHealthy("fallback")) {
-      console.log("Using fallback provider (primary unhealthy)");
+    // Try fallback if available (if not already attempted and healthy)
+    if (
+      this.providers.fallback &&
+      !excludeProviders.has("fallback") &&
+      this.isProviderHealthy("fallback")
+    ) {
+      console.log("Using fallback provider (primary unavailable)");
       return { name: "fallback", provider: this.providers.fallback };
     }
 
-    // Try free provider if available
-    if (this.providers.free && this.isProviderHealthy("free")) {
-      console.log("Using free provider (primary and fallback unhealthy)");
+    // Try free provider if available (if not already attempted and healthy)
+    if (
+      this.providers.free &&
+      !excludeProviders.has("free") &&
+      this.isProviderHealthy("free")
+    ) {
+      console.log("Using free provider (primary and fallback unavailable)");
       return { name: "free", provider: this.providers.free };
     }
 
@@ -176,21 +189,17 @@ export class MultiSearchProvider implements SearchProvider {
     query: string,
     filters?: SearchFilters
   ): Promise<SearchResponse> {
-    const maxAttempts = 3;
     const attemptedProviders = new Set<string>();
+    const maxProviders = this.health.size;
 
-    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-      const selected = this.selectProvider();
+    // Try each available provider once
+    for (let attempt = 1; attempt <= maxProviders; attempt++) {
+      const selected = this.selectProvider(attemptedProviders);
 
       if (!selected) {
         throw new Error(
-          "All search providers are unhealthy. Please try again later."
+          "All search providers are unhealthy or have been attempted. Please try again later."
         );
-      }
-
-      // Skip if we've already tried this provider
-      if (attemptedProviders.has(selected.name)) {
-        continue;
       }
 
       attemptedProviders.add(selected.name);
@@ -203,13 +212,17 @@ export class MultiSearchProvider implements SearchProvider {
       } catch (error) {
         this.recordFailure(selected.name, error as Error);
 
-        // If this was the last attempt, throw the error
-        if (attempt === maxAttempts || attemptedProviders.size === this.health.size) {
-          throw error;
+        // If we've tried all providers, throw the error
+        if (attemptedProviders.size === this.health.size) {
+          throw new Error(
+            `Failed to execute search after trying all ${this.health.size} provider(s): ${error}`
+          );
         }
 
         // Otherwise, continue to next provider
-        console.log(`Retrying with next provider...`);
+        console.log(
+          `Provider ${selected.name} failed, trying next provider...`
+        );
       }
     }
 
