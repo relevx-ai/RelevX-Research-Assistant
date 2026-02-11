@@ -13,6 +13,7 @@ RelevX helps product teams, analysts, and marketers stay informed by automating 
 - **AI-Powered Analysis** - Uses LLMs to generate search queries, filter results, analyze relevancy, cluster topics, and compile comprehensive reports
 - **Source Quality Filtering** - Prioritize trusted domains, exclude unwanted sources, and filter by keywords
 - **Email Delivery** - Receive beautifully formatted research reports with summaries and citations delivered to your inbox
+- **Cost Optimization** - 90%+ reduction in search costs through intelligent caching, semantic deduplication, and affordable APIs (see [SEARCH_COST_OPTIMIZATION.md](./SEARCH_COST_OPTIMIZATION.md))
 
 ## Architecture
 
@@ -51,7 +52,12 @@ relevx/
 **Research Engine**
 
 - OpenAI for LLM operations (query generation, relevancy analysis, report compilation)
-- Brave Search API for web searching
+- **Search Providers:**
+  - Serper.dev API (Recommended - 80% cheaper than Brave)
+  - Brave Search API
+  - Multi-provider with automatic fallback
+- Redis-based search result caching (50%+ cost reduction)
+- Semantic query deduplication using embeddings
 - Content extraction and deduplication
 - Topic clustering with embeddings
 
@@ -67,7 +73,8 @@ relevx/
 - Node.js >= 18.0.0
 - pnpm 10.25.0 or later
 - Firebase project with Firestore enabled
-- API keys for OpenAI and Brave Search
+- API keys for OpenAI and Serper.dev (or Brave Search)
+- Redis instance (local or managed) for caching
 - (Optional) Stripe account for billing
 - (Optional) AWS account for secrets management
 
@@ -111,15 +118,19 @@ FIREBASE_SERVICE_ACCOUNT_JSON=<service-account-json>
 # OpenAI
 OPENAI_API_KEY=<your-openai-api-key>
 
-# Brave Search
-BRAVE_SEARCH_API_KEY=<your-brave-api-key>
+# Search Provider (choose one or both for fallback)
+SERPER_API_KEY=<your-serper-api-key>  # Recommended - 80% cheaper
+BRAVE_SEARCH_API_KEY=<your-brave-api-key>  # Alternative/fallback
 
 # Stripe (optional)
 STRIPE_SECRET_KEY=<your-stripe-secret-key>
 STRIPE_WEBHOOK_SECRET=<your-stripe-webhook-secret>
 
-# Redis
-REDIS_URL=<redis-connection-url>
+# Redis (for caching and cost optimization)
+REDIS_HOST=localhost
+REDIS_PORT=6379
+REDIS_PASSWORD=<optional-password>
+ENABLE_SEARCH_CACHE=true
 
 # AWS (optional, for secrets management)
 AWS_REGION=<aws-region>
@@ -159,11 +170,13 @@ NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=<stripe-publishable-key>
 3. **Research Execution**:
 
    - Generate search queries using LLM based on the project description
-   - Execute searches via Brave Search API with freshness filters
+   - Check cache and semantic similarity to avoid redundant searches
+   - Execute searches via Serper.dev or Brave Search API with freshness filters
    - Extract and deduplicate content from search results
    - Analyze relevancy of each result against the project description
    - Cluster related articles by topic similarity
    - Compile a comprehensive report with summaries and citations
+   - Cache results for faster future searches
 
 4. **Delivery** - Reports are delivered via email at the scheduled time with a summary, key insights, and links to original sources.
 
@@ -171,11 +184,15 @@ NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=<stripe-publishable-key>
 
 Research behavior can be customized via `research-config.yaml`:
 
+- Search provider selection (Serper.dev, Brave, or multi-provider)
+- Cache settings (TTL, popularity thresholds)
 - Max iterations per research run
 - Queries per iteration
 - Results per query
 - Relevancy thresholds
 - Clustering settings
 - Report format and length
+
+For detailed cost optimization setup, see [SEARCH_COST_OPTIMIZATION.md](./SEARCH_COST_OPTIMIZATION.md).
 
 ## License

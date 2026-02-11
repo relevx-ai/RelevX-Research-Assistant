@@ -20,17 +20,32 @@ import type {
   BraveSearchResponse,
   BraveSearchResult,
 } from "../brave-search/types";
+import { getSearchCache, type SearchCache } from "../cache";
 
 /**
  * Brave Search implementation of SearchProvider
  */
 export class BraveSearchProvider implements SearchProvider {
   private initialized: boolean = false;
+  private cache: SearchCache | null = null;
+  private enableCache: boolean;
 
-  constructor(apiKey?: string) {
+  constructor(apiKey?: string, enableCache: boolean = true) {
     if (apiKey) {
       initBrave(apiKey);
       this.initialized = true;
+    }
+
+    this.enableCache = enableCache;
+
+    // Initialize cache if enabled
+    if (this.enableCache) {
+      try {
+        this.cache = getSearchCache();
+      } catch (error) {
+        console.warn("Failed to initialize search cache:", error);
+        this.cache = null;
+      }
     }
   }
 
@@ -85,9 +100,24 @@ export class BraveSearchProvider implements SearchProvider {
   ): Promise<SearchResponse> {
     this.ensureInitialized();
 
+    // Check cache first
+    if (this.cache && this.cache.isEnabled()) {
+      const cachedResult = await this.cache.get(query, filters, "brave");
+      if (cachedResult) {
+        return cachedResult;
+      }
+    }
+
     // Use retry logic for reliability
     const braveResponse = await braveSearchRetry(query, filters, 3);
-    return this.convertResponse(braveResponse);
+    const result = this.convertResponse(braveResponse);
+
+    // Store in cache
+    if (this.cache && this.cache.isEnabled()) {
+      await this.cache.set(query, result, filters, "brave");
+    }
+
+    return result;
   }
 
   /**
@@ -122,6 +152,9 @@ export class BraveSearchProvider implements SearchProvider {
 /**
  * Factory function to create Brave Search provider
  */
-export function createBraveSearchProvider(apiKey: string): BraveSearchProvider {
-  return new BraveSearchProvider(apiKey);
+export function createBraveSearchProvider(
+  apiKey: string,
+  enableCache: boolean = true
+): BraveSearchProvider {
+  return new BraveSearchProvider(apiKey, enableCache);
 }
