@@ -4,178 +4,76 @@ An AI-powered research assistant that automates recurring research and delivers 
 
 ## Overview
 
-RelevX helps product teams, analysts, and marketers stay informed by automating the research process. Instead of manually searching and reading through countless articles, you define research topics and schedules, and RelevX delivers concise, summarized briefs with cited sources.
+Stop wasting hours on manual research. RelevX keeps product teams, analysts, and marketers informed by automating the entire research process. Define your topics once, and we'll deliver concise, summarized briefs with cited sources on your schedule.
 
-### Key Features
+## Why RelevX?
 
-- **Custom Research Projects** - Define topics with natural language descriptions and fine-tune with keywords, domain filters, and relevancy thresholds
-- **Scheduled Delivery** - Set daily, weekly, or monthly research schedules with timezone-aware delivery times
-- **AI-Powered Analysis** - Uses LLMs to generate search queries, filter results, analyze relevancy, cluster topics, and compile comprehensive reports
-- **Source Quality Filtering** - Prioritize trusted domains, exclude unwanted sources, and filter by keywords
-- **Email Delivery** - Receive beautifully formatted research reports with summaries and citations delivered to your inbox
+### The Problem
 
-## Architecture
+Staying current requires constant research across multiple sources. Traditional approaches mean:
+- Hours spent searching and reading through countless articles
+- Missing important developments while focused on other priorities
+- Information overload with no way to filter signal from noise
+- Difficulty tracking emerging trends across your industry
 
-This is a pnpm monorepo with the following structure:
+### The Solution
 
-```
-relevx/
-├── apps/
-│   ├── web/          # Next.js web application
-│   ├── mobile/       # Expo React Native mobile app
-│   └── backend/      # Fastify API server
-├── packages/
-│   ├── core/         # Shared business logic, types, and services
-│   └── ui/           # Shared UI components
-└── services/
-    └── scheduler/    # Cron-based research execution service
-```
+RelevX transforms research from a time sink into a competitive advantage. Set it once and receive curated intelligence automatically, letting you focus on decisions and strategy instead of information gathering.
 
-### Tech Stack
+## Key Features
 
-**Frontend**
+### 🎯 Custom Research Projects
+Define topics using natural language descriptions. Fine-tune with keywords, domain filters, and relevancy thresholds to get exactly what you need.
 
-- Next.js 16 with React 19
-- Tailwind CSS 4
-- Framer Motion for animations
-- Firebase Authentication
+### ⏰ Scheduled Delivery
+Set daily, weekly, or monthly research schedules with timezone-aware delivery. Reports arrive in your inbox when you want them, not when you have time to search.
 
-**Backend**
+### 🤖 AI-Powered Intelligence
+Our research engine generates targeted search queries, filters irrelevant results, analyzes content relevancy, identifies emerging themes, and compiles comprehensive reports with summaries and citations.
 
-- Fastify with TypeScript
-- Firebase Admin SDK / Firestore
-- Redis for caching and rate limiting
-- AWS Secrets Manager
-- Stripe for billing
+### 🎚️ Source Quality Control
+Prioritize trusted domains, exclude unwanted sources, and filter by keywords. You control what makes it into your reports.
 
-**Research Engine**
-
-- OpenAI for LLM operations (query generation, relevancy analysis, report compilation)
-- Brave Search API for web searching
-- Content extraction and deduplication
-- Topic clustering with embeddings
-
-**Infrastructure**
-
-- Docker support for backend and scheduler
-- pnpm workspaces for monorepo management
-
-## Getting Started
-
-### Prerequisites
-
-- Node.js >= 18.0.0
-- pnpm 10.25.0 or later
-- Firebase project with Firestore enabled
-- API keys for OpenAI and Brave Search
-- (Optional) Stripe account for billing
-- (Optional) AWS account for secrets management
-
-### Installation
-
-1. Clone the repository:
-
-   ```bash
-   git clone <repository-url>
-   cd relevx
-   ```
-
-2. Install dependencies:
-
-   ```bash
-   pnpm install
-   ```
-
-3. Set up environment variables (see [Environment Variables](#environment-variables) below)
-
-4. Start the development server:
-
-   ```bash
-   # Web app
-   pnpm dev:web
-
-   # Mobile app
-   pnpm dev:mobile
-   ```
-
-### Environment Variables
-
-Create `.env` files in the respective app directories with the following variables:
-
-**Core/Backend**
-
-```env
-# Firebase
-FIREBASE_SERVICE_ACCOUNT_JSON=<service-account-json>
-
-# OpenAI
-OPENAI_API_KEY=<your-openai-api-key>
-
-# Brave Search
-BRAVE_SEARCH_API_KEY=<your-brave-api-key>
-
-# Stripe (optional)
-STRIPE_SECRET_KEY=<your-stripe-secret-key>
-STRIPE_WEBHOOK_SECRET=<your-stripe-webhook-secret>
-
-# Redis
-REDIS_URL=<redis-connection-url>
-
-# AWS (optional, for secrets management)
-AWS_REGION=<aws-region>
-AWS_ACCESS_KEY_ID=<aws-access-key>
-AWS_SECRET_ACCESS_KEY=<aws-secret-key>
-```
-
-**Web App**
-
-```env
-NEXT_PUBLIC_FIREBASE_API_KEY=<firebase-api-key>
-NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=<firebase-auth-domain>
-NEXT_PUBLIC_FIREBASE_PROJECT_ID=<firebase-project-id>
-NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=<stripe-publishable-key>
-```
-
-## Scripts
-
-| Script               | Description                           |
-| -------------------- | ------------------------------------- |
-| `pnpm dev:web`       | Start the web app in development mode |
-| `pnpm dev:mobile`    | Start the mobile app with Expo        |
-| `pnpm build:web`     | Build the web app for production      |
-| `pnpm test:research` | Test the research engine              |
-| `pnpm test:openai`   | Test OpenAI integration               |
-| `pnpm test:brave`    | Test Brave Search integration         |
-| `pnpm test:email`    | Test email delivery                   |
-| `pnpm test:queries`  | Test query generation                 |
-| `pnpm test:extract`  | Test content extraction               |
+### 📧 Beautiful Reports
+Receive professionally formatted research briefs with executive summaries, key insights, and direct links to original sources.
 
 ## How It Works
 
-1. **Create a Project** - Users define a research topic with a description, set the frequency (daily/weekly/monthly), and configure delivery preferences.
+1. **Define Your Research Topics** - Describe what you want to track using natural language and set your delivery schedule
+2. **AI Does the Work** - Our engine searches the web, extracts relevant content, analyzes quality and relevance, and identifies key themes
+3. **Receive Curated Insights** - Get comprehensive reports delivered to your inbox with summaries, citations, and actionable intelligence
 
-2. **Scheduled Research** - The scheduler service runs every minute, checking for projects due for research execution.
+## Who Uses RelevX?
 
-3. **Research Execution**:
+### Product Teams
+Track competitor launches, feature announcements, and industry trends to inform roadmap decisions.
 
-   - Generate search queries using LLM based on the project description
-   - Execute searches via Brave Search API with freshness filters
-   - Extract and deduplicate content from search results
-   - Analyze relevancy of each result against the project description
-   - Cluster related articles by topic similarity
-   - Compile a comprehensive report with summaries and citations
+### Market Analysts
+Monitor market movements, regulatory changes, and industry developments across multiple sectors.
 
-4. **Delivery** - Reports are delivered via email at the scheduled time with a summary, key insights, and links to original sources.
+### Marketers
+Stay current on content trends, campaign strategies, and emerging channels in your industry.
 
-## Project Configuration
+### Investors
+Keep tabs on portfolio companies, market segments, and investment themes automatically.
 
-Research behavior can be customized via `research-config.yaml`:
+### Executives
+Maintain strategic awareness without the time commitment of manual research.
 
-- Max iterations per research run
-- Queries per iteration
-- Results per query
-- Relevancy thresholds
-- Clustering settings
-- Report format and length
+## Get Started
+
+Ready to automate your research? Visit [your-website-url] to create your account and set up your first research project.
+
+## Contact & Support
+
+Have questions? Reach out to us at [your-support-email]
 
 ## License
+
+Copyright © 2026 RelevX. All rights reserved.
+
+This code is provided for reference and portfolio purposes only. No license is granted to use, modify, or distribute this software.
+
+---
+
+Built with advanced AI to save you time and keep you informed.
