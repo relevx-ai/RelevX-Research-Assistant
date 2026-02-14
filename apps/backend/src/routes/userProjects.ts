@@ -553,14 +553,32 @@ const routes: FastifyPluginAsync = async (app) => {
           );
         }
 
-        const projectRef = db
+        const projectCol = db
           .collection("users")
           .doc(userId)
           .collection("projects");
-        await projectRef.add(projectData);
+        const newProjectRef = await projectCol.add(projectData);
 
         // Invalidate cache so /list returns fresh data
         try { await app.redis.del(userId); } catch (_) {}
+
+        // Schedule research if the project is active and has a nextRunAt
+        if (!createAsPaused && projectData.nextRunAt) {
+          try {
+            await app.queueService.scheduleResearch({
+              userId,
+              projectId: newProjectRef.id,
+              projectTitle: projectData.title,
+              nextRunAt: projectData.nextRunAt,
+              isRunNow: projectData.frequency === "once",
+            });
+          } catch (queueErr: any) {
+            app.log.error(
+              { error: queueErr.message },
+              "Failed to enqueue research after create"
+            );
+          }
+        }
 
         const { userId: _userId, ...projectInfo } = projectData;
 
@@ -652,8 +670,9 @@ const routes: FastifyPluginAsync = async (app) => {
           });
         }
 
+        const nowTs = Date.now();
         const updateData: Record<string, unknown> = {
-          nextRunAt: Date.now(),
+          nextRunAt: nowTs,
           preparedDeliveryLogId: null,
           updatedAt: new Date().toISOString(),
         };
@@ -666,6 +685,23 @@ const routes: FastifyPluginAsync = async (app) => {
         await projectDoc.ref.update(updateData);
 
         try { await app.redis.del(userId); } catch (_) {}
+
+        // Schedule immediate research via queue
+        try {
+          await app.queueService.scheduleResearch({
+            userId,
+            projectId: projectDoc.id,
+            projectTitle: title,
+            nextRunAt: nowTs,
+            isRunNow: true,
+            isOneShot: project.frequency !== "once",
+          });
+        } catch (queueErr: any) {
+          app.log.error(
+            { error: queueErr.message },
+            "Failed to enqueue research for run-now"
+          );
+        }
 
         // oneShotCount is the count *before* this run, so remaining = limit - count - 1
         const remainingRuns = Math.max(0, oneShotLimit - oneShotCount - 1);
@@ -825,6 +861,24 @@ const routes: FastifyPluginAsync = async (app) => {
 
         try { await app.redis.del(userId); } catch (_) {}
 
+        // Reschedule queue job if nextRunAt was recalculated
+        if (updates.nextRunAt && docData.status === "active") {
+          try {
+            await app.queueService.scheduleResearch({
+              userId,
+              projectId: doc.id,
+              projectTitle: title,
+              nextRunAt: updates.nextRunAt,
+              isRunNow: (data.frequency || docData.frequency) === "once",
+            });
+          } catch (queueErr: any) {
+            app.log.error(
+              { error: queueErr.message },
+              "Failed to reschedule research after update"
+            );
+          }
+        }
+
         return rep.status(200).send({ ok: true });
       } catch (err: any) {
         req.log?.error(err, "/user/projects/update failed");
@@ -856,6 +910,16 @@ const routes: FastifyPluginAsync = async (app) => {
           return rep
             .status(404)
             .send({ error: { message: "Project not found" } });
+
+        // Cancel any pending queue jobs
+        try {
+          await app.queueService.cancelProjectJobs(userId, doc.id);
+        } catch (queueErr: any) {
+          app.log.error(
+            { error: queueErr.message },
+            "Failed to cancel queue jobs on delete"
+          );
+        }
 
         // update cache after deletion
         await doc.ref.update({
@@ -988,22 +1052,41 @@ const routes: FastifyPluginAsync = async (app) => {
         // Apply update if status has changed
         if (nStatus !== cStatus) {
           app.log.info("Updating project status to " + nStatus);
-          await db
+          const toggleSnapshot = await db
             .collection("users")
             .doc(userId)
             .collection("projects")
             .where("title", "==", title)
             .limit(1)
-            .get()
-            .then((querySnapshot) => {
-              querySnapshot.forEach((doc) => {
-                doc.ref.update({
-                  ...updates,
-                  status: nStatus,
-                  updatedAt: new Date().toISOString(),
-                });
-              });
+            .get();
+
+          for (const doc of toggleSnapshot.docs) {
+            await doc.ref.update({
+              ...updates,
+              status: nStatus,
+              updatedAt: new Date().toISOString(),
             });
+
+            // Queue integration
+            try {
+              if (nStatus === "paused") {
+                await app.queueService.cancelProjectJobs(userId, doc.id);
+              } else if (nStatus === "active" && updates.nextRunAt) {
+                await app.queueService.scheduleResearch({
+                  userId,
+                  projectId: doc.id,
+                  projectTitle: title,
+                  nextRunAt: updates.nextRunAt,
+                  isRunNow: projectToToggle.frequency === "once",
+                });
+              }
+            } catch (queueErr: any) {
+              app.log.error(
+                { error: queueErr.message },
+                "Failed to update queue on toggle-status"
+              );
+            }
+          }
 
           try { await app.redis.del(userId); } catch (_) {}
         }

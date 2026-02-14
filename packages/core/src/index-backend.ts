@@ -43,6 +43,7 @@ export type {
 export type {
   RelevxDeliveryLog,
   DeliveryLog,
+  NewDeliveryLog,
   ProjectDeliveryLogResponse,
 } from "./models/delivery-log";
 
@@ -78,3 +79,25 @@ export {
   sanitizeLanguageCode,
   sanitizeRegionCode,
 } from "./utils/language-validation";
+
+// Firebase (server-side only)
+export { db } from "./services/firebase";
+
+// Research engine
+export {
+  executeResearchForProject,
+  setDefaultProviders,
+  loadConfig,
+} from "./services/research-engine";
+
+// Search providers
+export {
+  BraveSearchProvider,
+  SerperSearchProvider,
+} from "./services/search";
+
+// Scheduling
+export { calculateNextRunAt } from "./utils/scheduling";
+
+// Email
+export { sendReportEmail } from "./services/email";

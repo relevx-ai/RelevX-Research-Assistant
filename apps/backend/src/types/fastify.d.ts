@@ -2,6 +2,7 @@ import "fastify";
 import type { preHandlerHookHandler } from "fastify";
 import type Stripe from "stripe";
 import type { Plan } from "../models/plan";
+import type { QueueService } from "../services/queue.service";
 
 declare module "fastify" {
   interface FastifyInstance {
@@ -15,6 +16,14 @@ declare module "fastify" {
       remoteConfig: any;
     };
     aiInterface: LLMProvider;
+    queueService: QueueService;
+    queueHealth: {
+      researchWorker: import("bullmq").Worker;
+      deliveryWorker: import("bullmq").Worker;
+      researchQueue: import("bullmq").Queue;
+      deliveryQueue: import("bullmq").Queue;
+      redisInstance: import("ioredis").Redis;
+    };
     // Verify Firebase ID token and enrich with optional user/plan
     introspectIdToken: (idToken: string) => Promise<{
       user?: {
