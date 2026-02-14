@@ -42,6 +42,9 @@ services:
       # Runtime configuration
       - REDIS_URL=redis://redis-server:6379
       - NODE_ENV=production
+
+      # Queue configuration
+      - QUEUE_PRE_RUN_MINUTES=${QUEUE_PRE_RUN_MINUTES:-15}
     depends_on:
       - redis-server
     networks:
@@ -54,10 +57,10 @@ services:
     deploy:
       resources:
         limits:
-          memory: 1g
-          cpus: "1.0"
+          memory: 1.5g
+          cpus: "1.5"
         reservations:
-          memory: 256m
+          memory: 512m
           cpus: "0.25"
     healthcheck:
       test:
@@ -76,6 +79,7 @@ services:
     image: redis:alpine
     container_name: redis-server
     restart: always
+    command: redis-server --appendonly yes --appendfsync everysec --maxmemory 256mb --maxmemory-policy noeviction
     ports:
       - "127.0.0.1:6379:6379"
     networks:
