@@ -76,38 +76,6 @@ search:
   safeSearch: "moderate"
 
 # =============================================================================
-# Search Cache Settings
-# =============================================================================
-# Redis-based caching for search results to reduce API costs by 50%+
-cache:
-  # Enable search result caching
-  enabled: true
-
-  # Cache provider: "redis"
-  provider: "redis"
-
-  # Redis connection settings
-  redis:
-    host: ${REDIS_HOST:-localhost}
-    port: ${REDIS_PORT:-6379}
-    password: ${REDIS_PASSWORD:-}
-    db: 0
-
-  # Search cache TTL settings
-  searchResults:
-    # Base TTL for search results (seconds)
-    baseTtl: 900 # 15 minutes
-
-    # Extended TTL for popular queries (hit 3+ times)
-    popularTtl: 3600 # 1 hour
-
-    # Random jitter factor to prevent cache stampede (0.0-1.0)
-    ttlJitter: 0.1 # 10%
-
-    # Hits required for a query to be considered "popular"
-    popularThreshold: 3
-
-# =============================================================================
 # Content Extraction Settings
 # =============================================================================
 extraction:

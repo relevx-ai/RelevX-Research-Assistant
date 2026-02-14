@@ -12,8 +12,6 @@ import type {
   SearchResultItem,
   SearchResponse,
 } from "../../interfaces/search-provider";
-import { getSearchCache, type SearchCache } from "../cache";
-
 // Serper API configuration
 const SERPER_API_URL = "https://serpapi.serper.dev/search";
 const MIN_REQUEST_INTERVAL = 100; // 100ms between requests (allows 300/sec)
@@ -22,7 +20,6 @@ interface SerperConfig {
   apiKey: string;
   timeout?: number;
   maxRetries?: number;
-  enableCache?: boolean;
 }
 
 interface SerperSearchResult {
@@ -56,24 +53,11 @@ export class SerperSearchProvider implements SearchProvider {
   private timeout: number;
   private maxRetries: number;
   private lastRequestTime: number = 0;
-  private cache: SearchCache | null = null;
-  private enableCache: boolean;
 
   constructor(config: SerperConfig) {
     this.apiKey = config.apiKey;
     this.timeout = config.timeout || 10000;
     this.maxRetries = config.maxRetries || 3;
-    this.enableCache = config.enableCache ?? true;
-
-    // Initialize cache if enabled
-    if (this.enableCache) {
-      try {
-        this.cache = getSearchCache();
-      } catch (error) {
-        console.warn("Failed to initialize search cache:", error);
-        this.cache = null;
-      }
-    }
   }
 
   /**
@@ -324,23 +308,7 @@ export class SerperSearchProvider implements SearchProvider {
     query: string,
     filters?: SearchFilters
   ): Promise<SearchResponse> {
-    // Check cache first
-    if (this.cache && this.cache.isEnabled()) {
-      const cachedResult = await this.cache.get(query, filters, "serper");
-      if (cachedResult) {
-        return cachedResult;
-      }
-    }
-
-    // Execute search
-    const result = await this.searchWithRetry(query, filters);
-
-    // Store in cache
-    if (this.cache && this.cache.isEnabled()) {
-      await this.cache.set(query, result, filters, "serper");
-    }
-
-    return result;
+    return this.searchWithRetry(query, filters);
   }
 
   /**
