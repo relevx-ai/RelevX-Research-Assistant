@@ -10,7 +10,6 @@
 
 import * as cron from "node-cron";
 import { logger } from "./logger";
-import { Filter } from "firebase-admin/firestore";
 import { loadAwsSecrets } from "./plugins/aws";
 import { Queue } from "elegant-queue";
 import { Mutex } from "async-mutex";
@@ -22,6 +21,7 @@ import {
   calculateNextRunAt,
   incrementUserOneShotRun,
   kAnalyticsMonthlyDateKey,
+  loadConfig,
 } from "core";
 
 // Provider instances (initialized once at startup)
@@ -40,6 +40,7 @@ function getCheckWindowMs(): number {
 
 /**
  * Initialize providers once at startup
+ * Uses research-config.yaml to determine which search provider to use
  */
 async function initializeProviders(): Promise<void> {
   if (providersInitialized) {
@@ -49,23 +50,38 @@ async function initializeProviders(): Promise<void> {
   logger.info("Initializing research providers");
 
   try {
+    const config = loadConfig();
+    const searchProviderName = config.search?.provider || "serper";
+
     // Validate API keys
     const openaiKey = process.env.OPENAI_API_KEY;
-    const braveKey = process.env.BRAVE_SEARCH_API_KEY;
+    const searchKey =
+      searchProviderName === "brave"
+        ? process.env.BRAVE_SEARCH_API_KEY
+        : process.env.SERPER_API_KEY;
+    const searchKeyName =
+      searchProviderName === "brave" ? "BRAVE_SEARCH_API_KEY" : "SERPER_API_KEY";
 
-    if (!openaiKey || !braveKey) {
+    if (!openaiKey || !searchKey) {
       throw new Error(
-        "Missing required API keys (OPENAI_API_KEY or BRAVE_SEARCH_API_KEY)"
+        `Missing required API keys (OPENAI_API_KEY or ${searchKeyName})`
       );
     }
 
     // Import provider classes and setup function from core package
-    const { OpenAIProvider, BraveSearchProvider, setDefaultProviders } =
-      await import("core");
+    const {
+      OpenAIProvider,
+      BraveSearchProvider,
+      SerperSearchProvider,
+      setDefaultProviders,
+    } = await import("core");
 
     // Create provider instances
     const llmProvider = new OpenAIProvider(openaiKey);
-    const searchProvider = new BraveSearchProvider(braveKey);
+    const searchProvider =
+      searchProviderName === "brave"
+        ? new BraveSearchProvider(searchKey)
+        : new SerperSearchProvider({ apiKey: searchKey });
 
     // Set as defaults for research engine
     setDefaultProviders(llmProvider, searchProvider);
@@ -73,7 +89,7 @@ async function initializeProviders(): Promise<void> {
     providersInitialized = true;
     logger.info("Research providers initialized successfully", {
       llmProvider: "OpenAI",
-      searchProvider: "Brave Search",
+      searchProvider: searchProvider.getName(),
     });
   } catch (error: any) {
     logger.error("Failed to initialize providers", {
@@ -107,85 +123,59 @@ async function runResearchJob(scheduledJobNumber: number): Promise<void> {
   const checkWindowMs = getCheckWindowMs();
   const prerunMaxTime = now + checkWindowMs;
 
-  // polls projects that need research
+  // polls projects that need research using collection group queries
+  // This queries ALL projects across ALL users in just 2 queries (instead of 2N+1)
   const pollResearchProjects = async (): Promise<Array<PolledProject>> => {
-    // Query all users
-    const usersSnapshot = await db.collection("users").get();
-
     let projectsToRun: Array<PolledProject> = [];
-    for (const userDoc of usersSnapshot.docs) {
-      const userId = userDoc.id;
 
-      // Query 1: Pre-run projects (upcoming within check window)
-      const prerunSnapshot = await db
-        .collection("users")
-        .doc(userId)
-        .collection("projects")
-        // active and projects with error need to be taken care off.
-        .where(
-          Filter.or(
-            Filter.where("status", "==", "active"),
-            Filter.where("status", "==", "error")
-          )
-        )
-        .where("preparedDeliveryLogId", "==", null)
-        .where("nextRunAt", ">", now)
-        .where("nextRunAt", "<=", prerunMaxTime)
-        .get();
+    // Query 1: Pre-run projects (upcoming within check window)
+    const prerunSnapshot = await db
+      .collectionGroup("projects")
+      .where("status", "in", ["active", "error"])
+      .where("preparedDeliveryLogId", "==", null)
+      .where("nextRunAt", ">", now)
+      .where("nextRunAt", "<=", prerunMaxTime)
+      .get();
 
-      for (const projectDoc of prerunSnapshot.docs) {
-        const project = {
-          id: projectDoc.id,
-          ...projectDoc.data(),
-        } as Project;
+    for (const projectDoc of prerunSnapshot.docs) {
+      const project = {
+        id: projectDoc.id,
+        ...projectDoc.data(),
+      } as Project;
 
-        // Only include if no prepared delivery log
-        if (!project.preparedDeliveryLogId) {
-          projectsToRun.push({
-            userId,
-            project,
-            isRetry: false,
-            projectRef: projectDoc.ref,
-          } as PolledProject);
-        }
-      }
+      projectsToRun.push({
+        userId: project.userId,
+        project,
+        isRetry: false,
+        projectRef: projectDoc.ref,
+      } as PolledProject);
+    }
 
-      // Query 2: Retry projects (already due but no prepared results)
-      const retrySnapshot = await db
-        .collection("users")
-        .doc(userId)
-        .collection("projects")
-        .where(
-          Filter.or(
-            Filter.where("status", "==", "active"),
-            Filter.where("status", "==", "error")
-          )
-        )
-        .where("preparedDeliveryLogId", "==", null)
-        .where("nextRunAt", "<=", now)
-        .get();
+    // Query 2: Retry projects (already due but no prepared results)
+    const retrySnapshot = await db
+      .collectionGroup("projects")
+      .where("status", "in", ["active", "error"])
+      .where("preparedDeliveryLogId", "==", null)
+      .where("nextRunAt", "<=", now)
+      .get();
 
-      for (const projectDoc of retrySnapshot.docs) {
-        const project = {
-          id: projectDoc.id,
-          ...projectDoc.data(),
-        } as Project;
+    for (const projectDoc of retrySnapshot.docs) {
+      const project = {
+        id: projectDoc.id,
+        ...projectDoc.data(),
+      } as Project;
 
-        // Only include if no prepared delivery log (missed pre-run)
-        if (!project.preparedDeliveryLogId) {
-          // Check if already in list from pre-run query to avoid duplicates
-          const alreadyQueued = projectsToRun.some(
-            (p) => p.project.id === project.id && p.userId === userId
-          );
-          if (!alreadyQueued) {
-            projectsToRun.push({
-              userId,
-              project,
-              isRetry: true,
-              projectRef: projectDoc.ref,
-            } as PolledProject);
-          }
-        }
+      // Check if already in list from pre-run query to avoid duplicates
+      const alreadyQueued = projectsToRun.some(
+        (p) => p.project.id === project.id && p.userId === project.userId
+      );
+      if (!alreadyQueued) {
+        projectsToRun.push({
+          userId: project.userId,
+          project,
+          isRetry: true,
+          projectRef: projectDoc.ref,
+        } as PolledProject);
       }
     }
 
@@ -353,11 +343,14 @@ async function runDeliveryJob(scheduledJobNumber: number): Promise<void> {
       jobNumber: scheduledJobNumber,
     });
 
-    // Query all users
-    // @TODO: Instead of using users to query projects, use projects collection altogether and then reference the user from the project
-    // @TODO: Use pagination to avoid loading all projects at once
-    // @TODO: Future update ^ - will become non-scalable
-    const usersSnapshot = await db.collection("users").get();
+    // Use collection group query to find all projects ready for delivery
+    // This queries ALL projects across ALL users in a single query
+    const projectsSnapshot = await db
+      .collectionGroup("projects")
+      .where("preparedDeliveryLogId", "!=", null)
+      .where("nextRunAt", "<=", now)
+      .get();
+
     let projectsToDeliver: Array<{
       userId: string;
       userRef: any;
@@ -365,33 +358,20 @@ async function runDeliveryJob(scheduledJobNumber: number): Promise<void> {
       projectRef: any;
     }> = [];
 
-    for (const userDoc of usersSnapshot.docs) {
-      const userId = userDoc.id;
+    for (const projectDoc of projectsSnapshot.docs) {
+      const project = {
+        id: projectDoc.id,
+        ...projectDoc.data(),
+      } as Project;
 
-      const userRef = db.collection("users").doc(userId);
-      // Query active projects where nextRunAt <= now AND preparedDeliveryLogId is not null
-      const projectsSnapshot = await userRef
-        .collection("projects")
-        // .where("status", "==", "active") // one shot projects get set to paused after research...
-        .where("preparedDeliveryLogId", "!=", null)
-        .where("nextRunAt", "<=", now)
-        .get();
-
-      for (const projectDoc of projectsSnapshot.docs) {
-        const project = {
-          id: projectDoc.id,
-          ...projectDoc.data(),
-        } as Project;
-
-        // Only include if has prepared delivery log
-        if (project.preparedDeliveryLogId) {
-          projectsToDeliver.push({
-            userId,
-            userRef,
-            project,
-            projectRef: projectDoc.ref,
-          });
-        }
+      if (project.preparedDeliveryLogId) {
+        const userRef = db.collection("users").doc(project.userId);
+        projectsToDeliver.push({
+          userId: project.userId,
+          userRef,
+          project,
+          projectRef: projectDoc.ref,
+        });
       }
     }
 
@@ -644,10 +624,16 @@ async function startScheduler(): Promise<void> {
   // Load secrets from AWS Secrets Manager if available
   await loadAwsSecrets("relevx-backend-env");
 
+  // Determine required search API key based on config
+  const config = loadConfig();
+  const searchProviderName = config.search?.provider || "serper";
+  const searchEnvVar =
+    searchProviderName === "brave" ? "BRAVE_SEARCH_API_KEY" : "SERPER_API_KEY";
+
   // Validate required environment variables
   const requiredEnvVars = [
     "OPENAI_API_KEY",
-    "BRAVE_SEARCH_API_KEY",
+    searchEnvVar,
     "FIREBASE_SERVICE_ACCOUNT_JSON",
   ];
 
@@ -717,7 +703,7 @@ async function startScheduler(): Promise<void> {
     timezone: process.env.SCHEDULER_TIMEZONE || "UTC",
     providers: {
       llm: "OpenAI",
-      search: "Brave Search",
+      search: searchProviderName,
     },
   });
 

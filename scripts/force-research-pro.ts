@@ -28,7 +28,7 @@
  *
  * Environment variables required:
  *   OPENAI_API_KEY
- *   BRAVE_SEARCH_API_KEY
+ *   SERPER_API_KEY (default) or BRAVE_SEARCH_API_KEY (if config uses brave)
  *   FIREBASE_SERVICE_ACCOUNT_JSON
  *   RESEND_API_KEY
  *   RESEND_FROM_EMAIL
@@ -42,12 +42,17 @@ dotenv.config({ path: path.resolve(__dirname, "../.env"), override: true });
 import {
   executeResearchForProject,
   setDefaultProviders,
+  loadConfig,
   db,
 } from "../packages/core/src";
 import { createOpenAIProvider } from "../packages/core/src/services/llm";
-import { createBraveSearchProvider } from "../packages/core/src/services/search";
+import {
+  createBraveSearchProvider,
+  createSerperSearchProvider,
+} from "../packages/core/src/services/search";
 import { sendReportEmail } from "../packages/core/src/services/email";
 import type { Project, SearchParameters } from "../packages/core/src";
+import type { SearchProvider } from "../packages/core/src/interfaces/search-provider";
 
 // Language display names for output
 const LANGUAGE_NAMES: Record<string, string> = {
@@ -365,10 +370,17 @@ async function main() {
   const maxIterations = iterationsStr ? parseInt(iterationsStr, 10) : 3;
   const noRestore = hasFlag("no-restore");
 
-  // Validate environment variables
+  // Load config to determine search provider
+  const config = loadConfig();
+  const searchProviderName = config.search?.provider || "serper";
+
+  // Determine required env vars based on configured search provider
+  const searchEnvVar =
+    searchProviderName === "brave" ? "BRAVE_SEARCH_API_KEY" : "SERPER_API_KEY";
+
   const requiredEnvVars = [
     "OPENAI_API_KEY",
-    "BRAVE_SEARCH_API_KEY",
+    searchEnvVar,
     "FIREBASE_SERVICE_ACCOUNT_JSON",
     "RESEND_API_KEY",
     "RESEND_FROM_EMAIL",
@@ -385,12 +397,18 @@ async function main() {
   // Initialize providers
   console.log("\nInitializing providers...");
   const openaiKey = process.env.OPENAI_API_KEY!;
-  const braveKey = process.env.BRAVE_SEARCH_API_KEY!;
 
   const llmProvider = createOpenAIProvider(openaiKey);
-  const searchProvider = createBraveSearchProvider(braveKey);
+
+  let searchProvider: SearchProvider;
+  if (searchProviderName === "brave") {
+    searchProvider = createBraveSearchProvider(process.env.BRAVE_SEARCH_API_KEY!);
+  } else {
+    searchProvider = createSerperSearchProvider(process.env.SERPER_API_KEY!);
+  }
+
   setDefaultProviders(llmProvider, searchProvider);
-  console.log("Providers initialized (OpenAI + Brave Search)");
+  console.log(`Providers initialized (OpenAI + ${searchProvider.getName()})`);
 
   try {
     await forceResearchWithProFeatures(

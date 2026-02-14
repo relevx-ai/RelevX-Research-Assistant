@@ -45,7 +45,7 @@ export interface LLMConfig {
  * Search provider configuration
  */
 export interface SearchConfig {
-  provider: "brave" | "google" | "bing";
+  provider: "brave" | "serper" | "multi";
   queriesPerIteration: number;
   resultsPerQuery: number;
   maxUrlsToExtract: number;
@@ -365,7 +365,7 @@ export function getDefaultLLMProvider(): "openai" | "gemini" {
 /**
  * Get the default search provider
  */
-export function getDefaultSearchProvider(): "brave" | "google" | "bing" {
+export function getDefaultSearchProvider(): "brave" | "serper" | "multi" {
   return getConfig().search.provider;
 }
 

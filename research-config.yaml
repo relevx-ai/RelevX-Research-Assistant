@@ -73,7 +73,7 @@ search:
   maxUrlsToExtract: 25
 
   # Safe search level: "off" | "moderate" | "strict"
-  safeSearch: "moderate"
+  safeSearch: "off"
 
 # =============================================================================
 # Content Extraction Settings

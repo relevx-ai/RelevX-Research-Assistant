@@ -9,6 +9,7 @@ import type { LLMProvider } from "./interfaces/llm-provider";
 import type { SearchProvider } from "./interfaces/search-provider";
 import { OpenAIProvider } from "./services/llm/openai-provider";
 import { BraveSearchProvider } from "./services/search/brave-provider";
+import { SerperSearchProvider } from "./services/search/serper-provider";
 
 /**
  * LLM Provider types
@@ -20,6 +21,7 @@ export type LLMProviderType = "openai" | "gemini" | "anthropic" | "custom";
  */
 export type SearchProviderType =
   | "brave"
+  | "serper"
   | "google"
   | "bing"
   | "scrapingbee"
@@ -85,6 +87,9 @@ export function createSearchProvider(
   switch (config.provider) {
     case "brave":
       return new BraveSearchProvider(config.apiKey);
+
+    case "serper":
+      return new SerperSearchProvider({ apiKey: config.apiKey });
 
     case "google":
       // TODO: Implement Google Search provider

@@ -275,7 +275,7 @@ export class SerperSearchProvider implements SearchProvider {
         );
       }
 
-      const data: SerperResponse = await response.json();
+      const data = (await response.json()) as SerperResponse;
 
       // Serper returns results in 'organic' for web search or 'news' for news search
       const results = data.organic || data.news || [];
