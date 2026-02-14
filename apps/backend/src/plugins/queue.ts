@@ -26,7 +26,7 @@ import {
 } from "../workers/delivery.worker.js";
 
 const REDIS_URL = process.env.REDIS_URL || "redis://localhost:6379";
-const STUCK_THRESHOLD_MS = 30 * 60 * 1000; // 30 minutes
+const STUCK_THRESHOLD_MS = 5 * 60 * 1000; // 5 minutes
 
 export default fp(
   async (app: FastifyInstance) => {

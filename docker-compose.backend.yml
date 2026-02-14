@@ -29,6 +29,7 @@ services:
     image: relevx-backend:latest
     container_name: relevx-backend
     restart: always
+    stop_grace_period: 90s
     ports:
       - "3000:3000"
     volumes:
