@@ -13,7 +13,7 @@ import type {
   SearchResponse,
 } from "../../interfaces/search-provider";
 // Serper API configuration
-const SERPER_API_URL = "https://serpapi.serper.dev/search";
+const SERPER_API_URL = "https://google.serper.dev/search";
 const MIN_REQUEST_INTERVAL = 100; // 100ms between requests (allows 300/sec)
 
 interface SerperConfig {
