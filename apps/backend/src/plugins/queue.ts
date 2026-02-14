@@ -27,6 +27,7 @@ import {
 
 const REDIS_URL = process.env.REDIS_URL || "redis://localhost:6379";
 const STUCK_THRESHOLD_MS = 5 * 60 * 1000; // 5 minutes
+const RECOVERY_INTERVAL_MS = 10 * 60 * 1000; // 10 minutes
 
 export default fp(
   async (app: FastifyInstance) => {
@@ -138,16 +139,87 @@ export default fp(
     // ── Decorate ────────────────────────────────────────────────────────
 
     app.decorate("queueService", queueService);
+    app.decorate("queueHealth", {
+      researchWorker,
+      deliveryWorker,
+      researchQueue,
+      deliveryQueue,
+      redisInstance,
+    });
 
     // ── Startup Recovery ────────────────────────────────────────────────
 
     // Run asynchronously so it doesn't block server start
     setImmediate(() => runStartupRecovery(queueService, app));
 
+    // ── Periodic Recovery ─────────────────────────────────────────────
+    // Safety net: re-scan Firestore every 10 minutes to catch any jobs
+    // that silently disappeared from Redis.
+
+    const recoveryInterval = setInterval(
+      () => runStartupRecovery(queueService, app),
+      RECOVERY_INTERVAL_MS
+    );
+
+    // ── Admin Recovery Endpoint ───────────────────────────────────────
+
+    app.post(
+      "/admin/queue/recover",
+      { config: { rateLimit: false } },
+      async (_req, rep) => {
+        const result = await runStartupRecovery(queueService, app);
+        return rep.status(200).send(result);
+      }
+    );
+
+    // ── Queue Health Endpoint ─────────────────────────────────────────
+
+    app.get(
+      "/admin/queue/health",
+      { config: { rateLimit: false } },
+      async (_req, rep) => {
+        const [researchCounts, deliveryCounts] = await Promise.all([
+          researchQueue.getJobCounts(
+            "waiting",
+            "active",
+            "delayed",
+            "failed"
+          ),
+          deliveryQueue.getJobCounts(
+            "waiting",
+            "active",
+            "delayed",
+            "failed"
+          ),
+        ]);
+
+        const redisOk = redisInstance.status === "ready";
+        const researchRunning = researchWorker.isRunning();
+        const deliveryRunning = deliveryWorker.isRunning();
+        const healthy = redisOk && researchRunning && deliveryRunning;
+
+        const body = {
+          healthy,
+          redis: redisOk ? "connected" : redisInstance.status,
+          workers: {
+            research: researchRunning ? "running" : "stopped",
+            delivery: deliveryRunning ? "running" : "stopped",
+          },
+          queues: {
+            research: researchCounts,
+            delivery: deliveryCounts,
+          },
+        };
+
+        return rep.status(healthy ? 200 : 503).send(body);
+      }
+    );
+
     // ── Graceful Shutdown ───────────────────────────────────────────────
 
     app.addHook("onClose", async () => {
       app.log.info("Shutting down queue workers…");
+      clearInterval(recoveryInterval);
       await researchWorker.close();
       await deliveryWorker.close();
       await researchQueue.close();
@@ -160,14 +232,20 @@ export default fp(
 
 // ── Startup Recovery ──────────────────────────────────────────────────────
 
+interface RecoveryResult {
+  recovered: number;
+  stuckReset: number;
+  errors: number;
+}
+
 async function runStartupRecovery(
   queueService: QueueService,
   app: FastifyInstance
-): Promise<void> {
-  try {
-    app.log.info("Running queue startup recovery…");
+): Promise<RecoveryResult> {
+  const result: RecoveryResult = { recovered: 0, stuckReset: 0, errors: 0 };
 
-    let recovered = 0;
+  try {
+    app.log.info("Running queue recovery scan…");
 
     // 1. Active/error projects without prepared results → need research
     const needsResearchSnap = await db
@@ -189,8 +267,9 @@ async function runStartupRecovery(
           isRunNow: false,
           isOneShot: project.thisRunIsOneShot === true,
         });
-        recovered++;
+        result.recovered++;
       } catch (err: any) {
+        result.errors++;
         app.log.error(
           { projectId: doc.id, error: err.message },
           "Failed to recover research job"
@@ -198,7 +277,7 @@ async function runStartupRecovery(
       }
     }
 
-    // 2. Stuck "running" projects (>30 min) → reset to error and re-enqueue
+    // 2. Stuck "running" projects (>5 min) → reset to error and re-enqueue
     const stuckSnap = await db
       .collectionGroup("projects")
       .where("status", "==", "running")
@@ -221,10 +300,11 @@ async function runStartupRecovery(
 
         await doc.ref.update({
           status: "error",
-          lastError: "Reset by startup recovery (stuck >30 min)",
+          lastError: "Reset by recovery scan (stuck >5 min)",
           researchStartedAt: null,
           updatedAt: Date.now(),
         });
+        result.stuckReset++;
 
         if (project.nextRunAt && project.userId) {
           try {
@@ -235,8 +315,9 @@ async function runStartupRecovery(
               nextRunAt: project.nextRunAt,
               isRunNow: false,
             });
-            recovered++;
+            result.recovered++;
           } catch (err: any) {
+            result.errors++;
             app.log.error(
               { projectId: doc.id, error: err.message },
               "Failed to re-enqueue stuck project"
@@ -267,8 +348,9 @@ async function runStartupRecovery(
           isRunNow: !project.nextRunAt || project.nextRunAt <= Date.now(),
           isOneShot: project.thisRunIsOneShot === true,
         });
-        recovered++;
+        result.recovered++;
       } catch (err: any) {
+        result.errors++;
         app.log.error(
           { projectId: doc.id, error: err.message },
           "Failed to recover delivery job"
@@ -276,11 +358,13 @@ async function runStartupRecovery(
       }
     }
 
-    app.log.info({ recovered }, "Queue startup recovery complete");
+    app.log.info(result, "Queue recovery scan complete");
   } catch (err: any) {
     app.log.error(
       { error: err.message },
-      "Queue startup recovery failed"
+      "Queue recovery scan failed"
     );
   }
+
+  return result;
 }

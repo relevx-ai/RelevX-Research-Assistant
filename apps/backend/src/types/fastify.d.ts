@@ -17,6 +17,13 @@ declare module "fastify" {
     };
     aiInterface: LLMProvider;
     queueService: QueueService;
+    queueHealth: {
+      researchWorker: import("bullmq").Worker;
+      deliveryWorker: import("bullmq").Worker;
+      researchQueue: import("bullmq").Queue;
+      deliveryQueue: import("bullmq").Queue;
+      redisInstance: import("ioredis").Redis;
+    };
     // Verify Firebase ID token and enrich with optional user/plan
     introspectIdToken: (idToken: string) => Promise<{
       user?: {

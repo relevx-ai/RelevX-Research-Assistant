@@ -1,4 +1,4 @@
-import Fastify from "fastify";
+import Fastify, { type FastifyInstance } from "fastify";
 import fastifyCors from "@fastify/cors";
 import fastifyRateLimit from "@fastify/rate-limit";
 import fastifyWebsocket from "@fastify/websocket";
@@ -130,6 +130,24 @@ app.get("/", { config: { rateLimit: false } }, async (_req, rep) => {
 });
 
 app.get("/healthz", { config: { rateLimit: false } }, async (_req, rep) => {
+  // If queue plugin is registered, include worker health
+  // queueHealth is decorated by the queue plugin which registers after
+  // this route, so we access it dynamically at request time.
+  const qh = (app as any).queueHealth as
+    | FastifyInstance["queueHealth"]
+    | undefined;
+  if (qh) {
+    const redisOk = qh.redisInstance.status === "ready";
+    const workersOk =
+      qh.researchWorker.isRunning() && qh.deliveryWorker.isRunning();
+    if (!redisOk || !workersOk) {
+      return rep.status(503).send({
+        ok: false,
+        redis: redisOk ? "connected" : qh.redisInstance.status,
+        workers: workersOk ? "running" : "degraded",
+      });
+    }
+  }
   return rep.status(200).send({ ok: true });
 });
 
