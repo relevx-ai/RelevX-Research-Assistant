@@ -43,6 +43,7 @@ services:
       # Runtime configuration
       - REDIS_URL=redis://redis-server:6379
       - NODE_ENV=production
+      - BULL_BOARD_ENABLED=true
 
       # Queue configuration
       - QUEUE_PRE_RUN_MINUTES=${QUEUE_PRE_RUN_MINUTES:-15}

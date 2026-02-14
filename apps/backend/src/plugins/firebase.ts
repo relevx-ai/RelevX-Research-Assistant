@@ -60,4 +60,4 @@ export default fp(async (app: any) => {
       );
     }
   });
-});
+}, { name: "firebase" });
