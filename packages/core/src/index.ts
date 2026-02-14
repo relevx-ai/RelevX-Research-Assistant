@@ -155,6 +155,10 @@ export {
   BraveSearchProvider,
   createBraveSearchProvider,
 } from "./services/search";
+export {
+  SerperSearchProvider,
+  createSerperSearchProvider,
+} from "./services/search";
 
 // Provider Factories
 export {

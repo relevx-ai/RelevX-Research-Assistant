@@ -20,7 +20,6 @@ import type {
   BraveSearchResponse,
   BraveSearchResult,
 } from "../brave-search/types";
-
 /**
  * Brave Search implementation of SearchProvider
  */
@@ -122,6 +121,8 @@ export class BraveSearchProvider implements SearchProvider {
 /**
  * Factory function to create Brave Search provider
  */
-export function createBraveSearchProvider(apiKey: string): BraveSearchProvider {
+export function createBraveSearchProvider(
+  apiKey: string
+): BraveSearchProvider {
   return new BraveSearchProvider(apiKey);
 }

@@ -57,8 +57,11 @@ llm:
 # Search Settings
 # =============================================================================
 search:
-  # Default search provider: "brave" | "google" | "bing"
-  provider: "brave"
+  # Default search provider: "brave" | "serper" | "multi"
+  # - "brave": Brave Search API ($3-5 per 1K queries)
+  # - "serper": Serper.dev API ($0.30-$1.00 per 1K queries) - Recommended
+  # - "multi": Multi-provider with automatic fallback
+  provider: "serper"
 
   # Number of search queries to generate per iteration
   queriesPerIteration: 5
@@ -70,7 +73,7 @@ search:
   maxUrlsToExtract: 25
 
   # Safe search level: "off" | "moderate" | "strict"
-  safeSearch: "moderate"
+  safeSearch: "off"
 
 # =============================================================================
 # Content Extraction Settings
