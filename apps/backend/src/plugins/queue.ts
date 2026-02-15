@@ -79,7 +79,7 @@ export default fp(
       createResearchProcessor(queueService, log),
       {
         connection: redisInstance.duplicate() as unknown as ConnectionOptions,
-        concurrency: 1,
+        concurrency: parseInt(process.env.MAX_CONCURRENT_RESEARCH || "3", 10),
       }
     );
 
@@ -208,6 +208,9 @@ export default fp(
           queues: {
             research: researchCounts,
             delivery: deliveryCounts,
+          },
+          config: {
+            maxConcurrentResearch: parseInt(process.env.MAX_CONCURRENT_RESEARCH || "3", 10),
           },
         };
 

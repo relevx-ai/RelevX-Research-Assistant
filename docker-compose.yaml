@@ -47,6 +47,7 @@ services:
 
       # Queue configuration
       - QUEUE_PRE_RUN_MINUTES=${QUEUE_PRE_RUN_MINUTES:-15}
+      - MAX_CONCURRENT_RESEARCH=${MAX_CONCURRENT_RESEARCH:-3}
     depends_on:
       - redis-server
     networks:
