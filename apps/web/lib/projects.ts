@@ -18,7 +18,7 @@ import type {
 import type { ProjectDeliveryLogResponse } from "../../../packages/core/src/models/delivery-log";
 import { relevx_api } from "@/lib/client";
 
-let socket_connection_statis: "connecting" | "connected" | "disconnected" =
+let socket_connection_status: "connecting" | "connected" | "disconnected" =
   "disconnected";
 
 /**
@@ -95,13 +95,13 @@ export function subscribeToProjects(
   // We use the backend WebSocket for real-time updates
   // Authentication is handled by passing the token in the query or first message
 
-  if (socket_connection_statis !== "disconnected") return () => {};
+  if (socket_connection_status !== "disconnected") return () => {};
 
   let socket: WebSocket | null = null;
   let isClosed = false;
 
   const connect = async () => {
-    socket_connection_statis = "connecting";
+    socket_connection_status = "connecting";
     try {
       if (isClosed) return;
 
@@ -124,7 +124,7 @@ export function subscribeToProjects(
         try {
           const data = JSON.parse(event.data);
           if (data.connected) {
-            socket_connection_statis = "connected";
+            socket_connection_status = "connected";
             console.log("WebSocket connected");
           } else if (data.projects) {
             console.log("WebSocket projects:", data.projects);
@@ -146,19 +146,19 @@ export function subscribeToProjects(
       };
 
       socket.onclose = () => {
-        socket_connection_statis = "disconnected";
+        socket_connection_status = "disconnected";
         if (!isClosed) {
           setTimeout(connect, 3000);
         }
       };
 
       socket.onerror = (err) => {
-        socket_connection_statis = "disconnected";
+        socket_connection_status = "disconnected";
         console.error("WebSocket error:", err);
         socket?.close();
       };
     } catch (err) {
-      socket_connection_statis = "disconnected";
+      socket_connection_status = "disconnected";
       console.error("Failed to connect to WebSocket:", err);
       setTimeout(connect, 5000);
     }
@@ -213,38 +213,6 @@ export async function updateProjectStatus(
 
   return response.status === status;
 }
-
-/**
- * Update project execution tracking after a research run
- */
-// export async function updateProjectExecution(
-//   userId: string,
-//   projectId: string,
-//   updates: {
-//     status?: ProjectStatus;
-//     lastRunAt?: number;
-//     nextRunAt?: number;
-//     lastError?: string;
-//   },
-//   dbInstance?: any,
-//   isAdminSDK?: boolean
-// ): Promise<void> {
-//   // This is typically called from the backend/worker, so it might still use Firestore directly
-//   // or we can add a route for it. For now, let's keep it if it's Admin SDK.
-//   if (isAdminSDK) {
-//     const projectRef = getProjectRef(userId, projectId, dbInstance, isAdminSDK);
-//     const updateData = {
-//       ...updates,
-//       updatedAt: Date.now(),
-//     };
-//     await projectRef.update(updateData);
-//     return;
-//   }
-
-//   // If called from client, we should use the update route
-//   // Note: we'd need the title here too.
-//   throw new Error("updateProjectExecution should only be called by Admin SDK");
-// }
 
 /**
  * Update a project with partial data

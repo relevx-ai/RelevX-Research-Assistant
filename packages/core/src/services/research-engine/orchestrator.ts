@@ -31,12 +31,10 @@ import type {
   SearchFilters,
 } from "../../interfaces/search-provider";
 import { extractMultipleContents } from "../content-extractor";
-import { validateFrequency } from "../../utils/scheduling";
 import {
   createTokenUsageTracker,
   estimateTokens,
   estimateCost,
-  type TokenUsage,
 } from "../../utils/token-estimation";
 import { getSearchHistory, updateSearchHistory } from "./search-history";
 import { saveDeliveryLog } from "./result-storage";
