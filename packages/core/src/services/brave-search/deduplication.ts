@@ -3,34 +3,9 @@
  */
 
 import type { BraveSearchResult, BraveSearchResponse } from "./types";
+import { normalizeUrl } from "../../utils/deduplication";
 
-/**
- * Normalize URL for deduplication
- * Removes query params, fragments, trailing slashes, and www prefix
- */
-export function normalizeUrl(url: string): string {
-  try {
-    const urlObj = new URL(url);
-
-    // Remove www prefix
-    let hostname = urlObj.hostname.toLowerCase();
-    if (hostname.startsWith("www.")) {
-      hostname = hostname.substring(4);
-    }
-
-    // Remove trailing slash from pathname
-    let pathname = urlObj.pathname;
-    if (pathname.endsWith("/") && pathname.length > 1) {
-      pathname = pathname.slice(0, -1);
-    }
-
-    // Reconstruct without query params and hash
-    return `${urlObj.protocol}//${hostname}${pathname}`;
-  } catch (error) {
-    // If URL parsing fails, return original URL
-    return url.toLowerCase();
-  }
-}
+export { normalizeUrl };
 
 /**
  * Deduplicate search results across multiple responses

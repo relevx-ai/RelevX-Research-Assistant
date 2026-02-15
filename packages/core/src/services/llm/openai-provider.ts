@@ -38,15 +38,15 @@ export class OpenAIProvider implements LLMProvider {
     }
   }
   clusterByTopic?(
-    results: ResultForReport[],
-    options?: { similarityThreshold?: number }
+    _results: ResultForReport[],
+    _options?: { similarityThreshold?: number }
   ): Promise<TopicCluster[]> {
     throw new Error("Method not implemented.");
   }
   compileClusteredReport?(
-    projectDescription: string,
-    clusters: TopicCluster[],
-    options?: {
+    _projectDescription: string,
+    _clusters: TopicCluster[],
+    _options?: {
       tone?: "professional" | "casual" | "technical";
       maxLength?: number;
       projectTitle?: string;

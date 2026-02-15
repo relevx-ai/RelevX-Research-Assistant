@@ -97,7 +97,7 @@ function initializeFirebase(): void {
 const authProxy = new Proxy(
   {},
   {
-    get(target, prop) {
+    get(_target, prop) {
       if (!initialized) {
         initializeFirebase();
       }
@@ -109,7 +109,7 @@ const authProxy = new Proxy(
 const dbProxy = new Proxy(
   {},
   {
-    get(target, prop) {
+    get(_target, prop) {
       if (!initialized) {
         initializeFirebase();
       }
@@ -118,7 +118,7 @@ const dbProxy = new Proxy(
       }
       return (db as any)[prop];
     },
-    apply(target, thisArg, argumentsList) {
+    apply(_target, thisArg, argumentsList) {
       if (!initialized) {
         initializeFirebase();
       }
@@ -133,7 +133,7 @@ const dbProxy = new Proxy(
 const fireBaseRemoteConfigProxy = new Proxy(
   {},
   {
-    get(target, prop) {
+    get(_target, prop) {
       if (!initialized) {
         initializeFirebase();
       }
@@ -142,7 +142,7 @@ const fireBaseRemoteConfigProxy = new Proxy(
       }
       return (fireBaseRemoteConfig as any)[prop];
     },
-    apply(target, thisArg, argumentsList) {
+    apply(_target, thisArg, argumentsList) {
       if (!initialized) {
         initializeFirebase();
       }

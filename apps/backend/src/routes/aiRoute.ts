@@ -4,16 +4,12 @@ import type {
   ImproveProjectDescriptionResponse,
 } from "core";
 
-// API key management routes: create/list/revoke. All routes rely on the auth
-// plugin to populate req.userId and tenant authorization.
 const routes: FastifyPluginAsync = async (app) => {
   const aiInterface = app.aiInterface;
 
   app.get("/healthz", async (_req, rep) => {
     return rep.send({ ok: true });
   });
-
-  app.addHook("onClose", async () => {});
 
   app.post(
     "/improve-project-description",

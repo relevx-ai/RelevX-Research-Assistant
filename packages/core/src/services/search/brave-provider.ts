@@ -11,7 +11,6 @@ import type {
   SearchResponse,
 } from "../../interfaces/search-provider";
 import {
-  searchWeb as braveSearchWeb,
   searchWithRetry as braveSearchRetry,
   searchMultipleQueries as braveSearchMultiple,
   initializeBraveSearch as initBrave,

@@ -4,8 +4,6 @@ import type { RelevxUserProfile, CreateProfileResponse, Plan } from "core";
 import { getPlans } from "./products.js";
 import { getFreePlanId } from "../utils/billing.js";
 
-// API key management routes: create/list/revoke. All routes rely on the auth
-// plugin to populate req.userId and tenant authorization.
 const routes: FastifyPluginAsync = async (app) => {
   const firebase = app.firebase;
   const db = firebase.db;

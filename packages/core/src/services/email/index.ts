@@ -31,7 +31,7 @@ export interface ReportEmailOptions {
  */
 async function generateEmailHTML(
   report: ClientReport,
-  projectId: string,
+  _projectId: string,
   options?: ReportEmailOptions
 ): Promise<string> {
   // Convert markdown to HTML

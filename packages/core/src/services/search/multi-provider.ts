@@ -65,7 +65,7 @@ export class MultiSearchProvider implements SearchProvider {
   /**
    * Initialize health tracking for a provider
    */
-  private initializeHealth(name: string, provider: SearchProvider): void {
+  private initializeHealth(name: string, _provider: SearchProvider): void {
     this.health.set(name, {
       healthy: true,
       consecutiveFailures: 0,
