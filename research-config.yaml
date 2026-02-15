@@ -30,6 +30,13 @@ llm:
       temperature: 0.3 # Low for consistent scoring
       responseFormat: "json_object"
 
+    # Cross-source analysis - synthesizes themes, connections, contradictions across sources
+    # This is the "thinking" step before report writing. Use a stronger model here for better synthesis.
+    crossSourceAnalysis:
+      model: "gpt-4o"
+      temperature: 0.4 # Moderate for analytical reasoning
+      responseFormat: "json_object"
+
     # Report compilation - generates the final research report
     reportCompilation:
       model: "gpt-4o-mini"
