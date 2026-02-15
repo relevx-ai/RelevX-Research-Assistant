@@ -41,6 +41,15 @@ export {
 } from "./topic-clustering";
 
 export {
+  analyzeCrossSources,
+  analyzeCrossSourcesWithRetry,
+  analyzeClusteredCrossSources,
+  analyzeClusteredCrossSourcesWithRetry,
+  formatAnalysisForReport,
+  type CrossSourceAnalysis,
+} from "./cross-source-analysis";
+
+export {
   generateEmbeddings,
   generateEmbedding,
   cosineSimilarity,
@@ -51,6 +60,7 @@ export {
 export {
   QUERY_GENERATION_PROMPTS,
   RELEVANCY_ANALYSIS_PROMPTS,
+  CROSS_SOURCE_ANALYSIS_PROMPTS,
   REPORT_COMPILATION_PROMPTS,
   CLUSTERED_REPORT_COMPILATION_PROMPTS,
   renderPrompt,

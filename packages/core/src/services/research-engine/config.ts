@@ -31,6 +31,7 @@ export interface LLMConfig {
     queryGeneration: ModelConfig;
     searchFiltering: ModelConfig;
     relevancyAnalysis: ModelConfig;
+    crossSourceAnalysis: ModelConfig;
     reportCompilation: ModelConfig;
     clusteredReportCompilation: ModelConfig;
     reportSummary: ModelConfig;
@@ -139,6 +140,11 @@ export const DEFAULT_CONFIG: ResearchConfig = {
       relevancyAnalysis: {
         model: "gpt-4o-mini",
         temperature: 0.3,
+        responseFormat: "json_object",
+      },
+      crossSourceAnalysis: {
+        model: "gpt-4o",
+        temperature: 0.4,
         responseFormat: "json_object",
       },
       reportCompilation: {
