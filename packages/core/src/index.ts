@@ -193,6 +193,8 @@ export { saveDeliveryLog } from "./services/research-engine/result-storage";
 
 export { sendReportEmail } from "./services/email";
 
+export { stripReferencesForEmail } from "./utils/markdown-references";
+
 export {
   getUserAnalytics,
   getUserOneShotCount,

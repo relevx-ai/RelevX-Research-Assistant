@@ -22,8 +22,8 @@ async function testEmail() {
 This is a **bold statement** about the future of AI. The interactions between *politics* and *economics* are complex.
 
 ### Key Findings
-1. **Model Growth**: GPT-5.2 has revolutionized the field.
-2. **Economic Impact**: Markets are [reacting positively](https://example.com).
+1. **Model Growth**: GPT-5.2 has revolutionized the field [1].
+2. **Economic Impact**: Markets are [reacting positively](https://example.com) [2].
 
 > "The future is here, it's just not evenly distributed."
 
@@ -36,6 +36,12 @@ The quick brown fox jumps over the lazy dog.
 \`\`\`javascript
 console.log("Code block test");
 \`\`\`
+
+## References
+
+1. [AI Research Lab](https://example.com/ai-research) - Jan 15, 2025
+2. [Market Analysis Report](https://example.com/markets) - Jan 12, 2025
+3. [TechCrunch](https://techcrunch.com/article) - Jan 10, 2025
 `,
     resultCount: 5,
     averageScore: 85,
@@ -52,7 +58,9 @@ console.log("Code block test");
     
     console.log(`Sending to ${testEmail}...`);
     
-    const result = await sendReportEmail(testEmail, mockReport, "test-project-id");
+    const result = await sendReportEmail(testEmail, mockReport, "test-project-id", {
+      projectTitle: "Test Research Report",
+    });
     
     if (result.success) {
       console.log("Email sent successfully! ID:", result.id);

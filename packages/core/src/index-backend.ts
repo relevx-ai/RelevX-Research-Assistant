@@ -101,3 +101,5 @@ export { calculateNextRunAt } from "./utils/scheduling";
 
 // Email
 export { sendReportEmail } from "./services/email";
+
+export { stripReferencesForEmail } from "./utils/markdown-references";
