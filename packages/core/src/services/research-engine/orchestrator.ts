@@ -262,7 +262,7 @@ export async function executeResearchForProject(
       count: resultsPerQuery, // From config or options
       safesearch: searchConfig.safeSearch,
     };
-    console.log(`[Search Filters] Brave search_lang=${project.searchParameters?.language || '(none)'}, country=${project.searchParameters?.region || '(none)'}, outputLanguage=${project.searchParameters?.outputLanguage || '(none)'} (used only for post-search translation)`);
+    console.log(`[Search Filters] search provider=${searchProvider.constructor.name}, search_lang=${project.searchParameters?.language || '(none)'}, country=${project.searchParameters?.region || '(none)'}, outputLanguage=${project.searchParameters?.outputLanguage || '(none)'} (used only for post-search translation)`);
 
     // 5.1 Determine initial freshness based on project frequency
     let currentFreshness: Freshness = getFreshnessForFrequency(
