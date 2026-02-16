@@ -21,16 +21,9 @@ import { set, isAfter, add } from "date-fns";
 import { toZonedTime, fromZonedTime } from "date-fns-tz";
 import { getFreePlanId } from "../utils/billing.js";
 import { getUserData } from "../utils/user.js";
-import { Redis } from "ioredis";
 import { getPlans } from "./products.js";
 
 const listeners = new Map<string, () => void>();
-
-// 1. Create a dedicated subscriber connection
-// We don't use the main fastify.redis because it's busy with GET/SET
-const subscriber = new Redis(process.env.REDIS_URL || "");
-
-subscriber.on("error", (err) => console.log("Redis Client Error", err));
 
 /**
  * Add one frequency period to a date
@@ -183,8 +176,6 @@ async function getAllUserProjectsFromCache(
   return projects;
 }
 
-// API key management routes: create/list/revoke. All routes rely on the auth
-// plugin to populate req.userId and tenant authorization.
 const routes: FastifyPluginAsync = async (app) => {
   const firebase = app.firebase;
   const db = firebase.db;
@@ -193,8 +184,6 @@ const routes: FastifyPluginAsync = async (app) => {
   app.get("/healthz", async (_req, rep) => {
     return rep.send({ ok: true });
   });
-
-  app.addHook("onClose", async () => {});
 
   // Secure project subscription via WebSockets
   app.get("/subscribe", { websocket: true }, (connection, req: any) => {
@@ -262,7 +251,7 @@ const routes: FastifyPluginAsync = async (app) => {
           listeners.set(userId, unsubscribe);
 
           connection.on("close", async () => {
-            console.log("WebSocket closed");
+            app.log.info("WebSocket closed");
             await onConnectedClosed(userId);
           });
         })
@@ -479,7 +468,6 @@ const routes: FastifyPluginAsync = async (app) => {
           // Remove the entire searchParameters object for free users
           delete request.projectInfo.searchParameters;
 
-          console.log('Removed all advanced search parameters for free user');
         }
 
         // Sanitize language/region codes to prevent prompt injection
@@ -768,7 +756,6 @@ const routes: FastifyPluginAsync = async (app) => {
           // Remove the entire searchParameters object for free users
           delete data.searchParameters;
 
-          console.log('Removed all advanced search parameters for free user during update');
         }
         
         

@@ -80,16 +80,6 @@ export type {
 // Services
 export { auth, db, fireBaseRemoteConfig } from "./services/firebase";
 export { signInWithGoogle, signOut } from "./services/auth";
-// export {
-//   createProject,
-//   listProjects,
-//   subscribeToProjects,
-//   updateProjectStatus,
-//   //updateProjectExecution,
-//   activateProject,
-//   updateProject,
-//   deleteProject,
-// } from "../../../apps/web/lib/projects";
 
 export {
   extractContent,
