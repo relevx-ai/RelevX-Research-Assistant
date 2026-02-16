@@ -25,6 +25,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Download,
+  ExternalLink,
 } from "lucide-react";
 import { useDeliveryLogs } from "@/hooks/use-delivery-logs";
 import { ProjectDialog } from "./project-dialog";
@@ -35,6 +36,7 @@ import {
   formatRelativeTime,
 } from "@/lib/utils";
 import { exportAsMarkdown } from "@/lib/export-utils";
+import { parseReferencesFromMarkdown } from "@/lib/markdown-utils";
 
 const formatDate = (
   timestamp: number | undefined,
@@ -55,20 +57,22 @@ const formatDate = (
   });
 };
 
-type TabId = "overview" | "history";
+export type TabId = "overview" | "history";
 
 interface ProjectDetailModalProps {
   project: ProjectInfo;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  initialTab?: TabId;
 }
 
 export function ProjectDetailModal({
   project,
   open,
   onOpenChange,
+  initialTab,
 }: ProjectDetailModalProps) {
-  const [activeTab, setActiveTab] = useState<TabId>("overview");
+  const [activeTab, setActiveTab] = useState<TabId>(initialTab ?? "overview");
   const [settingsDialogOpen, setSettingsDialogOpen] = useState(false);
 
   /* New state for error dialog */
@@ -691,6 +695,50 @@ function DeliveryHistoryTab({ project }: { project: ProjectInfo }) {
                     </div>
                   </div>
                 )}
+
+                {/* Sources */}
+                {log.reportMarkdown &&
+                  (() => {
+                    const refs = parseReferencesFromMarkdown(
+                      log.reportMarkdown
+                    );
+                    if (refs.length === 0) return null;
+                    return (
+                      <div className="mx-4 mt-4 rounded-lg border border-border/50 bg-muted/30 p-4">
+                        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-3">
+                          Sources
+                        </p>
+                        <ol className="space-y-2">
+                          {refs.map((ref) => (
+                            <li
+                              key={ref.number}
+                              className="flex items-start gap-2 text-sm"
+                            >
+                              <span className="text-muted-foreground shrink-0 w-5 text-right">
+                                {ref.number}.
+                              </span>
+                              <div className="min-w-0">
+                                <a
+                                  href={ref.url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-cyan-400 hover:text-cyan-300 transition-colors inline-flex items-center gap-1"
+                                >
+                                  <span className="truncate">{ref.name}</span>
+                                  <ExternalLink className="w-3 h-3 shrink-0" />
+                                </a>
+                                {ref.date && (
+                                  <span className="text-muted-foreground text-xs ml-2">
+                                    {ref.date}
+                                  </span>
+                                )}
+                              </div>
+                            </li>
+                          ))}
+                        </ol>
+                      </div>
+                    );
+                  })()}
 
                 {/* Metadata */}
                 <div className="grid grid-cols-2 gap-4 text-sm p-4 pt-0 border-t border-border/30 mt-4">

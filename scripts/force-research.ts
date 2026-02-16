@@ -192,6 +192,7 @@ async function forceResearch(
           summary: result.report.summary,
           resultCount: result.relevantResults.length,
           averageScore: Math.round(result.report.averageScore),
+          projectTitle: project.title,
         }
       );
 

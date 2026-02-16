@@ -23,6 +23,8 @@ export interface CompileReportOptions {
   frequency?: Frequency;
   searchParams?: SearchParameters;
   timezone?: string;
+  /** Pre-computed cross-source analysis context to inject into the report prompt */
+  analysisContext?: string;
 }
 
 /**
@@ -37,6 +39,7 @@ export async function compileReport(
     projectDescription,
     frequency = "weekly",
     timezone,
+    analysisContext,
   } = options;
 
   const client = getClient();
@@ -59,9 +62,17 @@ export async function compileReport(
     return b.score - a.score;
   });
 
+  // Max chars of full content to include per result (to manage token limits)
+  const MAX_CONTENT_LENGTH = 3000;
+
   const resultsFormatted = sortedResults
     .map((r, idx) => {
       const publishedDate = formatReadableDate(r.publishedDate);
+      // Use fullContent if available, truncated to limit; fall back to snippet
+      const contentBody = r.fullContent
+        ? r.fullContent.substring(0, MAX_CONTENT_LENGTH) +
+          (r.fullContent.length > MAX_CONTENT_LENGTH ? "..." : "")
+        : r.snippet;
       return `
 Result ${idx + 1}:
 URL: ${r.url}
@@ -71,8 +82,8 @@ ${publishedDate ? `Published: ${publishedDate}` : ""}
 Author: ${r.author || "Unknown"}
 Key Points: ${r.keyPoints.join("; ")}
 ${r.imageUrl ? `Image: ${r.imageUrl} (Alt: ${r.imageAlt || "N/A"})` : ""}
-Snippet:
-${r.snippet}
+Content:
+${contentBody}
 ---`;
     })
     .join("\n");
@@ -85,6 +96,7 @@ ${r.snippet}
     reportDate: formatReportDate(new Date(), timezone),
     resultCount: results.length,
     resultsFormatted,
+    analysisContext: analysisContext || "No cross-source analysis available.",
   });
 
   try {
@@ -164,6 +176,8 @@ export interface CompileClusteredReportOptions {
   frequency?: Frequency;
   searchParams?: SearchParameters;
   timezone?: string;
+  /** Pre-computed cross-source analysis context to inject into the report prompt */
+  analysisContext?: string;
 }
 
 /**
@@ -187,14 +201,16 @@ function formatCluster(cluster: TopicCluster, idx: number): string {
     .map((p) => `  - ${p}`)
     .join("\n");
 
-  // Format snippets from all articles
-  const snippetsFormatted = allArticles
-    .map(
-      (a) =>
-        `  [${a.title || "Untitled"}]: ${a.snippet.substring(0, 300)}${
-          a.snippet.length > 300 ? "..." : ""
-        }`
-    )
+  // Format content from all articles (use fullContent when available)
+  const CLUSTER_CONTENT_LENGTH = 2000;
+  const contentFormatted = allArticles
+    .map((a) => {
+      const content = a.fullContent
+        ? a.fullContent.substring(0, CLUSTER_CONTENT_LENGTH) +
+          (a.fullContent.length > CLUSTER_CONTENT_LENGTH ? "..." : "")
+        : a.snippet.substring(0, 500);
+      return `  [${a.title || "Untitled"}]: ${content}`;
+    })
     .join("\n\n");
 
   return `
@@ -210,8 +226,8 @@ ${sourcesFormatted}
 KEY POINTS (merged from all sources):
 ${keyPointsFormatted}
 
-CONTENT SNIPPETS:
-${snippetsFormatted}
+CONTENT:
+${contentFormatted}
 ---`;
 }
 
@@ -245,6 +261,7 @@ export async function compileClusteredReport(
     projectDescription,
     frequency = "weekly",
     timezone,
+    analysisContext,
   } = options;
 
   const client = getClient();
@@ -289,6 +306,7 @@ export async function compileClusteredReport(
     clusterCount: clusters.length,
     totalArticles,
     clustersFormatted,
+    analysisContext: analysisContext || "No cross-source analysis available.",
   });
 
   try {

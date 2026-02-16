@@ -175,88 +175,150 @@ export const RELEVANCY_ANALYSIS_PROMPTS: PromptConfig =
   getRelevancyAnalysisPrompts();
 
 /**
+ * Prompt templates for cross-source analysis
+ * This is the "thinking" step that identifies themes, connections, contradictions,
+ * and unique insights across all sources before report generation.
+ * Model and temperature loaded from research-config.yaml
+ */
+export function getCrossSourceAnalysisPrompts(): PromptConfig {
+  return createPromptConfig(
+    "crossSourceAnalysis",
+    `You are an expert research analyst. Your task is to perform deep cross-source analysis on a collection of articles/sources about a research topic.
+
+You must identify:
+
+1. **Major Themes**: What are the 3-7 key themes or storylines that emerge across multiple sources? Group related information together regardless of which source it came from.
+
+2. **Cross-Source Connections**: What patterns, trends, or relationships can be identified by connecting information from different sources? What does Source A + Source B together tell us that neither says alone?
+
+3. **Contradictions & Disagreements**: Where do sources disagree on facts, interpretations, or conclusions? Note the specific claims that conflict and which sources make them.
+
+4. **Unique Insights**: What important information appears in only one source? These are facts or perspectives that add value but aren't corroborated.
+
+5. **Synthesized Narrative**: What is the overall story when you connect all the dots? What are the key takeaways a reader should understand about this topic right now?
+
+Be analytical, not descriptive. Don't just summarize what each source says — draw conclusions by combining information across sources.`,
+    `Project: {{projectTitle}}
+Description: {{projectDescription}}
+
+Analyze these sources and identify themes, connections, contradictions, and insights:
+
+{{sourcesFormatted}}
+
+Return ONLY a JSON object with this structure:
+{
+  "themes": [
+    {
+      "title": "Theme title",
+      "description": "What this theme is about and why it matters",
+      "sourceUrls": ["url1", "url2"],
+      "keyFacts": ["specific fact 1", "specific fact 2"]
+    }
+  ],
+  "connections": [
+    {
+      "insight": "What connecting these sources reveals",
+      "sourceUrls": ["url1", "url2"],
+      "significance": "Why this connection matters"
+    }
+  ],
+  "contradictions": [
+    {
+      "topic": "What the disagreement is about",
+      "claims": [
+        {"claim": "Source A says X", "sourceUrl": "url1"},
+        {"claim": "Source B says Y", "sourceUrl": "url2"}
+      ],
+      "assessment": "Which claim appears more credible and why, or note that it is unresolved"
+    }
+  ],
+  "uniqueInsights": [
+    {
+      "insight": "The unique fact or perspective",
+      "sourceUrl": "url",
+      "significance": "Why this matters"
+    }
+  ],
+  "overallNarrative": "A 3-5 sentence synthesis of the big picture — what all these sources together tell us about the topic right now. This should read like an analyst briefing, not a list of sources."
+}`
+  );
+}
+
+// Legacy export for backward compatibility
+export const CROSS_SOURCE_ANALYSIS_PROMPTS: PromptConfig =
+  getCrossSourceAnalysisPrompts();
+
+/**
  * Prompt templates for report compilation
  * Model and temperature loaded from research-config.yaml
  */
 export function getReportCompilationPrompts(): PromptConfig {
   return createPromptConfig(
     "reportCompilation",
-    `You are a research assistant delivering factual, data-rich reports in a vertical newsletter format.
+    `You are a senior research analyst writing a synthesized analytical report. Your job is NOT to summarize each source individually — it is to combine information across all sources into a coherent, theme-based analysis.
 
 **Report Structure:**
-Present each news item in a vertical reading flow:
 
-**Bold Title Here (no link)**
+1. **Opening Synthesis** (1-2 paragraphs): Start with the big picture. What is the overall state of this topic right now? What are the most important developments? This should read like an analyst briefing that connects the dots across sources.
 
-One sentence summary that captures the key takeaway.
+2. **Thematic Sections**: Organize the body by THEME or INSIGHT — NOT by source. Each section should:
+   - Have a bold heading describing the theme
+   - Synthesize information from multiple sources into a unified narrative
+   - Use inline citations as numbered references, e.g. [1], [2], to attribute specific facts
+   - Include specific facts: numbers, names, dates, amounts, specs
+   - Note where sources agree, add nuance to each other, or disagree
 
-[Details section - format varies based on content type]
+3. **References**: End with a numbered list of all sources cited:
+   1. [Publication Name](url) | Date
+   2. [Publication Name](url) | Date
 
-*Source: [Publication Name](url) | January 8, 2026*
-
----
-
-**Details Section Formatting:**
-Choose the best format for each item's details based on the content:
-
-- **Prose paragraph**: For narrative news, context, or analysis. Write dense, fact-packed sentences.
-- **Bullet points**: For multiple distinct facts, features, or updates that don't need comparison.
-- **Table**: For structured data like specs, pricing, comparisons, release dates, or any data with consistent attributes.
-- **Mixed**: Combine formats when appropriate (e.g., a paragraph followed by a specs table).
+**Section Formatting:**
+Choose the best format for each section's content:
+- **Prose paragraphs**: For narrative, context, or analysis
+- **Bullet points**: For multiple distinct facts or updates
+- **Tables**: For structured data, comparisons, specs
+- **Mixed**: Combine formats when appropriate
 
 **Core Principles:**
-1. **Title**: Bold text only, NO hyperlink on title
-2. **One-Line Summary**: A single sentence below the title. Keep it short - helps reader decide if they want details.
-3. **Flexible Details**: Present information in whatever format best serves the content. Pack in facts - numbers, names, dates, amounts, specs.
-4. **Source Link**: Hyperlink goes on publication name in the source line, not on the title.
-5. **No Filler**: Remove "It is worth noting", "Interestingly", "This highlights", "It's important to note".
-6. **Complete Data**: NEVER use "etc.", "and more", "among others". List ALL items.
-7. **Specific Dates**: Always use exact dates (e.g., "January 8, 2026"), never "recently" or "this week".
+1. **Synthesize, don't summarize**: Connect information across sources. If two sources cover the same event, combine their unique facts into one narrative.
+2. **Theme-based organization**: Group by what the information is about, not which source it came from.
+3. **Inline citations**: Use [1], [2] etc. to attribute specific claims to their sources.
+4. **No Filler**: Remove "It is worth noting", "Interestingly", "This highlights", "It's important to note".
+5. **Complete Data**: NEVER use "etc.", "and more", "among others". List ALL items.
+6. **Specific Dates**: Always use exact dates (e.g., "January 8, 2026"), never "recently" or "this week".
+7. **Cross-reference**: When multiple sources cover the same topic, note what each adds and where they differ.
 
-**Do NOT include:**
-- Summary/conclusion section at the end of report
-- Generic introductions
-- Relevancy scores
-- Links on titles
+**Do NOT:**
+- Create a section per source (this is the most important rule)
+- Include relevancy scores
+- Add a generic introduction like "This report covers..."
+- Add a conclusion section that just restates what was said
 
-**Tone:** Direct, factual, scannable.`,
+**Tone:** Analytical, direct, factual. Like a research briefing from an analyst who has read everything and is telling you what matters.`,
     `Project: {{projectTitle}}
 Description: {{projectDescription}}
 Report Frequency: {{frequency}}
 Report Date: {{reportDate}}
 
-Synthesize these findings into a newsletter-style report:
+{{analysisContext}}
+
+Using the analysis above as your guide for themes and structure, write an analytical research report that synthesizes these sources:
 
 {{resultsFormatted}}
 
-**Format each item as:**
-
-**Bold Title Text**
-
-One sentence summary of the key takeaway.
-
-[Details - use the best format for this content:
- - Prose for narrative/context
- - Bullets for distinct facts
- - Tables for structured/comparative data
- - Or mix formats as needed]
-
-*Source: [Publication Name](url) | Date*
-
----
-
 **Requirements:**
-- Title is bold text only (NO hyperlink on title)
-- Include a 1-sentence summary below title
-- Details section: choose format based on content (prose, bullets, table, or mixed)
+- Start with 1-2 paragraph synthesis of the overall picture
+- Organize body by THEME, not by source
+- Use inline [1], [2] citations to attribute facts to specific sources
+- End with a numbered References section listing all sources as: N. [Publication Name](url) | Date
 - Pack in specific facts - numbers, dates, names, amounts, specs
-- Hyperlink goes on publication name in source line
-- NO summary section at end of report
+- Cross-reference sources: note agreements, complementary details, and disagreements
+- NO section-per-source structure
 - NO filler words or vague statements
 
 Return ONLY a JSON object:
 {
-  "markdown": "the full markdown report in vertical newsletter format",
+  "markdown": "the full analytical report in markdown",
   "title": "A unique, descriptive title summarizing the main themes of THIS SPECIFIC report (do NOT just use the project name as the title). Do NOT include the report date in the title.",
   "summary": "2-3 factual sentences with key takeaways"
 }`
@@ -275,86 +337,70 @@ export const REPORT_COMPILATION_PROMPTS: PromptConfig =
 export function getClusteredReportCompilationPrompts(): PromptConfig {
   return createPromptConfig(
     "clusteredReportCompilation",
-    `You are a research assistant delivering factual, data-rich reports in a vertical newsletter format.
-
-**IMPORTANT: You are receiving TOPIC CLUSTERS - groups of articles covering the same story/event from different sources.**
-
-For each cluster, synthesize information from ALL sources into ONE comprehensive section. Do NOT create separate sections for each source within a cluster.
+    `You are a senior research analyst writing a synthesized analytical report. You are receiving TOPIC CLUSTERS — groups of articles covering the same story/event from different sources. Your job is to combine all information into a coherent, theme-based analysis.
 
 **Report Structure:**
-Present each topic cluster in a vertical reading flow:
 
-**Bold Title Here (no link)**
+1. **Opening Synthesis** (1-2 paragraphs): Start with the big picture. What is the overall state of this topic right now? What are the most important developments? Connect the dots across all clusters.
 
-One sentence summary synthesizing the key takeaway from all sources.
+2. **Thematic Sections**: Organize the body by THEME or INSIGHT. You may merge multiple clusters into one section if they relate to the same theme, or split a complex cluster across themes. Each section should:
+   - Have a bold heading describing the theme
+   - Synthesize information from multiple sources into a unified narrative
+   - Use inline citations as numbered references, e.g. [1], [2], to attribute specific facts
+   - Include specific facts: numbers, names, dates, amounts, specs
+   - Note where sources agree, complement each other, or disagree
 
-[Details section - combine facts from ALL sources in the cluster]
+3. **References**: End with a numbered list of all sources cited:
+   1. [Publication Name](url) | Date
+   2. [Publication Name](url) | Date
 
-*Sources: [Pub1](url1) | Date1 | [Pub2](url2) | Date2*
-
----
-
-**Details Section Formatting:**
-Choose the best format based on the combined content:
-
-- **Prose paragraph**: For narrative news, context, or analysis. Write dense, fact-packed sentences.
-- **Bullet points**: For multiple distinct facts, features, or updates. Combine unique points from all sources.
-- **Table**: For structured data like specs, pricing, comparisons, release dates.
-- **Mixed**: Combine formats when appropriate.
+**Section Formatting:**
+Choose the best format for each section:
+- **Prose paragraphs**: For narrative, context, or analysis
+- **Bullet points**: For multiple distinct facts or updates
+- **Tables**: For structured data, comparisons, specs
+- **Mixed**: Combine formats when appropriate
 
 **Core Principles:**
-1. **Title**: Bold text only, NO hyperlink on title. Create a comprehensive title that covers the topic.
-2. **One-Line Summary**: Synthesize the key takeaway from ALL sources in the cluster.
-3. **Merge Information**: Combine unique facts from all sources. Don't repeat the same fact from different sources.
-4. **Multiple Sources**: List ALL sources at the end, formatted as: *Sources: [Name1](url1) | Date1 | [Name2](url2) | Date2*
-5. **No Filler**: Remove "It is worth noting", "Interestingly", "This highlights".
-6. **Complete Data**: NEVER use "etc.", "and more", "among others". List ALL items.
-7. **Specific Dates**: Always use exact dates (e.g., "January 8, 2026"), never "recently" or "this week".
+1. **Synthesize across clusters**: Don't just write one section per cluster. Connect related themes across clusters into a bigger narrative.
+2. **Theme-based organization**: Group by insight/theme, not by cluster or source.
+3. **Inline citations**: Use [1], [2] etc. to attribute specific claims.
+4. **No Filler**: Remove "It is worth noting", "Interestingly", "This highlights".
+5. **Complete Data**: NEVER use "etc.", "and more", "among others". List ALL items.
+6. **Specific Dates**: Always use exact dates (e.g., "January 8, 2026"), never "recently" or "this week".
+7. **Cross-reference**: Note what each source uniquely contributes and where they differ.
 
 **Do NOT:**
-- Create separate sections for articles in the same cluster
-- Include summary/conclusion section at the end
+- Create a section per cluster or per source
 - Include relevancy scores
-- Put links on titles
+- Add a generic introduction
+- Add a conclusion that restates what was said
 
-**Tone:** Direct, factual, scannable.`,
+**Tone:** Analytical, direct, factual.`,
     `Project: {{projectTitle}}
 Description: {{projectDescription}}
 Report Frequency: {{frequency}}
 Report Date: {{reportDate}}
 
-Synthesize these TOPIC CLUSTERS into a newsletter-style report. Each cluster contains related articles about the same topic - combine them into ONE section per cluster:
+{{analysisContext}}
+
+Using the analysis above as your guide for themes and structure, write an analytical research report that synthesizes these topic clusters:
 
 {{clustersFormatted}}
 
-**Format each CLUSTER as ONE section:**
-
-**Bold Title Text** (synthesize a title covering the whole topic)
-
-One sentence summary combining insights from all sources.
-
-[Details - merge unique facts from ALL sources in the cluster:
- - Prose for narrative/context
- - Bullets for distinct facts
- - Tables for structured/comparative data
- - Or mix formats as needed]
-
-*Sources: [Pub1](url1) | Date1 | [Pub2](url2) | Date2*
-
----
-
 **Requirements:**
-- ONE section per cluster (NOT one per article)
-- Title is bold text only (NO hyperlink)
-- Synthesize information from all sources in each cluster
-- List ALL sources at the end of each section
+- Start with 1-2 paragraph synthesis of the overall picture
+- Organize body by THEME, not by cluster or source
+- Use inline [1], [2] citations to attribute facts to specific sources
+- End with a numbered References section listing all sources as: N. [Publication Name](url) | Date
+- Cross-reference sources across clusters: note agreements, complementary details, disagreements
 - Pack in specific facts - numbers, dates, names, amounts, specs
-- NO summary section at end of report
+- NO section-per-cluster or section-per-source structure
 - NO filler words or vague statements
 
 Return ONLY a JSON object:
 {
-  "markdown": "the full markdown report in vertical newsletter format",
+  "markdown": "the full analytical report in markdown",
   "title": "A unique, descriptive title summarizing the main themes of THIS SPECIFIC report (do NOT just use the project name as the title). Do NOT include the report date in the title.",
   "summary": "2-3 factual sentences with key takeaways"
 }`
@@ -423,6 +469,7 @@ export type PromptType =
   | "query-generation"
   | "search-result-filtering"
   | "relevancy-analysis"
+  | "cross-source-analysis"
   | "report-compilation"
   | "clustered-report-compilation"
   | "report-summary";
@@ -435,6 +482,8 @@ export function getPromptConfig(type: PromptType): PromptConfig {
       return getRelevancyAnalysisPrompts();
     case "search-result-filtering":
       return getSearchResultFilteringPrompts();
+    case "cross-source-analysis":
+      return getCrossSourceAnalysisPrompts();
     case "report-compilation":
       return getReportCompilationPrompts();
     case "clustered-report-compilation":

@@ -1,17 +1,38 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Plus, FolderOpen, RefreshCw, Home, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ProjectCard } from "@/components/projects/project-card";
 import { ProjectDialog } from "@/components/projects/project-dialog";
+import { ProjectDetailModal } from "@/components/projects/project-detail-modal";
 import { useProjects } from "@/hooks/use-projects";
 import Link from "next/link";
 
 export default function ProjectsPage() {
   const { projects, loading, refresh } = useProjects();
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
+
+  // Deep-link support: ?project=<title>&tab=history
+  const searchParams = useSearchParams();
+  const deepLinkProject = searchParams.get("project");
+  const deepLinkTab = searchParams.get("tab");
+  const [deepLinkModalOpen, setDeepLinkModalOpen] = useState(false);
+
+  const matchedProject = useMemo(() => {
+    if (!deepLinkProject || projects.length === 0) return null;
+    return projects.find(
+      (p) => p.title.toLowerCase() === deepLinkProject.toLowerCase()
+    ) ?? null;
+  }, [deepLinkProject, projects]);
+
+  useEffect(() => {
+    if (matchedProject) {
+      setDeepLinkModalOpen(true);
+    }
+  }, [matchedProject]);
 
   const sortedProjects = useMemo(() => {
     return [...projects].sort((a, b) => {
@@ -184,6 +205,16 @@ export default function ProjectsPage() {
         onOpenChange={setCreateDialogOpen}
         onProjectCreated={refresh}
       />
+
+      {/* Deep-link Project Detail Modal */}
+      {matchedProject && (
+        <ProjectDetailModal
+          project={matchedProject}
+          open={deepLinkModalOpen}
+          onOpenChange={setDeepLinkModalOpen}
+          initialTab={deepLinkTab === "history" ? "history" : undefined}
+        />
+      )}
     </div>
   );
 }

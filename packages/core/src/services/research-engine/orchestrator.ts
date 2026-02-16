@@ -24,8 +24,14 @@ import { LLMProvider } from "./../../interfaces";
 import { clusterArticlesByTopic } from "./../../services/llm/topic-clustering";
 import {
   compileClusteredReport,
+  compileReportWithRetry,
   generateReportSummaryWithRetry,
 } from "../llm/report-compilation";
+import {
+  analyzeCrossSourcesWithRetry,
+  analyzeClusteredCrossSourcesWithRetry,
+  formatAnalysisForReport,
+} from "../llm/cross-source-analysis";
 import type {
   SearchProvider,
   SearchFilters,
@@ -256,7 +262,7 @@ export async function executeResearchForProject(
       count: resultsPerQuery, // From config or options
       safesearch: searchConfig.safeSearch,
     };
-    console.log(`[Search Filters] Brave search_lang=${project.searchParameters?.language || '(none)'}, country=${project.searchParameters?.region || '(none)'}, outputLanguage=${project.searchParameters?.outputLanguage || '(none)'} (used only for post-search translation)`);
+    console.log(`[Search Filters] search provider=${searchProvider.constructor.name}, search_lang=${project.searchParameters?.language || '(none)'}, country=${project.searchParameters?.region || '(none)'}, outputLanguage=${project.searchParameters?.outputLanguage || '(none)'} (used only for post-search translation)`);
 
     // 5.1 Determine initial freshness based on project frequency
     let currentFreshness: Freshness = getFreshnessForFrequency(
@@ -669,6 +675,7 @@ export async function executeResearchForProject(
         url: r.url,
         title: r.metadata.title,
         snippet: r.snippet,
+        fullContent: r.fullContent,
         score: r.relevancyScore,
         keyPoints: r.relevancyReason?.split(".").slice(0, 3) || [],
         publishedDate: r.metadata.publishedDate,
@@ -700,13 +707,53 @@ export async function executeResearchForProject(
           tokenUsage.inputTokens + tokenUsage.outputTokens;
       }
 
-      // 9.2 Compile report using clusters if we have any multi-article clusters
+      // 9.2 Cross-source analysis (Pass 1 of two-pass report generation)
+      // Identifies themes, connections, contradictions, and unique insights
       const hasMultiArticleClusters =
         enableClustering && clusters.some((c) => c.relatedArticles.length > 0);
 
-      // Get report tone from options or config
-      const reportTone = options?.reportTone ?? reportConfig.defaultTone;
+      let analysisContext: string = "";
+      try {
+        console.log("Running cross-source analysis...");
+        const analysis = hasMultiArticleClusters
+          ? await analyzeClusteredCrossSourcesWithRetry(
+              clusters,
+              project.title,
+              project.description
+            )
+          : await analyzeCrossSourcesWithRetry(
+              resultsForReport,
+              project.title,
+              project.description
+            );
 
+        analysisContext = formatAnalysisForReport(analysis);
+        console.log(
+          `Cross-source analysis complete: ${analysis.themes.length} themes, ` +
+            `${analysis.connections.length} connections, ` +
+            `${analysis.contradictions.length} contradictions, ` +
+            `${analysis.uniqueInsights.length} unique insights`
+        );
+
+        // Track token usage for cross-source analysis
+        const analysisInput =
+          project.description +
+          JSON.stringify(
+            hasMultiArticleClusters ? clusters : resultsForReport
+          );
+        tokenUsage.inputTokens += estimateTokens(analysisInput) + 1500; // +1500 for system prompt
+        tokenUsage.outputTokens += estimateTokens(analysisContext);
+        tokenUsage.totalTokens =
+          tokenUsage.inputTokens + tokenUsage.outputTokens;
+      } catch (error) {
+        console.warn(
+          "Cross-source analysis failed, proceeding with report compilation without analysis:",
+          error
+        );
+        // Continue without analysis — report will still work, just without the synthesis layer
+      }
+
+      // 9.3 Compile report (Pass 2 of two-pass report generation)
       let compiledReport: CompiledReport;
 
       if (hasMultiArticleClusters) {
@@ -718,10 +765,12 @@ export async function executeResearchForProject(
           projectDescription: project.description,
           frequency: project.frequency,
           timezone: project.timezone,
+          analysisContext,
         });
 
         // Track token usage for clustered report compilation
-        const clusteredInput = project.description + JSON.stringify(clusters);
+        const clusteredInput =
+          project.description + JSON.stringify(clusters) + analysisContext;
         tokenUsage.inputTokens += estimateTokens(clusteredInput) + 1000; // +1000 for system prompt
         tokenUsage.outputTokens += estimateTokens(compiledReport.markdown);
         tokenUsage.totalTokens =
@@ -729,28 +778,27 @@ export async function executeResearchForProject(
       } else {
         // No clustering needed, use standard compilation
         console.log("No multi-article clusters, using standard compilation...");
-        compiledReport = await llmProvider.compileReport(
-          project.description,
-          resultsForReport,
-          {
-            tone: reportTone,
-            maxLength: options?.reportMaxLength ?? reportConfig.maxLength,
-            projectTitle: project.title,
-            frequency: project.frequency,
-            timezone: project.timezone,
-          }
-        );
+        compiledReport = await compileReportWithRetry({
+          results: resultsForReport,
+          projectTitle: project.title,
+          projectDescription: project.description,
+          frequency: project.frequency,
+          timezone: project.timezone,
+          analysisContext,
+        });
 
         // Track token usage for standard report compilation
         const reportInput =
-          project.description + JSON.stringify(resultsForReport);
+          project.description +
+          JSON.stringify(resultsForReport) +
+          analysisContext;
         tokenUsage.inputTokens += estimateTokens(reportInput) + 1000; // +1000 for system prompt
         tokenUsage.outputTokens += estimateTokens(compiledReport.markdown);
         tokenUsage.totalTokens =
           tokenUsage.inputTokens + tokenUsage.outputTokens;
       }
 
-      // 9.3 Generate summary from the compiled report (if enabled)
+      // 9.4 Generate summary from the compiled report (if enabled)
       const includeSummary =
         options?.includeSummary ??
         reportConfig.includeSummary;

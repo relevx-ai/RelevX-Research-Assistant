@@ -118,6 +118,7 @@ export function createDeliveryProcessor(
           averageScore: deliveryLog.stats?.averageRelevancyScore
             ? Math.round(deliveryLog.stats.averageRelevancyScore)
             : undefined,
+          projectTitle,
         }
       );
 

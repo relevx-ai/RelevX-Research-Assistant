@@ -58,6 +58,7 @@ export interface ResultForReport {
   url: string;
   title?: string;
   snippet: string;
+  fullContent?: string;
   score: number;
   keyPoints: string[];
   publishedDate?: string;

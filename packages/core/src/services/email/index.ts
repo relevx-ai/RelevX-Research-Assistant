@@ -1,6 +1,7 @@
 import { Resend } from "resend";
 import { ClientReport } from "../llm/types";
 import { marked } from "marked";
+import { stripReferencesForEmail } from "../../utils/markdown-references";
 
 // Initialize Resend client
 // We'll lazily initialize this to avoid errors if the API key is missing during build/test
@@ -24,6 +25,7 @@ export interface ReportEmailOptions {
   summary?: string;
   resultCount?: number;
   averageScore?: number;
+  projectTitle?: string;
 }
 
 /**
@@ -34,8 +36,10 @@ async function generateEmailHTML(
   projectId: string,
   options?: ReportEmailOptions
 ): Promise<string> {
+  // Strip references and external links from email version
+  const emailMarkdown = stripReferencesForEmail(report.markdown);
   // Convert markdown to HTML
-  const markdownHtml = await marked.parse(report.markdown, { async: true });
+  const markdownHtml = await marked.parse(emailMarkdown, { async: true });
 
   // Format current date
   const currentDate = new Date().toLocaleDateString("en-US", {
@@ -287,8 +291,11 @@ async function generateEmailHTML(
                     <div style="margin-top: 16px; font-size: 14px; color: #64748b !important; line-height: 1.6;">
                       Automated research intelligence, delivered to your inbox.
                     </div>
-                    <div style="margin-top: 20px;">
-                      <a href="https://relevx.ai/projects" style="display: inline-block; padding: 12px 24px; background: linear-gradient(135deg, #0d9488 0%, #14b8a6 100%); background-color: #0d9488 !important; color: #ffffff !important; font-size: 14px; font-weight: 600; text-decoration: none; border-radius: 8px; -webkit-border-radius: 8px;">Manage Project</a>
+                    <div style="margin-top: 16px; font-size: 13px; color: #64748b !important; line-height: 1.5;">
+                      Source references are available in the full report on your dashboard.
+                    </div>
+                    <div style="margin-top: 16px;">
+                      <a href="https://relevx.ai/projects${options?.projectTitle ? `?project=${encodeURIComponent(options.projectTitle)}&tab=history` : ""}" style="display: inline-block; padding: 12px 24px; background: linear-gradient(135deg, #0d9488 0%, #14b8a6 100%); background-color: #0d9488 !important; color: #ffffff !important; font-size: 14px; font-weight: 600; text-decoration: none; border-radius: 8px; -webkit-border-radius: 8px;">View Full Report &amp; Sources</a>
                     </div>
                     <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #e2e8f0;">
                       <span style="font-size: 12px; color: #64748b !important;">
