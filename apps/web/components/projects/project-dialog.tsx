@@ -410,7 +410,7 @@ export function ProjectDialog({
   return (
     <>
       <Dialog open={open} onOpenChange={handleOpenChange}>
-        <DialogContent className="sm:max-w-[750px] max-h-[85vh] flex flex-col overflow-hidden">
+        <DialogContent className="w-full sm:max-w-[750px] max-h-[85vh] flex flex-col overflow-hidden">
           <DialogHeader>
             <div className="flex items-center gap-3 mb-2">
               <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-teal-500 to-teal-600 flex items-center justify-center">
