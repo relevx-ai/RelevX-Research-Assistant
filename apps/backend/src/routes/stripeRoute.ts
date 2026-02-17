@@ -4,8 +4,6 @@ import type Stripe from "stripe";
 import { isUserSubscribed } from "../utils/billing.js";
 import { getPlans } from "./products.js";
 
-// API key management routes: create/list/revoke. All routes rely on the auth
-// plugin to populate req.userId and tenant authorization.
 const routes: FastifyPluginAsync = async (app) => {
   const firebase = app.firebase;
   const db = firebase.db;
@@ -94,10 +92,6 @@ const routes: FastifyPluginAsync = async (app) => {
                   stripeSubscriptionId: subscriptionId,
                 },
               };
-
-              // check to see if use has already subscribed to a different plan..
-              if (await isUserSubscribed(userData, stripe)) {
-              }
 
               if (
                 !(await isUserSubscribed(

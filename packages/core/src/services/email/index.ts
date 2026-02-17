@@ -32,8 +32,7 @@ export interface ReportEmailOptions {
  */
 async function generateEmailHTML(
   report: ClientReport,
-  projectId: string,
-  projectTitle: string,
+  _projectId: string,
   options?: ReportEmailOptions
 ): Promise<string> {
   // Strip references and external links from email version
