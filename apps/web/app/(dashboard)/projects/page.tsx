@@ -1,7 +1,6 @@
 "use client";
 
-import React, { useState, useMemo, useEffect } from "react";
-import { useSearchParams } from "next/navigation";
+import React, { useState, useMemo, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Plus, FolderOpen, RefreshCw, Home, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -9,30 +8,44 @@ import { ProjectCard } from "@/components/projects/project-card";
 import { ProjectDialog } from "@/components/projects/project-dialog";
 import { ProjectDetailModal } from "@/components/projects/project-detail-modal";
 import { useProjects } from "@/hooks/use-projects";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
+import type { ProjectInfo } from "core";
 
 export default function ProjectsPage() {
   const { projects, loading, refresh } = useProjects();
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
 
-  // Deep-link support: ?project=<title>&tab=history
+  // Deep-link handling: open a specific project's detail modal from URL params
   const searchParams = useSearchParams();
-  const deepLinkProject = searchParams.get("project");
-  const deepLinkTab = searchParams.get("tab");
-  const [deepLinkModalOpen, setDeepLinkModalOpen] = useState(false);
-
-  const matchedProject = useMemo(() => {
-    if (!deepLinkProject || projects.length === 0) return null;
-    return projects.find(
-      (p) => p.title.toLowerCase() === deepLinkProject.toLowerCase()
-    ) ?? null;
-  }, [deepLinkProject, projects]);
+  const deepLinkHandled = useRef(false);
+  const [deepLinkProject, setDeepLinkProject] = useState<ProjectInfo | null>(null);
+  const [deepLinkTab, setDeepLinkTab] = useState<"overview" | "history">("overview");
 
   useEffect(() => {
-    if (matchedProject) {
-      setDeepLinkModalOpen(true);
+    if (loading || deepLinkHandled.current) return;
+
+    const projectParam = searchParams.get("project");
+    const tabParam = searchParams.get("tab");
+
+    if (!projectParam) return;
+
+    const matched = projects.find(
+      (p) => p.title.toLowerCase() === projectParam.toLowerCase()
+    );
+
+    if (matched) {
+      deepLinkHandled.current = true;
+      setDeepLinkProject(matched);
+      setDeepLinkTab(tabParam === "history" ? "history" : "overview");
+
+      // Clean the URL without triggering a navigation
+      const url = new URL(window.location.href);
+      url.searchParams.delete("project");
+      url.searchParams.delete("tab");
+      window.history.replaceState({}, "", url.pathname);
     }
-  }, [matchedProject]);
+  }, [loading, projects, searchParams]);
 
   const sortedProjects = useMemo(() => {
     return [...projects].sort((a, b) => {
@@ -206,13 +219,15 @@ export default function ProjectsPage() {
         onProjectCreated={refresh}
       />
 
-      {/* Deep-link Project Detail Modal */}
-      {matchedProject && (
+      {/* Deep-link Project Detail Modal (opened from email links) */}
+      {deepLinkProject && (
         <ProjectDetailModal
-          project={matchedProject}
-          open={deepLinkModalOpen}
-          onOpenChange={setDeepLinkModalOpen}
-          initialTab={deepLinkTab === "history" ? "history" : undefined}
+          project={deepLinkProject}
+          open={true}
+          onOpenChange={(open) => {
+            if (!open) setDeepLinkProject(null);
+          }}
+          initialTab={deepLinkTab}
         />
       )}
     </div>

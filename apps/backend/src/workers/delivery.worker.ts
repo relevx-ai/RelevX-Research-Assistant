@@ -112,13 +112,13 @@ export function createDeliveryProcessor(
           markdown: deliveryLog.reportMarkdown,
         },
         projectId,
+        projectTitle,
         {
           summary: deliveryLog.reportSummary,
           resultCount: deliveryLog.stats?.includedResults,
           averageScore: deliveryLog.stats?.averageRelevancyScore
             ? Math.round(deliveryLog.stats.averageRelevancyScore)
             : undefined,
-          projectTitle,
         }
       );
 

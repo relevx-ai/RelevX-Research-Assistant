@@ -58,9 +58,7 @@ console.log("Code block test");
     
     console.log(`Sending to ${testEmail}...`);
     
-    const result = await sendReportEmail(testEmail, mockReport, "test-project-id", {
-      projectTitle: "Test Research Report",
-    });
+    const result = await sendReportEmail(testEmail, mockReport, "test-project-id", "Test Research Report");
     
     if (result.success) {
       console.log("Email sent successfully! ID:", result.id);
