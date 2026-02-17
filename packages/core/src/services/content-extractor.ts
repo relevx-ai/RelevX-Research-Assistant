@@ -11,6 +11,7 @@
  */
 
 import * as cheerio from "cheerio";
+import { NodeHtmlMarkdown } from "node-html-markdown";
 import { getExtractionConfig } from "./research-engine/config";
 
 /**
@@ -102,23 +103,50 @@ function normalizeUrl(url: string): string {
   }
 }
 
+/** Reusable NHM instance — drops link URLs and images at translation time */
+const nhm = new NodeHtmlMarkdown(
+  {
+    maxConsecutiveNewlines: 2,
+    ignore: ["img"], // images are noise for text analysis
+  },
+  // Custom translator: <a> tags emit inner text only (no URL wrapper)
+  { a: { prefix: "", postfix: "" } }
+);
+
 /**
- * Extract text from HTML, removing scripts and styles
+ * Extract content as Markdown from HTML, removing scripts and styles
  */
-function extractText($: cheerio.CheerioAPI, selector?: string): string {
+function extractMarkdown($: cheerio.CheerioAPI, selector?: string): string {
   const element = selector ? $(selector) : $("body");
 
   // Remove unwanted elements
   element.find("script, style, nav, footer, header, aside, iframe").remove();
 
-  // Get text and clean it up
-  const text = element
-    .text()
-    .replace(/\s+/g, " ") // Replace multiple spaces with single space
-    .replace(/\n+/g, " ") // Replace newlines with space
+  // Get the cleaned HTML and convert to Markdown
+  const html = $.html(element);
+  return nhm.translate(html).trim();
+}
+
+/**
+ * Count words in Markdown text, stripping syntax before counting.
+ * Links and images are already stripped by the NHM translator, so we only
+ * need to handle formatting markers.
+ */
+function countWordsInMarkdown(markdown: string): number {
+  const stripped = markdown
+    .replace(/```[\s\S]*?```/g, "") // fenced code blocks (multi-line)
+    .replace(/`[^`\n]+`/g, "") // inline code
+    .replace(/^#{1,6}\s+/gm, "") // heading markers
+    .replace(/\*\*([^*]+)\*\*/g, "$1") // bold
+    .replace(/\*([^*]+)\*/g, "$1") // italic
+    .replace(/^[-*+]\s+/gm, "") // unordered list markers
+    .replace(/^\d+\.\s+/gm, "") // ordered list markers
+    .replace(/^>\s+/gm, "") // blockquotes
+    .replace(/---+/g, "") // horizontal rules
     .trim();
 
-  return text;
+  if (!stripped) return 0;
+  return stripped.split(/\s+/).length;
 }
 
 /**
@@ -141,7 +169,7 @@ function extractMainContent($: cheerio.CheerioAPI): string {
   ];
 
   for (const selector of contentSelectors) {
-    const content = extractText($, selector);
+    const content = extractMarkdown($, selector);
     if (content.length > 100) {
       // Minimum viable content length
       return content;
@@ -149,7 +177,7 @@ function extractMainContent($: cheerio.CheerioAPI): string {
   }
 
   // Fallback to body
-  return extractText($);
+  return extractMarkdown($);
 }
 
 /**
@@ -356,7 +384,7 @@ export async function extractContent(
 
     // Extract main content
     const fullContent = extractMainContent($);
-    const wordCount = fullContent.split(/\s+/).length;
+    const wordCount = countWordsInMarkdown(fullContent);
 
     // Create snippet
     const snippet = createSnippet(
