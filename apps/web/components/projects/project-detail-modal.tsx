@@ -102,7 +102,7 @@ export function ProjectDetailModal({
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="sm:max-w-[900px] max-h-[85vh] p-0 flex flex-col overflow-hidden">
+        <DialogContent className="w-full sm:max-w-[900px] max-h-[85vh] p-0 flex flex-col overflow-hidden">
           {/* Header */}
           <div className="flex items-center justify-between p-4 sm:p-6 border-b border-border/50">
             <div className="flex items-center gap-3 min-w-0">
@@ -337,7 +337,7 @@ function OverviewTab({ project }: { project: ProjectInfo }) {
 
       {/* Created/Updated Info */}
       <div className="pt-4 border-t border-border/30">
-        <div className="flex items-center gap-6 text-sm">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-6 text-sm">
           <div
             className="flex items-center gap-2"
             title={new Date(project.createdAt).toLocaleString()}
@@ -469,12 +469,12 @@ function DeliveryHistoryTab({ project }: { project: ProjectInfo }) {
                   toggleExpand(index);
                 }
               }}
-              className="w-full flex items-center justify-between p-4 hover:bg-muted/50 transition-colors text-left cursor-pointer"
+              className="w-full flex items-center justify-between p-3 sm:p-4 hover:bg-muted/50 transition-colors text-left cursor-pointer"
             >
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 sm:gap-3 min-w-0">
                 {getStatusIcon(log.status)}
-                <div>
-                  <p className="font-medium">{log.reportTitle}</p>
+                <div className="min-w-0">
+                  <p className="font-medium truncate">{log.reportTitle}</p>
                   <p className="text-sm text-muted-foreground">
                     {log.status === "pending"
                       ? formatDate(project.nextRunAt, project.timezone)
@@ -482,7 +482,7 @@ function DeliveryHistoryTab({ project }: { project: ProjectInfo }) {
                   </p>
                 </div>
               </div>
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
                 <span
                   className={`text-xs px-2 py-1 rounded-full ${
                     log.status === "success"
@@ -499,7 +499,7 @@ function DeliveryHistoryTab({ project }: { project: ProjectInfo }) {
                     e.stopPropagation();
                     exportAsMarkdown(log);
                   }}
-                  className="p-1.5 rounded-md hover:bg-muted/80 transition-colors text-muted-foreground hover:text-foreground cursor-pointer"
+                  className="p-2 rounded-md hover:bg-muted/80 transition-colors text-muted-foreground hover:text-foreground cursor-pointer"
                   title="Export as Markdown"
                 >
                   <Download className="w-4 h-4" />
@@ -524,7 +524,7 @@ function DeliveryHistoryTab({ project }: { project: ProjectInfo }) {
 
                 {/* Summary */}
                 {log.reportSummary && (
-                  <div className="mx-4 mt-4 rounded-lg border border-border/50 bg-muted/30 p-4">
+                  <div className="mx-3 sm:mx-4 mt-3 sm:mt-4 rounded-lg border border-border/50 bg-muted/30 p-3 sm:p-4">
                     <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                       Summary
                     </p>
@@ -536,7 +536,7 @@ function DeliveryHistoryTab({ project }: { project: ProjectInfo }) {
 
                 {/* Report Content */}
                 {log.reportMarkdown && (
-                  <div className="report-content max-h-[500px] overflow-y-auto p-6">
+                  <div className="report-content max-h-[60vh] sm:max-h-[500px] overflow-y-auto p-3 sm:p-6">
                     <div className="max-w-3xl">
                       <ReactMarkdown
                         components={{
@@ -704,7 +704,7 @@ function DeliveryHistoryTab({ project }: { project: ProjectInfo }) {
                     );
                     if (refs.length === 0) return null;
                     return (
-                      <div className="mx-4 mt-4 rounded-lg border border-border/50 bg-muted/30 p-4">
+                      <div className="mx-3 sm:mx-4 mt-3 sm:mt-4 rounded-lg border border-border/50 bg-muted/30 p-3 sm:p-4">
                         <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-3">
                           Sources
                         </p>
@@ -741,7 +741,7 @@ function DeliveryHistoryTab({ project }: { project: ProjectInfo }) {
                   })()}
 
                 {/* Metadata */}
-                <div className="grid grid-cols-2 gap-4 text-sm p-4 pt-0 border-t border-border/30 mt-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 text-sm p-3 sm:p-4 pt-0 border-t border-border/30 mt-4">
                   <div className="pt-4">
                     <span className="text-muted-foreground">
                       {log.status === "pending"

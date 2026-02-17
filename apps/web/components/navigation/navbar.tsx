@@ -94,7 +94,7 @@ export function Navbar() {
       <nav className="sticky top-0 z-40 w-full border-b border-teal-500/10 bg-background/80 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60">
         <div className="container-wide flex h-16 items-center justify-between">
           {/* Logo / Brand */}
-          <div className="flex items-center gap-2 sm:gap-6">
+          <div className="flex items-center gap-1.5 sm:gap-6">
             <Link href="/" className="flex items-center gap-1.5 sm:gap-2 group">
               <div className="flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-gradient-to-br from-teal-500 to-teal-600 shadow-glow-sm group-hover:shadow-glow-md transition-shadow">
                 <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
@@ -107,7 +107,7 @@ export function Navbar() {
             <Button
               variant="ghost"
               asChild
-              className="h-auto px-2 sm:px-3 py-1.5 text-sm sm:text-base font-medium transition-all duration-300 hover:scale-105 hover:bg-teal-500/10 hover:text-teal-300"
+              className="h-auto px-2 sm:px-3 py-1.5 text-xs sm:text-sm font-medium transition-all duration-300 hover:scale-105 hover:bg-teal-500/10 hover:text-teal-300"
             >
               <Link href="/pricing">Pricing</Link>
             </Button>
@@ -116,7 +116,7 @@ export function Navbar() {
               <Button
                 variant="ghost"
                 asChild
-                className="h-auto px-2 sm:px-3 py-1.5 text-sm sm:text-base font-medium transition-all duration-300 hover:scale-105 hover:bg-teal-500/10 hover:text-teal-300"
+                className="h-auto px-2 sm:px-3 py-1.5 text-xs sm:text-sm font-medium transition-all duration-300 hover:scale-105 hover:bg-teal-500/10 hover:text-teal-300"
               >
                 <Link href="/projects">Projects</Link>
               </Button>

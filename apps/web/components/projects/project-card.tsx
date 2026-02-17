@@ -297,7 +297,7 @@ export function ProjectCard({ project, allProjects = [], onProjectDeleted, onPro
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-8 w-8 text-muted-foreground hover:text-foreground transition-colors focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                  className="h-9 w-9 sm:h-8 sm:w-8 text-muted-foreground hover:text-foreground transition-colors focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                   title="Project options"
                 >
                   <MoreVertical className="w-4 h-4" />
