@@ -25,7 +25,6 @@ export interface ReportEmailOptions {
   summary?: string;
   resultCount?: number;
   averageScore?: number;
-  projectTitle?: string;
 }
 
 /**
@@ -34,6 +33,7 @@ export interface ReportEmailOptions {
 async function generateEmailHTML(
   report: ClientReport,
   projectId: string,
+  projectTitle: string,
   options?: ReportEmailOptions
 ): Promise<string> {
   // Strip references and external links from email version
@@ -295,7 +295,7 @@ async function generateEmailHTML(
                       Source references are available in the full report on your dashboard.
                     </div>
                     <div style="margin-top: 16px;">
-                      <a href="https://relevx.ai/projects${options?.projectTitle ? `?project=${encodeURIComponent(options.projectTitle)}&tab=history` : ""}" style="display: inline-block; padding: 12px 24px; background: linear-gradient(135deg, #0d9488 0%, #14b8a6 100%); background-color: #0d9488 !important; color: #ffffff !important; font-size: 14px; font-weight: 600; text-decoration: none; border-radius: 8px; -webkit-border-radius: 8px;">View Full Report &amp; Sources</a>
+                      <a href="https://relevx.ai/projects?project=${encodeURIComponent(projectTitle)}&tab=history" style="display: inline-block; padding: 12px 24px; background: linear-gradient(135deg, #0d9488 0%, #14b8a6 100%); background-color: #0d9488 !important; color: #ffffff !important; font-size: 14px; font-weight: 600; text-decoration: none; border-radius: 8px; -webkit-border-radius: 8px;">View Full Report &amp; Sources</a>
                     </div>
                     <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #e2e8f0;">
                       <span style="font-size: 12px; color: #64748b !important;">
@@ -323,12 +323,13 @@ export async function sendReportEmail(
   to: string,
   report: ClientReport,
   projectId: string,
+  projectTitle: string,
   options?: ReportEmailOptions
 ): Promise<{ success: boolean; id?: string; error?: any }> {
   try {
     const resend = getResendClient();
 
-    const htmlContent = await generateEmailHTML(report, projectId, options);
+    const htmlContent = await generateEmailHTML(report, projectId, projectTitle, options);
 
     const fromEmail = process.env.RESEND_FROM_EMAIL;
     if (!fromEmail) {

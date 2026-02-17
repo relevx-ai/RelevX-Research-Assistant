@@ -273,11 +273,11 @@ async function forceResearchWithProFeatures(
             markdown: result.report.markdown,
           },
           projectId,
+          project.title,
           {
             summary: result.report.summary,
             resultCount: result.relevantResults.length,
             averageScore: Math.round(result.report.averageScore),
-            projectTitle: project.title,
           }
         );
 
