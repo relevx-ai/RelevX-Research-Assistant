@@ -83,7 +83,6 @@ export { signInWithGoogle, signOut } from "./services/auth";
 
 export {
   extractContent,
-  extractContentWithRetry,
   extractMultipleContents,
   getContentPreview,
 } from "./services/content-extractor";

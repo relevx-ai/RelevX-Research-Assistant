@@ -322,7 +322,7 @@ function extractMetadata($: cheerio.CheerioAPI): ExtractedContent["metadata"] {
 }
 
 /**
- * Extract content from a URL
+ * Extract content from a URL (with automatic retry on transient failures)
  */
 export async function extractContent(
   url: string,
@@ -330,29 +330,97 @@ export async function extractContent(
 ): Promise<ExtractedContent> {
   const defaultOpts = getDefaultOptions();
   const opts = { ...defaultOpts, ...options };
-  const fetchedAt = Date.now();
+  const retryCount = opts.maxRetries;
+  const retryDelay = opts.retryDelayMs;
 
-  try {
-    // Create abort controller for timeout
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), opts.timeout);
+  let lastError: Error | null = null;
 
-    // Fetch the page
-    const response = await fetch(url, {
-      signal: controller.signal,
-      headers: {
-        "User-Agent": opts.userAgent!,
-        Accept:
-          "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-        "Accept-Language": "en-US,en;q=0.9",
-      },
-    });
+  for (let attempt = 1; attempt <= retryCount; attempt++) {
+    const fetchedAt = Date.now();
 
-    clearTimeout(timeoutId);
+    try {
+      // Create abort controller for timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), opts.timeout);
 
-    // Check for errors
-    if (!response.ok) {
-      if (response.status === 403 || response.status === 401) {
+      // Fetch the page
+      const response = await fetch(url, {
+        signal: controller.signal,
+        headers: {
+          "User-Agent": opts.userAgent!,
+          Accept:
+            "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+          "Accept-Language": "en-US,en;q=0.9",
+        },
+      });
+
+      clearTimeout(timeoutId);
+
+      // Check for errors
+      if (!response.ok) {
+        // Don't retry on blocked (won't help)
+        if (response.status === 403 || response.status === 401) {
+          return {
+            url,
+            normalizedUrl: normalizeUrl(url),
+            snippet: "",
+            headings: [],
+            images: [],
+            metadata: {},
+            wordCount: 0,
+            fetchStatus: "blocked",
+            fetchError: `Access denied (${response.status})`,
+            fetchedAt,
+          };
+        }
+
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      // Get HTML content
+      const html = await response.text();
+
+      // Parse with cheerio
+      const $ = cheerio.load(html);
+
+      // Extract page title
+      const title =
+        $("title").text().trim() ||
+        $('meta[property="og:title"]').attr("content") ||
+        $("h1").first().text().trim();
+
+      // Extract main content
+      const fullContent = extractMainContent($);
+      const wordCount = countWordsInMarkdown(fullContent);
+
+      // Create snippet
+      const snippet = createSnippet(
+        fullContent,
+        opts.minSnippetLength!,
+        opts.maxSnippetLength!
+      );
+
+      // Extract other elements
+      const headings = extractHeadings($);
+      const images = extractImages($, url);
+      const metadata = extractMetadata($);
+
+      return {
+        url,
+        normalizedUrl: normalizeUrl(url),
+        title,
+        snippet,
+        fullContent: fullContent.length > 1000 ? fullContent : undefined, // Only store if substantial
+        headings,
+        images,
+        metadata,
+        wordCount,
+        fetchStatus: "success",
+        fetchedAt,
+      };
+    } catch (error: any) {
+      // Don't retry on timeout (won't help)
+      if (error.name === "AbortError") {
         return {
           url,
           normalizedUrl: normalizeUrl(url),
@@ -361,124 +429,13 @@ export async function extractContent(
           images: [],
           metadata: {},
           wordCount: 0,
-          fetchStatus: "blocked",
-          fetchError: `Access denied (${response.status})`,
+          fetchStatus: "timeout",
+          fetchError: "Request timeout",
           fetchedAt,
         };
       }
 
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-    }
-
-    // Get HTML content
-    const html = await response.text();
-
-    // Parse with cheerio
-    const $ = cheerio.load(html);
-
-    // Extract page title
-    const title =
-      $("title").text().trim() ||
-      $('meta[property="og:title"]').attr("content") ||
-      $("h1").first().text().trim();
-
-    // Extract main content
-    const fullContent = extractMainContent($);
-    const wordCount = countWordsInMarkdown(fullContent);
-
-    // Create snippet
-    const snippet = createSnippet(
-      fullContent,
-      opts.minSnippetLength!,
-      opts.maxSnippetLength!
-    );
-
-    // Extract other elements
-    const headings = extractHeadings($);
-    const images = extractImages($, url);
-    const metadata = extractMetadata($);
-
-    return {
-      url,
-      normalizedUrl: normalizeUrl(url),
-      title,
-      snippet,
-      fullContent: fullContent.length > 1000 ? fullContent : undefined, // Only store if substantial
-      headings,
-      images,
-      metadata,
-      wordCount,
-      fetchStatus: "success",
-      fetchedAt,
-    };
-  } catch (error: any) {
-    // Handle different error types
-    if (error.name === "AbortError") {
-      return {
-        url,
-        normalizedUrl: normalizeUrl(url),
-        snippet: "",
-        headings: [],
-        images: [],
-        metadata: {},
-        wordCount: 0,
-        fetchStatus: "timeout",
-        fetchError: "Request timeout",
-        fetchedAt,
-      };
-    }
-
-    return {
-      url,
-      normalizedUrl: normalizeUrl(url),
-      snippet: "",
-      headings: [],
-      images: [],
-      metadata: {},
-      wordCount: 0,
-      fetchStatus: "failed",
-      fetchError: error.message || "Unknown error",
-      fetchedAt,
-    };
-  }
-}
-
-/**
- * Extract content with retry logic
- */
-export async function extractContentWithRetry(
-  url: string,
-  options?: ExtractionOptions,
-  maxRetries?: number
-): Promise<ExtractedContent> {
-  const defaultOpts = getDefaultOptions();
-  const retryCount =
-    maxRetries ?? options?.maxRetries ?? defaultOpts.maxRetries;
-  const retryDelay = options?.retryDelayMs ?? defaultOpts.retryDelayMs;
-
-  let lastError: Error | null = null;
-
-  for (let attempt = 1; attempt <= retryCount; attempt++) {
-    try {
-      const result = await extractContent(url, options);
-
-      // Don't retry on blocked or timeout (won't help)
-      if (
-        result.fetchStatus === "blocked" ||
-        result.fetchStatus === "timeout"
-      ) {
-        return result;
-      }
-
-      // Success
-      if (result.fetchStatus === "success") {
-        return result;
-      }
-
-      // Failed, will retry
-      lastError = new Error(result.fetchError || "Extraction failed");
-    } catch (error) {
-      lastError = error as Error;
+      lastError = error;
     }
 
     if (attempt < retryCount) {
@@ -488,7 +445,7 @@ export async function extractContentWithRetry(
     }
   }
 
-  // All retries failed, return failed result
+  // All retries failed
   return {
     url,
     normalizedUrl: normalizeUrl(url),
@@ -519,7 +476,7 @@ export async function extractMultipleContents(
   while (queue.length > 0) {
     const batch = queue.splice(0, concurrencyLimit);
     const batchResults = await Promise.all(
-      batch.map((url) => extractContentWithRetry(url, options))
+      batch.map((url) => extractContent(url, options))
     );
     results.push(...batchResults);
   }
