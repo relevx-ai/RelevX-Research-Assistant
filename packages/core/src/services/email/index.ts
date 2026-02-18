@@ -33,6 +33,7 @@ export interface ReportEmailOptions {
 async function generateEmailHTML(
   report: ClientReport,
   _projectId: string,
+  projectTitle: string,
   options?: ReportEmailOptions
 ): Promise<string> {
   // Strip references and external links from email version
@@ -105,23 +106,25 @@ async function generateEmailHTML(
     
     /* Content styles - light theme, teal accents */
     .content-area h1 { color: #0f172a !important; font-size: 28px; font-weight: 700; line-height: 1.3; margin: 0 0 20px 0; letter-spacing: -0.025em; }
-    .content-area h2 { color: #1e293b !important; font-size: 20px; font-weight: 700; line-height: 1.4; margin: 32px 0 16px 0; padding-bottom: 10px; border-bottom: 1px solid #e2e8f0; letter-spacing: -0.025em; }
-    .content-area h3 { color: #334155 !important; font-size: 18px; font-weight: 600; line-height: 1.4; margin: 24px 0 12px 0; letter-spacing: -0.025em; }
-    .content-area p { color: #475569 !important; font-size: 16px; line-height: 1.6; margin: 0 0 16px 0; }
+    .content-area h2 { color: #0f766e !important; font-size: 20px; font-weight: 700; line-height: 1.4; margin: 44px 0 16px 0; padding-left: 14px; padding-bottom: 10px; border-left: 4px solid #14b8a6; border-bottom: none; letter-spacing: -0.025em; }
+    .content-area h2:first-child { margin-top: 0; }
+    .content-area h3 { color: #334155 !important; font-size: 18px; font-weight: 600; line-height: 1.4; margin: 28px 0 14px 0; letter-spacing: -0.025em; }
+    .content-area p { color: #475569 !important; font-size: 16px; line-height: 1.7; margin: 0 0 18px 0; }
     .content-area a { color: #0d9488 !important; text-decoration: none; border-bottom: 1px solid #99f6e4; }
     .content-area a:hover { border-bottom-color: #0d9488; }
-    .content-area ul, .content-area ol { margin: 0 0 20px 0; padding-left: 24px; color: #475569 !important; }
-    .content-area li { margin-bottom: 10px; font-size: 16px; line-height: 1.6; color: #475569 !important; }
+    .content-area ul, .content-area ol { margin: 0 0 22px 0; padding-left: 8px; color: #475569 !important; list-style: none; }
+    .content-area li { margin-bottom: 12px; font-size: 16px; line-height: 1.7; color: #475569 !important; padding-left: 20px; border-left: 2px solid #e2e8f0; }
     .content-area strong { color: #1e293b !important; font-weight: 600; }
     .content-area blockquote {
-      margin: 20px 0;
-      padding: 16px 20px;
-      background-color: #f8fafc !important;
+      margin: 24px 0;
+      padding: 20px 24px;
+      background-color: #f0fdfa !important;
       border-left: 4px solid #14b8a6;
       border-radius: 0 8px 8px 0;
       font-style: italic;
       font-size: 16px;
-      color: #64748b !important;
+      line-height: 1.7;
+      color: #475569 !important;
     }
     .content-area img {
       max-width: 100%;
@@ -231,6 +234,22 @@ async function generateEmailHTML(
               </td>
             </tr>
             
+            ${(options?.resultCount || options?.averageScore) ? `<!-- Stats Bar -->
+            <tr>
+              <td class="mobile-padding" style="padding: 16px 40px; background-color: #f0fdfa !important; border-left: 1px solid #e2e8f0; border-right: 1px solid #e2e8f0;">
+                <table role="presentation" cellspacing="0" cellpadding="0" border="0">
+                  <tr>
+                    ${options?.resultCount ? `<td style="padding-right: 16px;">
+                      <span style="display: inline-block; padding: 5px 14px; background-color: #ccfbf1 !important; border-radius: 20px; font-size: 13px; font-weight: 600; color: #0f766e !important;">${options.resultCount} Sources Analyzed</span>
+                    </td>` : ""}
+                    ${options?.averageScore ? `<td>
+                      <span style="display: inline-block; padding: 5px 14px; background-color: #ccfbf1 !important; border-radius: 20px; font-size: 13px; font-weight: 600; color: #0f766e !important;">Avg Relevancy: ${Math.round(options.averageScore)}%</span>
+                    </td>` : ""}
+                  </tr>
+                </table>
+              </td>
+            </tr>` : ""}
+
             <!-- Report Title Section -->
             <tr>
               <td class="mobile-padding" style="padding: 40px 40px 24px 40px; background-color: #ffffff !important; border: 1px solid #e2e8f0; border-top: none;">
