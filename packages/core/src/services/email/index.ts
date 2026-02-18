@@ -106,7 +106,7 @@ async function generateEmailHTML(
     
     /* Content styles - light theme, teal accents */
     .content-area h1 { color: #0f172a !important; font-size: 28px; font-weight: 700; line-height: 1.3; margin: 0 0 20px 0; letter-spacing: -0.025em; }
-    .content-area h2 { color: #0f766e !important; font-size: 20px; font-weight: 700; line-height: 1.4; margin: 44px 0 16px 0; padding-left: 14px; padding-bottom: 10px; border-left: 4px solid #14b8a6; border-bottom: none; letter-spacing: -0.025em; }
+    .content-area h2 { color: #0f766e !important; font-size: 20px; font-weight: 700; line-height: 1.4; margin: 44px 0 16px 0; padding: 2px 0 2px 14px; border-left: 4px solid #14b8a6; border-bottom: none; letter-spacing: -0.025em; }
     .content-area h2:first-child { margin-top: 0; }
     .content-area h3 { color: #334155 !important; font-size: 18px; font-weight: 600; line-height: 1.4; margin: 28px 0 14px 0; letter-spacing: -0.025em; }
     .content-area p { color: #475569 !important; font-size: 16px; line-height: 1.7; margin: 0 0 18px 0; }
@@ -234,21 +234,6 @@ async function generateEmailHTML(
               </td>
             </tr>
             
-            ${(options?.resultCount || options?.averageScore) ? `<!-- Stats Bar -->
-            <tr>
-              <td class="mobile-padding" style="padding: 16px 40px; background-color: #f0fdfa !important; border-left: 1px solid #e2e8f0; border-right: 1px solid #e2e8f0;">
-                <table role="presentation" cellspacing="0" cellpadding="0" border="0">
-                  <tr>
-                    ${options?.resultCount ? `<td style="padding-right: 16px;">
-                      <span style="display: inline-block; padding: 5px 14px; background-color: #ccfbf1 !important; border-radius: 20px; font-size: 13px; font-weight: 600; color: #0f766e !important;">${options.resultCount} Sources Analyzed</span>
-                    </td>` : ""}
-                    ${options?.averageScore ? `<td>
-                      <span style="display: inline-block; padding: 5px 14px; background-color: #ccfbf1 !important; border-radius: 20px; font-size: 13px; font-weight: 600; color: #0f766e !important;">Avg Relevancy: ${Math.round(options.averageScore)}%</span>
-                    </td>` : ""}
-                  </tr>
-                </table>
-              </td>
-            </tr>` : ""}
 
             <!-- Report Title Section -->
             <tr>
@@ -260,7 +245,8 @@ async function generateEmailHTML(
             
             ${hasSummary ? `<!-- Summary Section -->
             <tr>
-              <td class="mobile-padding" style="padding: 0 40px 30px 40px; background-color: #ffffff !important; border-left: 1px solid #e2e8f0; border-right: 1px solid #e2e8f0;">
+              <td class="mobile-padding" style="padding: 20px 40px 30px 40px; background-color: #ffffff !important; border-left: 1px solid #e2e8f0; border-right: 1px solid #e2e8f0;">
+                <div style="font-size: 11px; font-weight: 600; color: #0d9488 !important; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 12px;">Summary</div>
                 <div style="background-color: #f8fafc !important; padding: 20px; border-radius: 8px; -webkit-border-radius: 8px; border-left: 4px solid #14b8a6;">
                   <p style="font-size: 16px; line-height: 1.6; color: #475569 !important; margin: 0;">${summarySection}</p>
                 </div>
