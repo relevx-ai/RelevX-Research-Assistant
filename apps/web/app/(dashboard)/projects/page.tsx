@@ -8,12 +8,15 @@ import { ProjectCard } from "@/components/projects/project-card";
 import { ProjectDialog } from "@/components/projects/project-dialog";
 import { ProjectDetailModal } from "@/components/projects/project-detail-modal";
 import { useProjects } from "@/hooks/use-projects";
+import { useUsage } from "@/hooks/use-usage";
+import { UsageBar } from "@/components/projects/usage-bar";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import type { ProjectInfo } from "core";
 
 export default function ProjectsPage() {
   const { projects, loading, refresh } = useProjects();
+  const { maxActiveProjects, oneShotRunsUsed, oneShotRunsLimit, loading: usageLoading } = useUsage();
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
 
   // Deep-link handling: open a specific project's detail modal from URL params
@@ -70,6 +73,11 @@ export default function ProjectsPage() {
       return validDateB - validDateA;
     });
   }, [projects]);
+
+  const activeProjectCount = useMemo(
+    () => projects.filter((p) => p.status === "active" || p.status === "running").length,
+    [projects]
+  );
 
   const handleCreateProject = () => {
     setCreateDialogOpen(true);
@@ -145,6 +153,15 @@ export default function ProjectsPage() {
           </motion.div>
         </div>
       </motion.div>
+
+      {/* Usage Indicators */}
+      <UsageBar
+        activeProjectCount={activeProjectCount}
+        maxActiveProjects={maxActiveProjects}
+        oneShotRunsUsed={oneShotRunsUsed}
+        oneShotRunsLimit={oneShotRunsLimit}
+        loading={usageLoading}
+      />
 
       {/* Loading State */}
       {loading && (

@@ -244,6 +244,26 @@ export async function deleteProject(projectTitle: string): Promise<void> {
   }
 }
 
+export interface UsageResponse {
+  ok: boolean;
+  maxActiveProjects: number;
+  oneShotRunsUsed: number;
+  oneShotRunsLimit: number;
+}
+
+/**
+ * Fetch current plan usage (active project limit + one-shot run counts)
+ */
+export async function fetchUsage(): Promise<UsageResponse> {
+  const response = await relevx_api.get<UsageResponse>(
+    "/api/v1/user/projects/usage"
+  );
+  if (!response) {
+    throw new Error("Failed to fetch usage");
+  }
+  return response;
+}
+
 export interface RunNowResponse {
   ok: boolean;
   remainingRuns: number;

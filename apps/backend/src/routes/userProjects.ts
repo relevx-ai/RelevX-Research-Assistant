@@ -185,6 +185,55 @@ const routes: FastifyPluginAsync = async (app) => {
     return rep.send({ ok: true });
   });
 
+  app.get(
+    "/usage",
+    { preHandler: [app.rlPerRoute(10)] },
+    async (req: any, rep) => {
+      try {
+        const userId = req.user?.uid;
+        if (!userId) {
+          return rep
+            .status(401)
+            .send({ error: { message: "Unauthenticated" } });
+        }
+
+        const userData = await getUserData(userId, db);
+        const plans: Plan[] = await getPlans(remoteConfig);
+        const plan: Plan | undefined = plans.find(
+          (p) => p.id === (userData.user.planId || getFreePlanId())
+        );
+
+        const maxActiveProjects = plan?.settingsMaxActiveProjects || 1;
+        const oneShotRunsLimit = plan?.settingsOneShotRunsPerMonth ?? 0;
+
+        const monthKey = kAnalyticsMonthlyDateKey(new Date());
+        const oneShotRunsUsed = await getUserOneShotCount(
+          db,
+          userId,
+          monthKey
+        );
+
+        return rep.status(200).send({
+          ok: true,
+          maxActiveProjects,
+          oneShotRunsUsed,
+          oneShotRunsLimit,
+        });
+      } catch (err: any) {
+        const isDev = process.env.NODE_ENV !== "production";
+        const detail = err instanceof Error ? err.message : String(err);
+        req.log?.error({ detail }, "/userProjects/usage failed");
+        return rep.status(500).send({
+          error: {
+            code: "internal_error",
+            message: "Failed to fetch usage",
+            ...(isDev ? { detail } : {}),
+          },
+        });
+      }
+    }
+  );
+
   // Secure project subscription via WebSockets
   app.get("/subscribe", { websocket: true }, (connection, req: any) => {
     const onConnectedClosed = async (userId: string) => {
