@@ -86,6 +86,7 @@ export {
   extractContent,
   extractMultipleContents,
   getContentPreview,
+  normalizeUrl,
 } from "./services/content-extractor";
 export type {
   ExtractedContent,

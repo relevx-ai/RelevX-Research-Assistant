@@ -36,7 +36,7 @@ import type {
   SearchProvider,
   SearchFilters,
 } from "../../interfaces/search-provider";
-import { extractMultipleContents } from "../content-extractor";
+import { extractMultipleContents, normalizeUrl } from "../content-extractor";
 import {
   createTokenUsageTracker,
   estimateTokens,
@@ -362,12 +362,12 @@ export async function executeResearchForProject(
       // Simple deduplication by URL
       const uniqueUrlsMap = new Map<string, (typeof allUrlsWithMeta)[0]>();
       for (const item of allUrlsWithMeta) {
-        const normalizedUrl = item.url.toLowerCase().replace(/\/$/, "");
+        const normalized = normalizeUrl(item.url);
         if (
-          !processedUrlsSet.has(normalizedUrl) &&
-          !uniqueUrlsMap.has(normalizedUrl)
+          !processedUrlsSet.has(normalized) &&
+          !uniqueUrlsMap.has(normalized)
         ) {
-          uniqueUrlsMap.set(normalizedUrl, item);
+          uniqueUrlsMap.set(normalized, item);
         }
       }
       const uniqueResults = Array.from(uniqueUrlsMap.values());
@@ -408,8 +408,7 @@ export async function executeResearchForProject(
 
       // 7.3.7 Mark these URLs as processed so we don't try them again in future iterations
       for (const result of limitedResults) {
-        const normalizedUrl = result.url.toLowerCase().replace(/\/$/, "");
-        processedUrlsSet.add(normalizedUrl);
+        processedUrlsSet.add(normalizeUrl(result.url));
       }
 
       // 7.4.a Filter results using LLM (Pre-fetch filtering)
@@ -675,7 +674,11 @@ export async function executeResearchForProject(
         snippet: r.snippet,
         fullContent: r.fullContent,
         score: r.relevancyScore,
-        keyPoints: r.relevancyReason?.split(".").slice(0, 3) || [],
+        keyPoints: (r.relevancyReason
+          ?.split(/[.!?]+/)
+          .map(s => s.trim())
+          .filter(s => s.length > 0) || []
+        ).slice(0, 3),
         publishedDate: r.metadata.publishedDate,
         author: r.metadata.author,
         imageUrl: r.metadata.imageUrl,

@@ -86,7 +86,7 @@ function getDefaultOptions(): Required<ExtractionOptions> {
 /**
  * Normalize URL for deduplication
  */
-function normalizeUrl(url: string): string {
+export function normalizeUrl(url: string): string {
   try {
     const urlObj = new URL(url);
     let hostname = urlObj.hostname.toLowerCase();
