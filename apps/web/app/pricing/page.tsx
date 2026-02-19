@@ -93,8 +93,19 @@ function PricingContent() {
   const { user, userProfile, loading: userLoading, reloadUser } = useAuth();
   const [selectedPlan, setSelectedPlan] = useState<PlanInfo | null>(null);
   const [paymentLink, setPaymentLink] = useState<string | null>(null);
+  const [billingInterval, setBillingInterval] = useState<"month" | "year">(
+    "month"
+  );
   const searchParams = useSearchParams();
   const router = useRouter();
+
+  // Filter plans based on billing interval toggle.
+  // Free plans (price === 0) always show. Paid plans filter by interval.
+  const filteredPlans = plans.filter((plan) => {
+    if (plan.infoPrice === 0) return true;
+    const interval = plan.infoBillingInterval ?? "month";
+    return interval === billingInterval;
+  });
 
   // Handle success/failure dialog state
   const successParam = searchParams.get("success");
@@ -178,8 +189,54 @@ function PricingContent() {
           </p>
         </div>
 
+        {/* Billing Interval Toggle */}
+        <div className="flex items-center justify-center mb-8">
+          <div className="inline-flex items-center rounded-full border border-border/50 bg-muted/20 p-1">
+            <button
+              onClick={() => setBillingInterval("month")}
+              className={`rounded-full px-5 py-2 text-sm font-medium transition-all duration-200 ${
+                billingInterval === "month"
+                  ? "bg-gradient-to-r from-teal-600 to-teal-500 text-white shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              Monthly
+            </button>
+            <button
+              onClick={() => setBillingInterval("year")}
+              className={`rounded-full px-5 py-2 text-sm font-medium transition-all duration-200 flex items-center gap-2 ${
+                billingInterval === "year"
+                  ? "bg-gradient-to-r from-teal-600 to-teal-500 text-white shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              Annual
+              <span
+                className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
+                  billingInterval === "year"
+                    ? "bg-white/20 text-white"
+                    : "bg-teal-500/10 text-teal-400"
+                }`}
+              >
+                Save 25%
+              </span>
+            </button>
+          </div>
+        </div>
+
         <div className="grid gap-4 sm:gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-          {plans.map((plan) => (
+          {filteredPlans.map((plan) => {
+            const isAnnual = plan.infoBillingInterval === "year";
+            const displayPrice =
+              isAnnual && plan.infoPrice > 0
+                ? Math.round((plan.infoPrice / 12) * 100) / 100
+                : plan.infoPrice ?? 0;
+            const displayPriceFormatted =
+              Number.isInteger(displayPrice)
+                ? String(displayPrice)
+                : displayPrice.toFixed(2);
+
+            return (
             <Card key={plan.id} className="flex flex-col glass-card">
               <CardHeader>
                 <CardTitle className="text-xl capitalize">
@@ -191,13 +248,25 @@ function PricingContent() {
               </CardHeader>
               <CardContent className="flex-1">
                 <div className="space-y-4">
-                  <div className="flex items-baseline justify-start pb-4">
-                    <span className="text-xl font-medium text-muted-foreground/60 mr-1 self-start">
-                      US
-                    </span>
-                    <span className="text-5xl font-bold gradient-text">
-                      ${plan.infoPrice ?? "0"}
-                    </span>
+                  <div className="pb-4">
+                    <div className="flex items-baseline justify-start">
+                      <span className="text-xl font-medium text-muted-foreground/60 mr-1 self-start">
+                        US
+                      </span>
+                      <span className="text-5xl font-bold gradient-text">
+                        ${displayPriceFormatted}
+                      </span>
+                      {plan.infoPrice > 0 && (
+                        <span className="text-sm text-muted-foreground/60 ml-1">
+                          /mo
+                        </span>
+                      )}
+                    </div>
+                    {isAnnual && plan.infoPrice > 0 && (
+                      <p className="text-xs text-muted-foreground/60 mt-1">
+                        Billed annually at ${plan.infoPrice}
+                      </p>
+                    )}
                   </div>
 
                   <div className="flex items-center gap-2 pb-4 px-3 py-2 rounded-md bg-teal-500/10 border border-teal-500/20">
@@ -259,7 +328,8 @@ function PricingContent() {
                 </div>
               </CardContent>
             </Card>
-          ))}
+            );
+          })}
         </div>
 
         {/* Plan Selection / Payment Dialog */}

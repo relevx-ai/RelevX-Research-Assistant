@@ -14,6 +14,8 @@ export interface Plan {
   settingsMaxActiveProjects: number;
   /** Max one-shot runs (Once + Run Now) per user per month. Default 0 if missing. */
   settingsOneShotRunsPerMonth?: number;
+  /** Billing interval. Defaults to "month" if missing. */
+  infoBillingInterval?: "month" | "year";
 }
 
 export interface PlanInfo extends Omit<Plan, "infoStripeSubscriptionId"> {}
