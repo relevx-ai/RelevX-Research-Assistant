@@ -3,7 +3,6 @@
  */
 
 import type { SearchResult } from "../../models/search-result";
-import type { LLMProvider } from "../../interfaces/llm-provider";
 import type { SearchProvider } from "../../interfaces/search-provider";
 import type { ResearchConfig, ModelConfig } from "./config";
 
@@ -31,7 +30,6 @@ export interface ResearchOptions {
   ignoreFrequencyCheck?: boolean; // Skip frequency validation (default: false)
 
   // === Provider Injection ===
-  llmProvider?: LLMProvider; // Custom LLM provider (default: from config)
   searchProvider?: SearchProvider; // Custom search provider (default: from config)
 
   // === Query Generation Settings ===
@@ -44,10 +42,6 @@ export interface ResearchOptions {
   // === LLM Model Overrides ===
   // Override model/temperature for specific steps
   modelOverrides?: ModelOverrides;
-
-  // === Clustering Settings ===
-  enableClustering?: boolean; // Enable topic clustering (default: from config)
-  clusteringSimilarityThreshold?: number; // Similarity threshold (default: from config)
 
   // === Report Settings ===
   reportTone?: "professional" | "casual" | "technical"; // Report tone (default: from config)

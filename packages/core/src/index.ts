@@ -95,7 +95,7 @@ export type {
 
 export {
   executeResearchForProject,
-  setDefaultProviders,
+  setDefaultSearchProvider,
   // Config exports
   loadConfig,
   getConfig,
@@ -103,12 +103,9 @@ export {
   getConfigPath,
   withConfigOverrides,
   getModelConfig,
-  getDefaultLLMProvider,
   getDefaultSearchProvider,
-  getEmbeddingsConfig,
   getExtractionConfig,
   getResearchConfig,
-  getClusteringConfig,
   getReportConfig,
   getLimitsConfig,
   getSearchConfig,
@@ -125,14 +122,12 @@ export type {
   SearchConfig as ResearchSearchConfig, // Renamed to avoid conflict with SearchFilters
   ExtractionConfig,
   ResearchPipelineConfig,
-  ClusteringConfig,
   ReportConfig,
   LimitsConfig,
 } from "./services/research-engine";
 
 // Provider Interfaces
 export type {
-  LLMProvider,
   SearchProvider,
   GeneratedQuery,
   SearchFilters,
@@ -140,8 +135,10 @@ export type {
   SearchResponse,
 } from "./interfaces";
 
-// Provider Implementations
-export { OpenAIProvider, createOpenAIProvider } from "./services/llm";
+// LLM functions
+export { initializeOpenRouter, getClient, translateText, translateShortText } from "./services/llm";
+
+// Search Provider Implementations
 export {
   BraveSearchProvider,
   createBraveSearchProvider,
@@ -153,14 +150,10 @@ export {
 
 // Provider Factories
 export {
-  createLLMProvider,
   createSearchProvider,
-  createProviders,
 } from "./providers";
 export type {
-  LLMProviderType,
   SearchProviderType,
-  LLMProviderConfig,
   SearchProviderConfig,
 } from "./providers";
 

@@ -1,15 +1,16 @@
 /**
  * Shared provider initialization for research execution.
  *
- * Lazily initializes LLM and search providers on first call, then
- * re-uses the same instances for every subsequent research job.
+ * Lazily initializes the OpenRouter LLM client and search provider
+ * on first call, then re-uses the same instances for every subsequent
+ * research job.
  */
 
 import {
-  OpenAIProvider,
+  initializeOpenRouter,
   SerperSearchProvider,
   BraveSearchProvider,
-  setDefaultProviders,
+  setDefaultSearchProvider,
   loadConfig,
 } from "core";
 
@@ -21,7 +22,7 @@ export async function initializeProviders(): Promise<void> {
   const config = loadConfig();
   const searchProviderName = config.search?.provider || "serper";
 
-  const openaiKey = process.env.OPENAI_API_KEY;
+  const openrouterKey = process.env.OPENROUTER_API_KEY;
   const searchKey =
     searchProviderName === "brave"
       ? process.env.BRAVE_SEARCH_API_KEY
@@ -29,18 +30,18 @@ export async function initializeProviders(): Promise<void> {
   const searchKeyName =
     searchProviderName === "brave" ? "BRAVE_SEARCH_API_KEY" : "SERPER_API_KEY";
 
-  if (!openaiKey || !searchKey) {
+  if (!openrouterKey || !searchKey) {
     throw new Error(
-      `Missing required API keys (OPENAI_API_KEY or ${searchKeyName})`
+      `Missing required API keys (OPENROUTER_API_KEY or ${searchKeyName})`
     );
   }
 
-  const llmProvider = new OpenAIProvider(openaiKey);
+  initializeOpenRouter(openrouterKey);
   const searchProvider =
     searchProviderName === "brave"
       ? new BraveSearchProvider(searchKey)
       : new SerperSearchProvider({ apiKey: searchKey });
 
-  setDefaultProviders(llmProvider, searchProvider);
+  setDefaultSearchProvider(searchProvider);
   initialized = true;
 }

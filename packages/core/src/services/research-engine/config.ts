@@ -26,7 +26,7 @@ export interface ModelConfig {
  * LLM provider configuration
  */
 export interface LLMConfig {
-  provider: "openai" | "gemini";
+  provider: string;
   models: {
     queryGeneration: ModelConfig;
     searchFiltering: ModelConfig;
@@ -35,10 +35,6 @@ export interface LLMConfig {
     reportCompilation: ModelConfig;
     clusteredReportCompilation: ModelConfig;
     reportSummary: ModelConfig;
-  };
-  embeddings: {
-    model: string;
-    dimensions: number;
   };
 }
 
@@ -78,14 +74,6 @@ export interface ResearchPipelineConfig {
 }
 
 /**
- * Topic clustering configuration
- */
-export interface ClusteringConfig {
-  enabled: boolean;
-  similarityThreshold: number;
-}
-
-/**
  * Report generation configuration
  */
 export interface ReportConfig {
@@ -111,7 +99,6 @@ export interface ResearchConfig {
   search: SearchConfig;
   extraction: ExtractionConfig;
   research: ResearchPipelineConfig;
-  clustering: ClusteringConfig;
   report: ReportConfig;
   limits: LimitsConfig;
 }
@@ -125,47 +112,43 @@ export interface ResearchConfig {
  */
 export const DEFAULT_CONFIG: ResearchConfig = {
   llm: {
-    provider: "openai",
+    provider: "openrouter",
     models: {
       queryGeneration: {
-        model: "gpt-4o-mini",
+        model: "openai/gpt-4o-mini",
         temperature: 0.8,
         responseFormat: "json_object",
       },
       searchFiltering: {
-        model: "gpt-4o-mini",
+        model: "openai/gpt-4o-mini",
         temperature: 0.2,
         responseFormat: "json_object",
       },
       relevancyAnalysis: {
-        model: "gpt-4o-mini",
+        model: "openai/gpt-4o-mini",
         temperature: 0.3,
         responseFormat: "json_object",
       },
       crossSourceAnalysis: {
-        model: "gpt-4o",
+        model: "openai/gpt-4o",
         temperature: 0.4,
         responseFormat: "json_object",
       },
       reportCompilation: {
-        model: "gpt-4o-mini",
+        model: "openai/gpt-4o-mini",
         temperature: 0.3,
         responseFormat: "json_object",
       },
       clusteredReportCompilation: {
-        model: "gpt-4o-mini",
+        model: "openai/gpt-4o-mini",
         temperature: 0.3,
         responseFormat: "json_object",
       },
       reportSummary: {
-        model: "gpt-4o-mini",
+        model: "openai/gpt-4o-mini",
         temperature: 0.2,
         responseFormat: "json_object",
       },
-    },
-    embeddings: {
-      model: "text-embedding-3-small",
-      dimensions: 1536,
     },
   },
   search: {
@@ -191,10 +174,6 @@ export const DEFAULT_CONFIG: ResearchConfig = {
     defaultMinResults: 5,
     defaultMaxResults: 15,
     relevancyBatchSize: 10,
-  },
-  clustering: {
-    enabled: true,
-    similarityThreshold: 0.85,
   },
   report: {
     defaultTone: "professional",
@@ -362,24 +341,10 @@ export function getModelConfig(step: keyof LLMConfig["models"]): ModelConfig {
 }
 
 /**
- * Get the default LLM provider
- */
-export function getDefaultLLMProvider(): "openai" | "gemini" {
-  return getConfig().llm.provider;
-}
-
-/**
  * Get the default search provider
  */
 export function getDefaultSearchProvider(): "brave" | "serper" | "multi" {
   return getConfig().search.provider;
-}
-
-/**
- * Get embeddings configuration
- */
-export function getEmbeddingsConfig(): LLMConfig["embeddings"] {
-  return getConfig().llm.embeddings;
 }
 
 /**
@@ -394,13 +359,6 @@ export function getExtractionConfig(): ExtractionConfig {
  */
 export function getResearchConfig(): ResearchPipelineConfig {
   return getConfig().research;
-}
-
-/**
- * Get clustering configuration
- */
-export function getClusteringConfig(): ClusteringConfig {
-  return getConfig().clustering;
 }
 
 /**

@@ -477,7 +477,6 @@ const routes: FastifyPluginAsync = async (app) => {
         const desc = request.projectInfo.description?.trim() ?? "";
         if (desc) {
           const validation = await validateProjectDescription(
-            app.aiInterface,
             desc
           );
           if (!validation.valid) {
@@ -861,7 +860,6 @@ const routes: FastifyPluginAsync = async (app) => {
           const desc = String(data.description ?? "").trim();
           if (desc) {
             const validation = await validateProjectDescription(
-              app.aiInterface,
               desc
             );
             if (!validation.valid) {

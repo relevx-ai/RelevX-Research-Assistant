@@ -78,8 +78,7 @@ export type {
 
 export { validateProjectDescription } from "./services/project-description-validation";
 
-export { OpenAIProvider, createOpenAIProvider } from "./services/llm";
-export type { LLMProvider } from "./interfaces/llm-provider";
+export { initializeOpenRouter, getClient, translateText, translateShortText } from "./services/llm";
 
 export {
   sanitizeLanguageCode,
@@ -92,7 +91,7 @@ export { db } from "./services/firebase";
 // Research engine
 export {
   executeResearchForProject,
-  setDefaultProviders,
+  setDefaultSearchProvider,
   loadConfig,
 } from "./services/research-engine";
 

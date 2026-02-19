@@ -2,9 +2,7 @@
  * Research orchestrator
  * Core logic for executing the research flow
  *
- * Now uses provider interfaces for LLM and Search providers,
- * allowing easy switching between OpenAI/Gemini and Brave/ScrapingBee
- *
+ * All LLM calls go through OpenRouter via standalone step functions.
  * Configuration is loaded from research-config.yaml and can be
  * overridden via ResearchOptions.
  */
@@ -18,18 +16,17 @@ import type {
   ContentToAnalyze,
   ResultForReport,
   CompiledReport,
-  TopicCluster,
 } from "./../../services/llm/types";
-import { LLMProvider } from "./../../interfaces";
-import { clusterArticlesByTopic } from "./../../services/llm/topic-clustering";
+import { generateSearchQueriesWithRetry } from "../llm/query-generation";
+import { analyzeRelevancyWithRetry } from "../llm/relevancy-analysis";
+import { filterSearchResultsSafe } from "../llm/search-filtering";
+import { translateText, translateShortText } from "../llm/translation";
 import {
-  compileClusteredReport,
   compileReportWithRetry,
   generateReportSummaryWithRetry,
 } from "../llm/report-compilation";
 import {
   analyzeCrossSourcesWithRetry,
-  analyzeClusteredCrossSourcesWithRetry,
   formatAnalysisForReport,
 } from "../llm/cross-source-analysis";
 import type {
@@ -48,37 +45,33 @@ import type { ResearchOptions, ResearchResult } from "./types";
 import {
   getResearchConfig,
   getSearchConfig,
-  getClusteringConfig,
   getReportConfig,
+  getModelConfig,
 } from "./config";
 
-// Default providers (can be overridden via options)
-let defaultLLMProvider: LLMProvider | null = null;
+// Default search provider (can be overridden via options)
 let defaultSearchProvider: SearchProvider | null = null;
 
 /**
- * Set default providers for research execution
- * Call this during initialization to set up default providers
+ * Set default search provider for research execution
+ * Call this during initialization to set up the default provider
  */
-export function setDefaultProviders(
-  llmProvider: LLMProvider,
+export function setDefaultSearchProvider(
   searchProvider: SearchProvider
 ): void {
-  defaultLLMProvider = llmProvider;
   defaultSearchProvider = searchProvider;
 }
 
 /**
- * Get or create default providers
+ * Get the default search provider
  */
-function getDefaultProviders(): { llm: LLMProvider; search: SearchProvider } {
-  if (!defaultLLMProvider || !defaultSearchProvider) {
+function getDefaultSearchProvider(): { search: SearchProvider } {
+  if (!defaultSearchProvider) {
     throw new Error(
-      "Default providers not set. Call setDefaultProviders() or provide providers in options."
+      "Default search provider not set. Call setDefaultSearchProvider() first or provide a search provider in options."
     );
   }
   return {
-    llm: defaultLLMProvider,
     search: defaultSearchProvider,
   };
 }
@@ -167,7 +160,6 @@ export async function executeResearchForProject(
   // Load configuration (from file or defaults)
   const researchConfig = getResearchConfig();
   const searchConfig = getSearchConfig();
-  const clusteringConfig = getClusteringConfig();
   const reportConfig = getReportConfig();
 
   // Merge options with config defaults
@@ -178,16 +170,13 @@ export async function executeResearchForProject(
     options?.resultsPerQuery ?? searchConfig.resultsPerQuery;
   const maxUrlsToExtract =
     options?.maxUrlsToExtract ?? searchConfig.maxUrlsToExtract;
-  const enableClustering =
-    options?.enableClustering ?? clusteringConfig.enabled;
-  const clusteringSimilarityThreshold =
-    options?.clusteringSimilarityThreshold ??
-    clusteringConfig.similarityThreshold;
 
-  // Get providers (use injected or defaults)
-  const defaults = getDefaultProviders();
-  const llmProvider = options?.llmProvider || defaults.llm;
+  // Get search provider (use injected or default)
+  const defaults = getDefaultSearchProvider();
   const searchProvider = options?.searchProvider || defaults.search;
+
+  // Get model name for cost estimation
+  const reportModel = getModelConfig("reportCompilation").model;
 
   // Initialize token usage tracker for cost estimation
   const tokenUsage = createTokenUsageTracker();
@@ -216,19 +205,6 @@ export async function executeResearchForProject(
     }
 
     const project = { id: projectDoc.id, ...projectDoc.data() } as Project;
-
-    // 2. Validate frequency (prevent running too often)
-    // frequency checks should not be done here, it should be done in the scheduler
-    // if (
-    //   !options?.ignoreFrequencyCheck &&
-    //   !validateFrequency(/*project.frequency,*/ project.lastRunAt)
-    // ) {
-    //   throw new Error(
-    //     `E1:${userId}:${projectId}:Project cannot be run more than once per day. Last run: ${new Date(
-    //       project.lastRunAt!
-    //     ).toISOString()}`
-    //   );
-    // }
 
     // 3. Get settings (from options -> project settings -> config defaults)
     const minResults =
@@ -311,15 +287,12 @@ export async function executeResearchForProject(
         )}. These keywords are important for improving search result relevance.`;
       }
 
-      const generatedQueries = await llmProvider.generateSearchQueries(
+      const generatedQueries = await generateSearchQueriesWithRetry(
         project.description,
-        additionalContext,
-        {
-          count: queriesPerIteration, // From config or options
-          focusRecent:
-            project.searchParameters?.dateRangePreference === "last_24h" ||
-            project.searchParameters?.dateRangePreference === "last_week",
-        }
+        undefined, // searchParams
+        undefined, // previousQueries
+        queriesPerIteration, // iteration
+        3 // maxRetries
       );
 
       const queries = generatedQueries.map((q) => q.query);
@@ -415,7 +388,7 @@ export async function executeResearchForProject(
       // This saves tokens/time by not fetching irrelevant pages
       let resultsToFetch = limitedResults;
 
-      if (llmProvider.filterSearchResults && limitedResults.length > 0) {
+      if (limitedResults.length > 0) {
         console.log("Filtering search results with LLM...");
         const resultsForFilter = limitedResults.map((r) => ({
           url: r.url,
@@ -424,7 +397,7 @@ export async function executeResearchForProject(
         }));
 
         try {
-          const filtered = await llmProvider.filterSearchResults(
+          const filtered = await filterSearchResultsSafe(
             resultsForFilter,
             project.description
           );
@@ -535,13 +508,12 @@ export async function executeResearchForProject(
         })
       );
 
-      const relevancyResults = await llmProvider.analyzeRelevancy(
-        project.description,
+      const relevancyResults = await analyzeRelevancyWithRetry(
         contentsToAnalyze,
-        {
-          threshold: relevancyThreshold,
-          batchSize: researchConfig.relevancyBatchSize, // From config
-        }
+        project.description,
+        undefined, // searchParams
+        relevancyThreshold,
+        3 // maxRetries
       );
 
       // Track token usage for relevancy analysis
@@ -685,48 +657,16 @@ export async function executeResearchForProject(
         imageAlt: r.metadata.imageAlt,
       }));
 
-      // 9.1 Cluster articles by semantic similarity (if enabled)
-      let clusters: TopicCluster[] = [];
-      if (enableClustering) {
-        console.log("Clustering articles by topic...");
-        clusters = await clusterArticlesByTopic(resultsForReport, {
-          similarityThreshold: clusteringSimilarityThreshold,
-        });
-      }
-
-      if (enableClustering && clusters.length > 0) {
-        console.log(
-          `Created ${clusters.length} topic clusters from ${resultsForReport.length} articles`
-        );
-
-        // Track token usage for topic clustering (uses embeddings)
-        const clusterInput = JSON.stringify(resultsForReport);
-        tokenUsage.inputTokens += estimateTokens(clusterInput);
-        // Embeddings output is small (just vectors), so minimal output tokens
-        tokenUsage.outputTokens += 100;
-        tokenUsage.totalTokens =
-          tokenUsage.inputTokens + tokenUsage.outputTokens;
-      }
-
       // 9.2 Cross-source analysis (Pass 1 of two-pass report generation)
       // Identifies themes, connections, contradictions, and unique insights
-      const hasMultiArticleClusters =
-        enableClustering && clusters.some((c) => c.relatedArticles.length > 0);
-
       let analysisContext: string = "";
       try {
         console.log("Running cross-source analysis...");
-        const analysis = hasMultiArticleClusters
-          ? await analyzeClusteredCrossSourcesWithRetry(
-              clusters,
-              project.title,
-              project.description
-            )
-          : await analyzeCrossSourcesWithRetry(
-              resultsForReport,
-              project.title,
-              project.description
-            );
+        const analysis = await analyzeCrossSourcesWithRetry(
+          resultsForReport,
+          project.title,
+          project.description
+        );
 
         analysisContext = formatAnalysisForReport(analysis);
         console.log(
@@ -738,10 +678,7 @@ export async function executeResearchForProject(
 
         // Track token usage for cross-source analysis
         const analysisInput =
-          project.description +
-          JSON.stringify(
-            hasMultiArticleClusters ? clusters : resultsForReport
-          );
+          project.description + JSON.stringify(resultsForReport);
         tokenUsage.inputTokens += estimateTokens(analysisInput) + 1500; // +1500 for system prompt
         tokenUsage.outputTokens += estimateTokens(analysisContext);
         tokenUsage.totalTokens =
@@ -755,49 +692,26 @@ export async function executeResearchForProject(
       }
 
       // 9.3 Compile report (Pass 2 of two-pass report generation)
-      let compiledReport: CompiledReport;
+      // Always use standard (non-clustered) compilation
+      console.log("Using standard compilation...");
+      const compiledReport = await compileReportWithRetry({
+        results: resultsForReport,
+        projectTitle: project.title,
+        projectDescription: project.description,
+        frequency: project.frequency,
+        timezone: project.timezone,
+        analysisContext,
+      });
 
-      if (hasMultiArticleClusters) {
-        // Use clustered report compilation for better consolidation
-        console.log("Using clustered report compilation...");
-        compiledReport = await compileClusteredReport({
-          clusters,
-          projectTitle: project.title,
-          projectDescription: project.description,
-          frequency: project.frequency,
-          timezone: project.timezone,
-          analysisContext,
-        });
-
-        // Track token usage for clustered report compilation
-        const clusteredInput =
-          project.description + JSON.stringify(clusters) + analysisContext;
-        tokenUsage.inputTokens += estimateTokens(clusteredInput) + 1000; // +1000 for system prompt
-        tokenUsage.outputTokens += estimateTokens(compiledReport.markdown);
-        tokenUsage.totalTokens =
-          tokenUsage.inputTokens + tokenUsage.outputTokens;
-      } else {
-        // No clustering needed, use standard compilation
-        console.log("No multi-article clusters, using standard compilation...");
-        compiledReport = await compileReportWithRetry({
-          results: resultsForReport,
-          projectTitle: project.title,
-          projectDescription: project.description,
-          frequency: project.frequency,
-          timezone: project.timezone,
-          analysisContext,
-        });
-
-        // Track token usage for standard report compilation
-        const reportInput =
-          project.description +
-          JSON.stringify(resultsForReport) +
-          analysisContext;
-        tokenUsage.inputTokens += estimateTokens(reportInput) + 1000; // +1000 for system prompt
-        tokenUsage.outputTokens += estimateTokens(compiledReport.markdown);
-        tokenUsage.totalTokens =
-          tokenUsage.inputTokens + tokenUsage.outputTokens;
-      }
+      // Track token usage for standard report compilation
+      const reportInput =
+        project.description +
+        JSON.stringify(resultsForReport) +
+        analysisContext;
+      tokenUsage.inputTokens += estimateTokens(reportInput) + 1000; // +1000 for system prompt
+      tokenUsage.outputTokens += estimateTokens(compiledReport.markdown);
+      tokenUsage.totalTokens =
+        tokenUsage.inputTokens + tokenUsage.outputTokens;
 
       // 9.4 Generate summary from the compiled report (if enabled)
       const includeSummary =
@@ -839,7 +753,6 @@ export async function executeResearchForProject(
     console.log(`  project.searchParameters: ${JSON.stringify(project.searchParameters || null)}`);
     console.log(`  project.searchParameters?.language: ${project.searchParameters?.language || '(not set)'}`);
     console.log(`  project.searchParameters?.outputLanguage: ${project.searchParameters?.outputLanguage || '(not set)'}`);
-    console.log(`  llmProvider.translateText available: ${!!llmProvider.translateText}`);
 
     if (report && project.searchParameters?.outputLanguage) {
       const searchLang = project.searchParameters?.language || 'en';
@@ -853,76 +766,71 @@ export async function executeResearchForProject(
 
       // Always translate when outputLanguage is explicitly set, even if it matches searchLanguage.
       // Brave returns mixed-language results, so we need the LLM to ensure the full report is in the target language.
-      if (llmProvider.translateText) {
-        console.log(`[Translation] Translating report to ${targetLang} (ensuring full report is in target language)...`);
+      console.log(`[Translation] Translating report to ${targetLang} (ensuring full report is in target language)...`);
 
-        try {
-          const startTranslation = Date.now();
+      try {
+        const startTranslation = Date.now();
 
-          // Translate the markdown report
-          const translatedMarkdown = await llmProvider.translateText(
-            report.markdown,
-            searchLang,
-            targetLang
-          );
+        // Translate the markdown report
+        const translatedMarkdown = await translateText(
+          report.markdown,
+          searchLang,
+          targetLang
+        );
 
-          // Track translation token usage
-          const translationInputTokens = estimateTokens(report.markdown) + 50; // +50 for system prompt
-          const translationOutputTokens = estimateTokens(translatedMarkdown);
+        // Track translation token usage
+        const translationInputTokens = estimateTokens(report.markdown) + 50; // +50 for system prompt
+        const translationOutputTokens = estimateTokens(translatedMarkdown);
 
-          tokenUsage.inputTokens += translationInputTokens;
-          tokenUsage.outputTokens += translationOutputTokens;
-          tokenUsage.totalTokens = tokenUsage.inputTokens + tokenUsage.outputTokens;
+        tokenUsage.inputTokens += translationInputTokens;
+        tokenUsage.outputTokens += translationOutputTokens;
+        tokenUsage.totalTokens = tokenUsage.inputTokens + tokenUsage.outputTokens;
 
-          // Update report with translated content
-          report.markdown = translatedMarkdown;
+        // Update report with translated content
+        report.markdown = translatedMarkdown;
 
-          // Also translate title and summary using the short-text translator to avoid bloated output
-          const translateShort = llmProvider.translateShortText?.bind(llmProvider) || llmProvider.translateText!.bind(llmProvider);
-          report.title = (await translateShort(report.title, searchLang, targetLang)).replace(/\n/g, ' ').trim();
-          // Safety: truncate title if it somehow exceeds 200 chars
-          if (report.title.length > 200) {
-            report.title = report.title.slice(0, 200);
-          }
-          const titleInputTokens = estimateTokens(report.title) + 50;
-          const titleOutputTokens = estimateTokens(report.title);
-          if (report.summary) {
-            report.summary = await translateShort(report.summary, searchLang, targetLang);
-          }
-          const summaryInputTokens = report.summary ? estimateTokens(report.summary) + 50 : 0;
-          const summaryOutputTokens = report.summary ? estimateTokens(report.summary) : 0;
-
-          const extraInputTokens = titleInputTokens + summaryInputTokens;
-          const extraOutputTokens = titleOutputTokens + summaryOutputTokens;
-          tokenUsage.inputTokens += extraInputTokens;
-          tokenUsage.outputTokens += extraOutputTokens;
-          tokenUsage.totalTokens = tokenUsage.inputTokens + tokenUsage.outputTokens;
-
-          const totalTranslationInputTokens = translationInputTokens + extraInputTokens;
-          const totalTranslationOutputTokens = translationOutputTokens + extraOutputTokens;
-
-          const translationDuration = Date.now() - startTranslation;
-          console.log(`[Translation] Completed in ${translationDuration}ms`);
-
-          // Track translation stats
-          translationStats.wasTranslated = true;
-          translationStats.translatedToLanguage = targetLang;
-          translationStats.translationTokens = totalTranslationInputTokens + totalTranslationOutputTokens;
-          translationStats.translationCostUsd = estimateCost(
-            {
-              inputTokens: totalTranslationInputTokens,
-              outputTokens: totalTranslationOutputTokens,
-              totalTokens: totalTranslationInputTokens + totalTranslationOutputTokens
-            },
-            llmProvider.getModel()
-          );
-        } catch (error) {
-          console.error('Translation failed, delivering untranslated report:', error);
-          // Continue with untranslated report - don't fail the entire research
-          translationStats.wasTranslated = false;
+        // Also translate title and summary using the short-text translator to avoid bloated output
+        report.title = (await translateShortText(report.title, searchLang, targetLang)).replace(/\n/g, ' ').trim();
+        // Safety: truncate title if it somehow exceeds 200 chars
+        if (report.title.length > 200) {
+          report.title = report.title.slice(0, 200);
         }
-      } else {
-        console.log(`[Translation] SKIPPED: llmProvider.translateText is not available`);
+        const titleInputTokens = estimateTokens(report.title) + 50;
+        const titleOutputTokens = estimateTokens(report.title);
+        if (report.summary) {
+          report.summary = await translateShortText(report.summary, searchLang, targetLang);
+        }
+        const summaryInputTokens = report.summary ? estimateTokens(report.summary) + 50 : 0;
+        const summaryOutputTokens = report.summary ? estimateTokens(report.summary) : 0;
+
+        const extraInputTokens = titleInputTokens + summaryInputTokens;
+        const extraOutputTokens = titleOutputTokens + summaryOutputTokens;
+        tokenUsage.inputTokens += extraInputTokens;
+        tokenUsage.outputTokens += extraOutputTokens;
+        tokenUsage.totalTokens = tokenUsage.inputTokens + tokenUsage.outputTokens;
+
+        const totalTranslationInputTokens = translationInputTokens + extraInputTokens;
+        const totalTranslationOutputTokens = translationOutputTokens + extraOutputTokens;
+
+        const translationDuration = Date.now() - startTranslation;
+        console.log(`[Translation] Completed in ${translationDuration}ms`);
+
+        // Track translation stats
+        translationStats.wasTranslated = true;
+        translationStats.translatedToLanguage = targetLang;
+        translationStats.translationTokens = totalTranslationInputTokens + totalTranslationOutputTokens;
+        translationStats.translationCostUsd = estimateCost(
+          {
+            inputTokens: totalTranslationInputTokens,
+            outputTokens: totalTranslationOutputTokens,
+            totalTokens: totalTranslationInputTokens + totalTranslationOutputTokens
+          },
+          reportModel
+        );
+      } catch (error) {
+        console.error('Translation failed, delivering untranslated report:', error);
+        // Continue with untranslated report - don't fail the entire research
+        translationStats.wasTranslated = false;
       }
     } else if (report && project.searchParameters?.language && project.searchParameters.language !== 'en') {
       // No output language specified, default to English translation if search was not English
@@ -930,64 +838,61 @@ export async function executeResearchForProject(
 
       console.log(`[Translation] Branch 2 (default-to-English): searchLang=${searchLang}, no outputLanguage set`);
 
-      if (llmProvider.translateText) {
-        console.log(`No output language specified, translating from ${searchLang} to English (default)...`);
+      console.log(`No output language specified, translating from ${searchLang} to English (default)...`);
 
-        try {
-          const translatedMarkdown = await llmProvider.translateText(
-            report.markdown,
-            searchLang,
-            'en'
-          );
+      try {
+        const translatedMarkdown = await translateText(
+          report.markdown,
+          searchLang,
+          'en'
+        );
 
-          const translationInputTokens = estimateTokens(report.markdown) + 50;
-          const translationOutputTokens = estimateTokens(translatedMarkdown);
+        const translationInputTokens = estimateTokens(report.markdown) + 50;
+        const translationOutputTokens = estimateTokens(translatedMarkdown);
 
-          tokenUsage.inputTokens += translationInputTokens;
-          tokenUsage.outputTokens += translationOutputTokens;
-          tokenUsage.totalTokens = tokenUsage.inputTokens + tokenUsage.outputTokens;
+        tokenUsage.inputTokens += translationInputTokens;
+        tokenUsage.outputTokens += translationOutputTokens;
+        tokenUsage.totalTokens = tokenUsage.inputTokens + tokenUsage.outputTokens;
 
-          report.markdown = translatedMarkdown;
+        report.markdown = translatedMarkdown;
 
-          // Also translate title and summary using the short-text translator to avoid bloated output
-          const translateShort = llmProvider.translateShortText?.bind(llmProvider) || llmProvider.translateText!.bind(llmProvider);
-          report.title = (await translateShort(report.title, searchLang, 'en')).replace(/\n/g, ' ').trim();
-          // Safety: truncate title if it somehow exceeds 200 chars
-          if (report.title.length > 200) {
-            report.title = report.title.slice(0, 200);
-          }
-          const titleInputTokens = estimateTokens(report.title) + 50;
-          const titleOutputTokens = estimateTokens(report.title);
-          if (report.summary) {
-            report.summary = await translateShort(report.summary, searchLang, 'en');
-          }
-          const summaryInputTokens = report.summary ? estimateTokens(report.summary) + 50 : 0;
-          const summaryOutputTokens = report.summary ? estimateTokens(report.summary) : 0;
-
-          const extraInputTokens = titleInputTokens + summaryInputTokens;
-          const extraOutputTokens = titleOutputTokens + summaryOutputTokens;
-          tokenUsage.inputTokens += extraInputTokens;
-          tokenUsage.outputTokens += extraOutputTokens;
-          tokenUsage.totalTokens = tokenUsage.inputTokens + tokenUsage.outputTokens;
-
-          const totalTranslationInputTokens = translationInputTokens + extraInputTokens;
-          const totalTranslationOutputTokens = translationOutputTokens + extraOutputTokens;
-
-          translationStats.wasTranslated = true;
-          translationStats.translatedToLanguage = 'en';
-          translationStats.translationTokens = totalTranslationInputTokens + totalTranslationOutputTokens;
-          translationStats.translationCostUsd = estimateCost(
-            {
-              inputTokens: totalTranslationInputTokens,
-              outputTokens: totalTranslationOutputTokens,
-              totalTokens: totalTranslationInputTokens + totalTranslationOutputTokens
-            },
-            llmProvider.getModel()
-          );
-        } catch (error) {
-          console.error('Default translation to English failed:', error);
-          translationStats.wasTranslated = false;
+        // Also translate title and summary using the short-text translator to avoid bloated output
+        report.title = (await translateShortText(report.title, searchLang, 'en')).replace(/\n/g, ' ').trim();
+        // Safety: truncate title if it somehow exceeds 200 chars
+        if (report.title.length > 200) {
+          report.title = report.title.slice(0, 200);
         }
+        const titleInputTokens = estimateTokens(report.title) + 50;
+        const titleOutputTokens = estimateTokens(report.title);
+        if (report.summary) {
+          report.summary = await translateShortText(report.summary, searchLang, 'en');
+        }
+        const summaryInputTokens = report.summary ? estimateTokens(report.summary) + 50 : 0;
+        const summaryOutputTokens = report.summary ? estimateTokens(report.summary) : 0;
+
+        const extraInputTokens = titleInputTokens + summaryInputTokens;
+        const extraOutputTokens = titleOutputTokens + summaryOutputTokens;
+        tokenUsage.inputTokens += extraInputTokens;
+        tokenUsage.outputTokens += extraOutputTokens;
+        tokenUsage.totalTokens = tokenUsage.inputTokens + tokenUsage.outputTokens;
+
+        const totalTranslationInputTokens = translationInputTokens + extraInputTokens;
+        const totalTranslationOutputTokens = translationOutputTokens + extraOutputTokens;
+
+        translationStats.wasTranslated = true;
+        translationStats.translatedToLanguage = 'en';
+        translationStats.translationTokens = totalTranslationInputTokens + totalTranslationOutputTokens;
+        translationStats.translationCostUsd = estimateCost(
+          {
+            inputTokens: totalTranslationInputTokens,
+            outputTokens: totalTranslationOutputTokens,
+            totalTokens: totalTranslationInputTokens + totalTranslationOutputTokens
+          },
+          reportModel
+        );
+      } catch (error) {
+        console.error('Default translation to English failed:', error);
+        translationStats.wasTranslated = false;
       }
     }
 
@@ -1013,7 +918,7 @@ export async function executeResearchForProject(
 
         // Token usage / cost estimates
         estimatedTotalTokens: tokenUsage.totalTokens,
-        estimatedCostUsd: estimateCost(tokenUsage, llmProvider.getModel()),
+        estimatedCostUsd: estimateCost(tokenUsage, reportModel),
 
         // Search context
         freshnessUsed: currentFreshness,
@@ -1023,8 +928,8 @@ export async function executeResearchForProject(
         ...translationStats,
 
         // Provider info
-        llmProvider: llmProvider.getName(),
-        llmModel: llmProvider.getModel(),
+        llmProvider: "openrouter",
+        llmModel: reportModel,
       };
 
       if (isAllowedToWriteToDb) {
@@ -1078,25 +983,6 @@ export async function executeResearchForProject(
       durationMs: completedAt - startedAt,
     };
   } catch (error: any) {
-    // console.error("Research execution error:", error);
-
-    // // Update project with error
-    // try {
-    //   const projectRef = db
-    //     .collection("users")
-    //     .doc(userId)
-    //     .collection("projects")
-    //     .doc(projectId);
-    //   await projectRef.update({
-    //     lastRunAt: startedAt,
-    //     status: "error",
-    //     lastError: error.message,
-    //     updatedAt: Date.now(),
-    //   });
-    // } catch (updateError) {
-    //   console.error("Failed to update project with error:", updateError);
-    // }
-
     return {
       success: false,
       projectId,

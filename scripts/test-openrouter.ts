@@ -1,11 +1,11 @@
 /**
- * Test script for OpenAI service
+ * Test script for OpenRouter LLM service
  *
  * Usage:
- *   ts-node scripts/test-openai.ts
+ *   ts-node scripts/test-openrouter.ts
  *
  * Environment variables required:
- *   OPENAI_API_KEY
+ *   OPENROUTER_API_KEY
  */
 
 // Load environment variables from .env file
@@ -14,7 +14,7 @@ import * as path from "path";
 dotenv.config({ path: path.resolve(__dirname, "../.env"), override: true });
 
 import {
-  initializeOpenAI,
+  initializeOpenRouter,
   generateSearchQueries,
   analyzeRelevancy,
   compileReport,
@@ -166,21 +166,21 @@ async function testReportCompilation() {
 
 async function main() {
   console.log("===========================================");
-  console.log("    OpenAI Service Test Suite");
+  console.log("    OpenRouter Service Test Suite");
   console.log("===========================================");
 
   // Check for API key
-  const apiKey = process.env.OPENAI_API_KEY;
+  const apiKey = process.env.OPENROUTER_API_KEY;
   if (!apiKey) {
-    console.error("\n✗ Error: OPENAI_API_KEY environment variable not set");
+    console.error("\n✗ Error: OPENROUTER_API_KEY environment variable not set");
     console.error("Please set it before running this test:\n");
-    console.error("  export OPENAI_API_KEY=your-api-key\n");
+    console.error("  export OPENROUTER_API_KEY=your-api-key\n");
     process.exit(1);
   }
 
-  // Initialize OpenAI
-  console.log("\n✓ Initializing OpenAI client...");
-  initializeOpenAI(apiKey);
+  // Initialize OpenRouter
+  console.log("\n✓ Initializing OpenRouter client...");
+  initializeOpenRouter(apiKey);
 
   try {
     // Run tests

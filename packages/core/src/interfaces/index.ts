@@ -1,8 +1,7 @@
 /**
- * Provider interfaces for dependency injection
+ * Provider interfaces and data types
  */
 
-export type { LLMProvider } from "./../services/llm/index";
 export type {
   GeneratedQuery,
   ContentToAnalyze,

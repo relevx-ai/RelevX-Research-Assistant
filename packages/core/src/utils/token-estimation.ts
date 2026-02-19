@@ -72,10 +72,20 @@ export function addTokenUsage(
 }
 
 /**
+ * Strip the OpenRouter provider prefix from a model name.
+ * e.g. "openai/gpt-4o-mini" → "gpt-4o-mini"
+ */
+function normalizeModelName(model: string): string {
+  const slashIndex = model.indexOf("/");
+  return slashIndex >= 0 ? model.slice(slashIndex + 1) : model;
+}
+
+/**
  * Estimate cost in USD based on token usage and model
  */
 export function estimateCost(usage: TokenUsage, model: string): number {
-  const pricing = MODEL_PRICING[model];
+  const normalized = normalizeModelName(model);
+  const pricing = MODEL_PRICING[normalized] || MODEL_PRICING[model];
 
   if (!pricing) {
     // Default to gpt-4o-mini pricing if model not found

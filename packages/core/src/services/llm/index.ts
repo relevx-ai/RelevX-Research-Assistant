@@ -1,11 +1,10 @@
 /**
- * LLM Provider implementations
+ * LLM service functions
  */
 
-export { OpenAIProvider, createOpenAIProvider } from "./openai-provider";
-export type { LLMProvider } from "../../interfaces/llm-provider";
+export { initializeOpenRouter, getClient } from "./client";
 
-export { initializeOpenAI, getClient } from "./client";
+export { translateText, translateShortText } from "./translation";
 
 export {
   generateSearchQueries,
@@ -35,12 +34,6 @@ export {
 } from "./report-compilation";
 
 export {
-  clusterArticlesByTopic,
-  shouldCluster,
-  type ClusteringOptions,
-} from "./topic-clustering";
-
-export {
   analyzeCrossSources,
   analyzeCrossSourcesWithRetry,
   analyzeClusteredCrossSources,
@@ -48,14 +41,6 @@ export {
   formatAnalysisForReport,
   type CrossSourceAnalysis,
 } from "./cross-source-analysis";
-
-export {
-  generateEmbeddings,
-  generateEmbedding,
-  cosineSimilarity,
-  calculateSimilarityMatrix,
-  findSimilarPairs,
-} from "./embeddings";
 
 export {
   QUERY_GENERATION_PROMPTS,
