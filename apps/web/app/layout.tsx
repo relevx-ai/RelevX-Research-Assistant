@@ -6,6 +6,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { AuthProvider } from "@/contexts/auth-context";
 import { Navbar } from "@/components/navigation/navbar";
+import { Footer } from "@/components/footer";
 
 export const metadata: Metadata = {
   title: "RelevX - AI-Powered Research Assistant",
@@ -66,6 +67,7 @@ export default function RootLayout({
           <AuthProvider>
             <Navbar />
             {children}
+            <Footer />
           </AuthProvider>
         </div>
       </body>
