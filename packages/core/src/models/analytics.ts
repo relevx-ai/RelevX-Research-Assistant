@@ -18,6 +18,9 @@ export interface TopDownPlanMetrics {
   sum_estimated_cost_usd: number;
   sum_search_api_calls: number;
   run_count: number;
+  avg_research_duration_ms: number;
+  avg_estimated_cost_usd: number;
+  avg_search_api_calls: number;
 }
 
 export interface TopDownAnalyticsDocument

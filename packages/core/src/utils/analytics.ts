@@ -78,7 +78,7 @@ export async function updateActiveProjectCount(
   frequency: RecurringFrequency,
   planType: PlanType
 ): Promise<void> {
-  const dateKey = kAnalyticsDailyDateKey(new Date());
+  const dateKey = kAnalyticsMonthlyDateKey(new Date());
   const ref = db.doc(kAnalyticsCollectionTopDown(dateKey));
   const field = `active_${frequency}` as const;
 
@@ -94,14 +94,18 @@ export async function updateActiveProjectCount(
 
 /**
  * Record run metrics for top-down analytics after a delivery completes.
+ * Updates both plan-specific metrics (free/paid) and legacy aggregate fields
+ * (num_completed_daily_research, num_completed_monthly_research) for consistency.
  */
 export async function recordRunMetrics(
   db: any,
   planType: PlanType,
   stats: DeliveryStats
 ): Promise<void> {
-  const dateKey = kAnalyticsDailyDateKey(new Date());
-  const ref = db.doc(kAnalyticsCollectionTopDown(dateKey));
+  const now = new Date();
+  const monthKey = kAnalyticsMonthlyDateKey(now);
+  const dailyKey = kAnalyticsDailyDateKey(now);
+  const ref = db.doc(kAnalyticsCollectionTopDown(monthKey));
 
   const durationMs = stats.researchDurationMs ?? 0;
   const costUsd = stats.estimatedCostUsd ?? 0;
@@ -115,6 +119,12 @@ export async function recordRunMetrics(
     const sumCost = ((planData.sum_estimated_cost_usd as number) ?? 0) + costUsd;
     const sumSearch = ((planData.sum_search_api_calls as number) ?? 0) + searchCalls;
     const runCount = ((planData.run_count as number) ?? 0) + 1;
+    const avgDuration = runCount > 0 ? sumDuration / runCount : 0;
+    const avgCost = runCount > 0 ? sumCost / runCount : 0;
+    const avgSearch = runCount > 0 ? sumSearch / runCount : 0;
+
+    const dailyResearch = (data.num_completed_daily_research as Record<string, number>) ?? {};
+    const monthlyResearch = (data.num_completed_monthly_research as number) ?? 0;
 
     transaction.set(
       ref,
@@ -125,7 +135,15 @@ export async function recordRunMetrics(
           sum_estimated_cost_usd: sumCost,
           sum_search_api_calls: sumSearch,
           run_count: runCount,
+          avg_research_duration_ms: avgDuration,
+          avg_estimated_cost_usd: avgCost,
+          avg_search_api_calls: avgSearch,
         },
+        num_completed_daily_research: {
+          ...dailyResearch,
+          [dailyKey]: (dailyResearch[dailyKey] ?? 0) + 1,
+        },
+        num_completed_monthly_research: monthlyResearch + 1,
       },
       { merge: true }
     );
