@@ -13,6 +13,7 @@ import {
   Frequency,
   getUserOneShotCount,
   kAnalyticsMonthlyDateKey,
+  updateActiveProjectCount,
   validateProjectDescription,
   sanitizeLanguageCode,
   sanitizeRegionCode,
@@ -617,6 +618,30 @@ const routes: FastifyPluginAsync = async (app) => {
           }
         }
 
+        // Update top-down active project count for recurring projects
+        if (
+          !createAsPaused &&
+          (projectData.frequency === "daily" ||
+            projectData.frequency === "weekly" ||
+            projectData.frequency === "monthly")
+        ) {
+          try {
+            const planType =
+              plan?.id === getFreePlanId() ? "free" : "paid";
+            await updateActiveProjectCount(
+              db,
+              1,
+              projectData.frequency,
+              planType
+            );
+          } catch (err: any) {
+            app.log.warn(
+              { error: err.message },
+              "Failed to update top-down active project count on create"
+            );
+          }
+        }
+
         const { userId: _userId, ...projectInfo } = projectData;
 
         const response: CreateProjectResponse = {
@@ -720,6 +745,30 @@ const routes: FastifyPluginAsync = async (app) => {
           updateData.status = "active";
         }
         await projectDoc.ref.update(updateData);
+
+        // Update top-down active project count when activating paused project
+        if (
+          project.status === "paused" &&
+          (project.frequency === "daily" ||
+            project.frequency === "weekly" ||
+            project.frequency === "monthly")
+        ) {
+          try {
+            const planType =
+              plan?.id === getFreePlanId() ? "free" : "paid";
+            await updateActiveProjectCount(
+              db,
+              1,
+              project.frequency as "daily" | "weekly" | "monthly",
+              planType
+            );
+          } catch (err: any) {
+            app.log.warn(
+              { error: err.message },
+              "Failed to update top-down active project count on run-now"
+            );
+          }
+        }
 
         try { await app.redis.del(userId); } catch (_) {}
 
@@ -947,6 +996,14 @@ const routes: FastifyPluginAsync = async (app) => {
             .status(404)
             .send({ error: { message: "Project not found" } });
 
+        const docData = doc.data() as ProjectInfo & { userId?: string };
+        const wasActive =
+          docData.status === "active" || docData.status === "running";
+        const isRecurring =
+          docData.frequency === "daily" ||
+          docData.frequency === "weekly" ||
+          docData.frequency === "monthly";
+
         // Cancel any pending queue jobs
         try {
           await app.queueService.cancelProjectJobs(userId, doc.id);
@@ -963,6 +1020,30 @@ const routes: FastifyPluginAsync = async (app) => {
           status: "deleted",
           updatedAt: new Date().toISOString(),
         });
+
+        // Update top-down active project count when deleting an active recurring project
+        if (wasActive && isRecurring) {
+          try {
+            const userData = await getUserData(userId, db);
+            const plans = await getPlans(remoteConfig);
+            const plan = plans.find(
+              (p) => p.id === (userData.user.planId || getFreePlanId())
+            );
+            const planType =
+              plan?.id === getFreePlanId() ? "free" : "paid";
+            await updateActiveProjectCount(
+              db,
+              -1,
+              docData.frequency as "daily" | "weekly" | "monthly",
+              planType
+            );
+          } catch (err: any) {
+            app.log.warn(
+              { error: err.message },
+              "Failed to update top-down active project count on delete"
+            );
+          }
+        }
 
         // Invalidate cache so /list returns fresh data
         try { await app.redis.del(userId); } catch (_) {}
@@ -1096,12 +1177,43 @@ const routes: FastifyPluginAsync = async (app) => {
             .limit(1)
             .get();
 
+          const isRecurring =
+            projectToToggle.frequency === "daily" ||
+            projectToToggle.frequency === "weekly" ||
+            projectToToggle.frequency === "monthly";
+
           for (const doc of toggleSnapshot.docs) {
             await doc.ref.update({
               ...updates,
               status: nStatus,
               updatedAt: new Date().toISOString(),
             });
+
+            // Update top-down active project count for recurring projects
+            if (isRecurring) {
+              try {
+                const toggleUserData = await getUserData(userId, db);
+                const planForToggle = (await getPlans(remoteConfig)).find(
+                  (p) =>
+                    p.id === (toggleUserData.user.planId || getFreePlanId())
+                );
+                const planType =
+                  planForToggle?.id === getFreePlanId() ? "free" : "paid";
+                const delta =
+                  nStatus === "active" ? (1 as const) : (-1 as const);
+                await updateActiveProjectCount(
+                  db,
+                  delta,
+                  projectToToggle.frequency as "daily" | "weekly" | "monthly",
+                  planType
+                );
+              } catch (err: any) {
+                app.log.warn(
+                  { error: err.message },
+                  "Failed to update top-down active project count on toggle"
+                );
+              }
+            }
 
             // Queue integration
             try {
