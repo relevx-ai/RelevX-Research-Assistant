@@ -67,7 +67,9 @@ async function generateEmailHTML(
   //     `
   //   : "";
   const hasSummary = Boolean(options?.summary?.trim());
-  const summarySection = options?.summary?.trim() ?? "";
+  const summarySection = hasSummary
+    ? await marked.parse(options!.summary!.trim(), { async: true })
+    : "";
 
   return `<!DOCTYPE html>
 <html lang="en" xmlns:v="urn:schemas-microsoft-com:vml">
@@ -248,7 +250,7 @@ async function generateEmailHTML(
               <td class="mobile-padding" style="padding: 20px 40px 30px 40px; background-color: #ffffff !important; border-left: 1px solid #e2e8f0; border-right: 1px solid #e2e8f0;">
                 <div style="font-size: 11px; font-weight: 600; color: #0d9488 !important; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 12px;">Summary</div>
                 <div style="background-color: #f8fafc !important; padding: 20px; border-radius: 8px; -webkit-border-radius: 8px; border-left: 4px solid #14b8a6;">
-                  <p style="font-size: 16px; line-height: 1.6; color: #475569 !important; margin: 0;">${summarySection}</p>
+                  <div style="font-size: 16px; line-height: 1.6; color: #475569 !important;">${summarySection}</div>
                 </div>
               </td>
             </tr>
