@@ -25,6 +25,7 @@ import {
   HelpCircle,
   Home,
   ChevronRight,
+  Zap,
 } from "lucide-react";
 import { useAuth } from "@/contexts/auth-context";
 import { signInWithGoogle } from "@/lib/auth";
@@ -38,6 +39,7 @@ import { relevx_api } from "@/lib/client";
 // Feature comparison data
 const featureComparison = [
   { feature: "Active Projects", free: "1", pro: "5" },
+  { feature: "Run Now Uses", free: "1 / month", pro: "5 / month" },
   {
     feature: "Research Frequency",
     free: "Daily, Weekly, Monthly",
@@ -195,6 +197,17 @@ function PricingContent() {
                     </span>
                     <span className="text-5xl font-bold gradient-text">
                       ${plan.infoPrice ?? "0"}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-2 pb-4 px-3 py-2 rounded-md bg-teal-500/10 border border-teal-500/20">
+                    <Zap className="h-4 w-4 text-teal-400 flex-shrink-0" />
+                    <span className="text-sm font-medium text-teal-300">
+                      {plan.settingsOneShotRunsPerMonth ?? 0} Run Now
+                      {(plan.settingsOneShotRunsPerMonth ?? 0) === 1
+                        ? " use"
+                        : " uses"}{" "}
+                      / month
                     </span>
                   </div>
 
