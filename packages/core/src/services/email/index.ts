@@ -37,7 +37,18 @@ async function generateEmailHTML(
   options?: ReportEmailOptions
 ): Promise<string> {
   // Strip references and external links from email version
-  const emailMarkdown = stripReferencesForEmail(report.markdown);
+  let emailMarkdown = stripReferencesForEmail(report.markdown);
+
+  // When a standalone summary is shown, strip the AI's opening synthesis
+  // and Key Takeaways from the report body to avoid duplicate summaries.
+  // Everything before the first ## heading is the opening summary content.
+  if (options?.summary?.trim()) {
+    const firstH2 = emailMarkdown.search(/^##\s/m);
+    if (firstH2 > 0) {
+      emailMarkdown = emailMarkdown.slice(firstH2);
+    }
+  }
+
   // Convert markdown to HTML
   const markdownHtml = await marked.parse(emailMarkdown, { async: true });
 
