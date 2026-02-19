@@ -8,7 +8,7 @@
     "build:web": "cd apps/web && pnpm build",
     "clean": "pnpm -r exec rm -rf node_modules && rm -rf node_modules",
     "install:all": "pnpm install",
-    "test:openai": "tsx scripts/test-openai.ts",
+    "test:openrouter": "tsx scripts/test-openrouter.ts",
     "test:brave": "tsx scripts/test-brave-search.ts",
     "test:extract": "tsx scripts/test-content-extraction.ts",
     "test:research": "tsx scripts/test-research.ts",

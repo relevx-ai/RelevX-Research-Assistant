@@ -5,7 +5,7 @@
  *   pnpm test:queries "Your project description here"
  *
  * Environment variables required:
- *   OPENAI_API_KEY
+ *   OPENROUTER_API_KEY
  */
 
 import * as dotenv from "dotenv";
@@ -13,7 +13,7 @@ import * as path from "path";
 dotenv.config({ path: path.resolve(__dirname, "../.env"), override: true });
 
 import {
-  initializeOpenAI,
+  initializeOpenRouter,
   generateSearchQueriesWithRetry,
 } from "../packages/core/src/services/llm";
 
@@ -26,14 +26,14 @@ async function main() {
   }
 
   // Check for API key
-  const openaiKey = process.env.OPENAI_API_KEY;
-  if (!openaiKey) {
-    console.error("Error: OPENAI_API_KEY not set");
+  const openrouterKey = process.env.OPENROUTER_API_KEY;
+  if (!openrouterKey) {
+    console.error("Error: OPENROUTER_API_KEY not set");
     process.exit(1);
   }
 
-  // Initialize OpenAI client
-  initializeOpenAI(openaiKey);
+  // Initialize OpenRouter client
+  initializeOpenRouter(openrouterKey);
 
   console.log("=".repeat(70));
   console.log("PROJECT DESCRIPTION:");

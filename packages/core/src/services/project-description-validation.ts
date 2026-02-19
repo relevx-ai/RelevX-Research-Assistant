@@ -5,8 +5,10 @@
  * and researchable via standard U.S. web search.
  */
 
-import type { LLMProvider } from "../interfaces/llm-provider";
 import type { ValidateProjectDescriptionResult } from "../models/ai";
+import { getClient } from "./llm/client";
+import { getModelConfig } from "./research-engine/config";
+import type { ChatCompletionMessageParam } from "openai/resources/chat/completions";
 
 const VALIDATION_TEMPERATURE = 0.2;
 
@@ -38,12 +40,10 @@ Example invalid response: {"valid": false, "reason": "This description asks for 
  * Validates a project description using AI to ensure it is legal, non-threatening,
  * and researchable via standard U.S. web search.
  *
- * @param llmProvider - The LLM provider (e.g., OpenAI) for classification
  * @param description - The project description to validate
  * @returns Promise with valid flag and optional reason when invalid
  */
 export async function validateProjectDescription(
-  llmProvider: LLMProvider,
   description: string
 ): Promise<ValidateProjectDescriptionResult> {
   const trimmed = description?.trim() ?? "";
@@ -53,19 +53,28 @@ export async function validateProjectDescription(
 
   const userPrompt = USER_PROMPT_TEMPLATE.replace("DESCRIPTION", trimmed);
 
-  const response = await llmProvider.query(
-    [
-      { role: "system", content: SYSTEM_PROMPT },
-      { role: "user", content: userPrompt },
-    ],
-    VALIDATION_TEMPERATURE
-  );
+  const client = getClient();
+  const { model } = getModelConfig("queryGeneration");
+  const msgs: ChatCompletionMessageParam[] = [
+    { role: "system", content: SYSTEM_PROMPT },
+    { role: "user", content: userPrompt },
+  ];
 
-  const parsed = response as { valid?: boolean; reason?: string };
+  const response = await client.chat.completions.create({
+    model,
+    temperature: VALIDATION_TEMPERATURE,
+    messages: msgs,
+    response_format: { type: "json_object" },
+  });
+
+  const choice = response.choices[0];
+  if (!choice?.message?.content) {
+    throw new Error("No content in AI validation response");
+  }
+
+  const parsed = JSON.parse(choice.message.content) as { valid?: boolean; reason?: string };
 
   if (typeof parsed?.valid !== "boolean") {
-    // If AI returns unexpected format, fail open with a generic message
-    // (treat as internal error - caller may want to retry or return 500)
     throw new Error("Invalid response format from AI validation");
   }
 

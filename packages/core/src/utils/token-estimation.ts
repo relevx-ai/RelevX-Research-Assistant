@@ -6,22 +6,16 @@
  */
 
 /**
- * Pricing per 1M tokens (as of 2024)
+ * Pricing per 1M tokens (via OpenRouter)
  * Input/Output prices in USD
  */
 export const MODEL_PRICING: Record<string, { input: number; output: number }> =
   {
-    // OpenAI models
+    // OpenAI models (via OpenRouter)
     "gpt-4o-mini": { input: 0.15, output: 0.6 },
     "gpt-4o": { input: 2.5, output: 10 },
     "gpt-4-turbo": { input: 10, output: 30 },
     "gpt-3.5-turbo": { input: 0.5, output: 1.5 },
-
-    // Gemini models
-    "gemini-1.5-flash-8b": { input: 0.0375, output: 0.15 },
-    "gemini-1.5-flash": { input: 0.075, output: 0.3 },
-    "gemini-1.5-pro": { input: 1.25, output: 5 },
-    "gemini-2.0-flash": { input: 0.1, output: 0.4 },
   };
 
 /**
@@ -72,10 +66,20 @@ export function addTokenUsage(
 }
 
 /**
+ * Strip the OpenRouter provider prefix from a model name.
+ * e.g. "openai/gpt-4o-mini" → "gpt-4o-mini"
+ */
+function normalizeModelName(model: string): string {
+  const slashIndex = model.indexOf("/");
+  return slashIndex >= 0 ? model.slice(slashIndex + 1) : model;
+}
+
+/**
  * Estimate cost in USD based on token usage and model
  */
 export function estimateCost(usage: TokenUsage, model: string): number {
-  const pricing = MODEL_PRICING[model];
+  const normalized = normalizeModelName(model);
+  const pricing = MODEL_PRICING[normalized] || MODEL_PRICING[model];
 
   if (!pricing) {
     // Default to gpt-4o-mini pricing if model not found

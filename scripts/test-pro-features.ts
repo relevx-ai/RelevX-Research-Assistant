@@ -19,7 +19,7 @@
  *   --all                    Run all pro feature test scenarios
  *
  * Environment variables required:
- *   OPENAI_API_KEY
+ *   OPENROUTER_API_KEY
  *   BRAVE_SEARCH_API_KEY
  */
 
@@ -28,8 +28,9 @@ import * as dotenv from "dotenv";
 import * as path from "path";
 dotenv.config({ path: path.resolve(__dirname, "../.env"), override: true });
 
-import { setDefaultProviders } from "../packages/core/src/services/research-engine";
-import { createOpenAIProvider } from "../packages/core/src/services/llm";
+import { setDefaultSearchProvider } from "../packages/core/src/services/research-engine";
+import { initializeOpenRouter } from "../packages/core/src/services/llm";
+import { translateText } from "../packages/core/src/services/llm";
 import { createBraveSearchProvider } from "../packages/core/src/services/search";
 import { generateSearchQueriesWithRetry } from "../packages/core/src/services/llm";
 import { searchMultipleQueries } from "../packages/core/src/services/brave-search";
@@ -226,10 +227,7 @@ async function runScenario(scenario: TestScenario): Promise<void> {
           `6. Translating report from ${searchLang} (${LANGUAGE_NAMES[searchLang]}) to ${outputLang} (${LANGUAGE_NAMES[outputLang]})...`
         );
 
-        const openaiKey = process.env.OPENAI_API_KEY!;
-        const provider = createOpenAIProvider(openaiKey);
-
-        const translatedMarkdown = await provider.translateText(
+        const translatedMarkdown = await translateText(
           report.markdown,
           searchLang,
           outputLang
@@ -312,7 +310,7 @@ async function main() {
   const args = process.argv.slice(2);
 
   // Validate environment variables
-  const requiredEnvVars = ["OPENAI_API_KEY", "BRAVE_SEARCH_API_KEY"];
+  const requiredEnvVars = ["OPENROUTER_API_KEY", "BRAVE_SEARCH_API_KEY"];
   const missingVars = requiredEnvVars.filter((v) => !process.env[v]);
   if (missingVars.length > 0) {
     console.error("\nMissing required environment variables:");
@@ -323,13 +321,12 @@ async function main() {
 
   // Initialize providers
   console.log("\nInitializing providers...");
-  const openaiKey = process.env.OPENAI_API_KEY!;
+  initializeOpenRouter(process.env.OPENROUTER_API_KEY!);
   const braveKey = process.env.BRAVE_SEARCH_API_KEY!;
 
-  const llmProvider = createOpenAIProvider(openaiKey);
   const searchProvider = createBraveSearchProvider(braveKey);
-  setDefaultProviders(llmProvider, searchProvider);
-  console.log("Providers initialized (OpenAI + Brave Search)");
+  setDefaultSearchProvider(searchProvider);
+  console.log("Providers initialized (OpenRouter + Brave Search)");
 
   // Parse CLI args
   const getArg = (name: string): string | undefined => {

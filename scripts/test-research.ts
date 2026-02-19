@@ -8,7 +8,7 @@
  *   ts-node scripts/test-research.ts --mock
  *
  * Environment variables required:
- *   OPENAI_API_KEY
+ *   OPENROUTER_API_KEY
  *   BRAVE_SEARCH_API_KEY
  *   FIREBASE_SERVICE_ACCOUNT_JSON (optional for mock mode)
  */
@@ -20,9 +20,9 @@ dotenv.config({ path: path.resolve(__dirname, "../.env"), override: true });
 
 import {
   executeResearchForProject,
-  setDefaultProviders,
+  setDefaultSearchProvider,
 } from "../packages/core/src/services/research-engine";
-import { createOpenAIProvider } from "../packages/core/src/services/llm";
+import { initializeOpenRouter } from "../packages/core/src/services/llm";
 import { createBraveSearchProvider } from "../packages/core/src/services/search";
 
 async function testMockResearch() {
@@ -225,22 +225,22 @@ async function main() {
   // Check for mock mode
   if (args[0] === "--mock") {
     // Check for API keys
-    const openaiKey = process.env.OPENAI_API_KEY;
+    const openrouterKey = process.env.OPENROUTER_API_KEY;
     const braveKey = process.env.BRAVE_SEARCH_API_KEY;
 
-    if (!openaiKey || !braveKey) {
+    if (!openrouterKey || !braveKey) {
       console.error("\n✗ Error: Required API keys not set");
       console.error("Please set these environment variables:\n");
-      console.error("  export OPENAI_API_KEY=your-openai-key");
+      console.error("  export OPENROUTER_API_KEY=your-openrouter-key");
       console.error("  export BRAVE_SEARCH_API_KEY=your-brave-key\n");
       process.exit(1);
     }
 
     // Initialize providers
     console.log("\n✓ Initializing providers...");
-    const llmProvider = createOpenAIProvider(openaiKey);
+    initializeOpenRouter(openrouterKey);
     const searchProvider = createBraveSearchProvider(braveKey);
-    setDefaultProviders(llmProvider, searchProvider);
+    setDefaultSearchProvider(searchProvider);
 
     try {
       await testMockResearch();
@@ -272,22 +272,22 @@ async function main() {
   const [projectId, userId] = args;
 
   // Check for API keys
-  const openaiKey = process.env.OPENAI_API_KEY;
+  const openrouterKey = process.env.OPENROUTER_API_KEY;
   const braveKey = process.env.BRAVE_SEARCH_API_KEY;
 
-  if (!openaiKey || !braveKey) {
+  if (!openrouterKey || !braveKey) {
     console.error("\n✗ Error: Required API keys not set");
     console.error("Please set these environment variables:\n");
-    console.error("  export OPENAI_API_KEY=your-openai-key");
+    console.error("  export OPENROUTER_API_KEY=your-openrouter-key");
     console.error("  export BRAVE_SEARCH_API_KEY=your-brave-key\n");
     process.exit(1);
   }
 
   // Initialize providers
   console.log("\n✓ Initializing providers...");
-  const llmProvider = createOpenAIProvider(openaiKey);
+  initializeOpenRouter(openrouterKey);
   const searchProvider = createBraveSearchProvider(braveKey);
-  setDefaultProviders(llmProvider, searchProvider);
+  setDefaultSearchProvider(searchProvider);
 
   try {
     await testFullResearch(userId, projectId);

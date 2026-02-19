@@ -1,5 +1,5 @@
 /**
- * Search result filtering using OpenAI
+ * Search result filtering using OpenRouter
  */
 
 import { getClient } from "./client";
@@ -52,7 +52,7 @@ Snippet: ${r.description}
 
     const content = response.choices[0].message.content;
     if (!content) {
-      throw new Error("No content in OpenAI response");
+      throw new Error("No content in OpenRouter response");
     }
 
     const parsed = JSON.parse(content);

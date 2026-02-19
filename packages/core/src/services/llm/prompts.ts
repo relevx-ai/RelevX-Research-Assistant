@@ -348,7 +348,7 @@ export const REPORT_COMPILATION_PROMPTS: PromptConfig =
  */
 export function getClusteredReportCompilationPrompts(): PromptConfig {
   return createPromptConfig(
-    "clusteredReportCompilation",
+    "reportCompilation",
     `You are a senior research analyst writing a synthesized analytical report. You are receiving TOPIC CLUSTERS — groups of articles covering the same story/event from different sources. Your job is to combine all information into a coherent, theme-based analysis that is easy to scan quickly.
 
 **Report Structure:**

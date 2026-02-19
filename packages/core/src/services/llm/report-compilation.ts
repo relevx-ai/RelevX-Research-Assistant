@@ -1,5 +1,5 @@
 /**
- * Report compilation using OpenAI
+ * Report compilation using OpenRouter
  */
 
 import { getClient } from "./client";
@@ -114,7 +114,7 @@ ${contentBody}
 
     const content = response.choices[0].message.content;
     if (!content) {
-      throw new Error("No content in OpenAI response");
+      throw new Error("No content in OpenRouter response");
     }
 
     const parsed = JSON.parse(content);
@@ -328,7 +328,7 @@ export async function compileClusteredReport(
 
     const content = response.choices[0].message.content;
     if (!content) {
-      throw new Error("No content in OpenAI response");
+      throw new Error("No content in OpenRouter response");
     }
 
     const parsed = JSON.parse(content);
@@ -419,7 +419,7 @@ export async function generateReportSummary(
 
     const content = response.choices[0].message.content;
     if (!content) {
-      throw new Error("No content in OpenAI response");
+      throw new Error("No content in OpenRouter response");
     }
 
     const parsed = JSON.parse(content);

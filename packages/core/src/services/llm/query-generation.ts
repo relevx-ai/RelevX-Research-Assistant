@@ -1,5 +1,5 @@
 /**
- * Search query generation using OpenAI
+ * Search query generation using OpenRouter
  */
 
 import { getClient } from "./client";
@@ -110,7 +110,7 @@ export async function generateSearchQueries(
 
     const content = response.choices[0].message.content;
     if (!content) {
-      throw new Error("No content in OpenAI response");
+      throw new Error("No content in OpenRouter response");
     }
 
     // Parse the response - handle both array and object with queries array
@@ -126,7 +126,7 @@ export async function generateSearchQueries(
         "Unexpected response format. Received:",
         JSON.stringify(parsed, null, 2)
       );
-      throw new Error("Unexpected response format from OpenAI");
+      throw new Error("Unexpected response format from OpenRouter");
     }
 
     return queries.slice(0, 5); // Ensure max 5 queries

@@ -1,11 +1,10 @@
 /**
- * LLM Provider implementations
+ * LLM service functions
  */
 
-export { OpenAIProvider, createOpenAIProvider } from "./openai-provider";
-export type { LLMProvider } from "../../interfaces/llm-provider";
+export { initializeOpenRouter, getClient } from "./client";
 
-export { initializeOpenAI, getClient } from "./client";
+export { translateText, translateShortText } from "./translation";
 
 export {
   generateSearchQueries,
@@ -25,44 +24,24 @@ export {
 export {
   compileReport,
   compileReportWithRetry,
-  compileClusteredReport,
-  compileClusteredReportWithRetry,
   generateReportSummary,
   generateReportSummaryWithRetry,
   type CompileReportOptions,
-  type CompileClusteredReportOptions,
   type GenerateSummaryOptions,
 } from "./report-compilation";
 
 export {
-  clusterArticlesByTopic,
-  shouldCluster,
-  type ClusteringOptions,
-} from "./topic-clustering";
-
-export {
   analyzeCrossSources,
   analyzeCrossSourcesWithRetry,
-  analyzeClusteredCrossSources,
-  analyzeClusteredCrossSourcesWithRetry,
   formatAnalysisForReport,
   type CrossSourceAnalysis,
 } from "./cross-source-analysis";
-
-export {
-  generateEmbeddings,
-  generateEmbedding,
-  cosineSimilarity,
-  calculateSimilarityMatrix,
-  findSimilarPairs,
-} from "./embeddings";
 
 export {
   QUERY_GENERATION_PROMPTS,
   RELEVANCY_ANALYSIS_PROMPTS,
   CROSS_SOURCE_ANALYSIS_PROMPTS,
   REPORT_COMPILATION_PROMPTS,
-  CLUSTERED_REPORT_COMPILATION_PROMPTS,
   renderPrompt,
   getPromptConfig,
   type PromptConfig,
@@ -75,6 +54,4 @@ export type {
   RelevancyResult,
   ResultForReport,
   CompiledReport,
-  TopicCluster,
-  ArticleSource,
 } from "./types";

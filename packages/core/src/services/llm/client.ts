@@ -1,30 +1,38 @@
 /**
- * OpenAI client initialization and management
+ * OpenRouter client initialization and management
+ *
+ * Uses the OpenAI SDK with baseURL override to route all LLM calls
+ * through OpenRouter (OpenAI-API-compatible).
  */
 
 import OpenAI from "openai";
 
-// OpenAI client instance
-let openaiClient: OpenAI | null = null;
+// OpenRouter client instance
+let openrouterClient: OpenAI | null = null;
 
 /**
- * Initialize the OpenAI client
+ * Initialize the OpenRouter client
  * Must be called before using any other functions
  */
-export function initializeOpenAI(apiKey: string): void {
-  openaiClient = new OpenAI({
+export function initializeOpenRouter(apiKey: string): void {
+  openrouterClient = new OpenAI({
     apiKey,
+    baseURL: "https://openrouter.ai/api/v1",
+    defaultHeaders: {
+      "HTTP-Referer": "https://relevx.app",
+      "X-Title": "RelevX Research Assistant",
+    },
   });
 }
 
 /**
- * Get the OpenAI client instance
+ * Get the OpenRouter client instance
  */
 export function getClient(): OpenAI {
-  if (!openaiClient) {
+  if (!openrouterClient) {
     throw new Error(
-      "OpenAI client not initialized. Call initializeOpenAI() first."
+      "OpenRouter client not initialized. Call initializeOpenRouter() first."
     );
   }
-  return openaiClient;
+  return openrouterClient;
 }

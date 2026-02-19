@@ -16,7 +16,7 @@
  *   --iterations=N  Set max iterations (default: 3)
  *
  * Environment variables required:
- *   OPENAI_API_KEY
+ *   OPENROUTER_API_KEY
  *   SERPER_API_KEY (default) or BRAVE_SEARCH_API_KEY (if config uses brave)
  *   FIREBASE_SERVICE_ACCOUNT_JSON
  *   RESEND_API_KEY (for email delivery)
@@ -30,11 +30,11 @@ dotenv.config({ path: path.resolve(__dirname, "../.env"), override: true });
 
 import {
   executeResearchForProject,
-  setDefaultProviders,
+  setDefaultSearchProvider,
+  initializeOpenRouter,
   loadConfig,
   db,
 } from "../packages/core/src";
-import { createOpenAIProvider } from "../packages/core/src/services/llm";
 import {
   createBraveSearchProvider,
   createSerperSearchProvider,
@@ -270,7 +270,7 @@ async function main() {
     searchProviderName === "brave" ? "BRAVE_SEARCH_API_KEY" : "SERPER_API_KEY";
 
   const requiredEnvVars = [
-    "OPENAI_API_KEY",
+    "OPENROUTER_API_KEY",
     searchEnvVar,
     "FIREBASE_SERVICE_ACCOUNT_JSON",
   ];
@@ -286,9 +286,7 @@ async function main() {
 
   // Initialize providers
   console.log("\n✓ Initializing providers...");
-  const openaiKey = process.env.OPENAI_API_KEY!;
-
-  const llmProvider = createOpenAIProvider(openaiKey);
+  initializeOpenRouter(process.env.OPENROUTER_API_KEY!);
 
   let searchProvider: SearchProvider;
   if (searchProviderName === "brave") {
@@ -297,9 +295,9 @@ async function main() {
     searchProvider = createSerperSearchProvider(process.env.SERPER_API_KEY!);
   }
 
-  setDefaultProviders(llmProvider, searchProvider);
+  setDefaultSearchProvider(searchProvider);
   console.log(
-    `✓ Providers initialized (OpenAI + ${searchProvider.getName()})`
+    `✓ Providers initialized (OpenRouter + ${searchProvider.getName()})`
   );
 
   try {

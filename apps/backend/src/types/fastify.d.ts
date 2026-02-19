@@ -15,7 +15,12 @@ declare module "fastify" {
       app: import("firebase-admin/app").App;
       remoteConfig: any;
     };
-    aiInterface: LLMProvider;
+    aiInterface: {
+      query(
+        messages: Array<{ role: string; content: string }>,
+        temperature?: number
+      ): Promise<any>;
+    };
     queueService: QueueService;
     queueHealth: {
       researchWorker: import("bullmq").Worker;

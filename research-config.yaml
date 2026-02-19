@@ -7,58 +7,48 @@
 # LLM Provider Settings
 # =============================================================================
 llm:
-  # Default provider: "openai" | "gemini"
-  provider: "openai"
+  # Default provider
+  provider: "openrouter"
 
   # Model configurations for each step of the research pipeline
+  # Model names use OpenRouter format: "provider/model"
   models:
     # Query generation - creates search queries from project description
     queryGeneration:
-      model: "gpt-4o-mini"
+      model: "openai/gpt-4o-mini"
       temperature: 0.8 # Higher for creative, diverse query generation
       responseFormat: "json_object"
 
     # Search result filtering - filters results before fetching content
     searchFiltering:
-      model: "gpt-4o-mini"
+      model: "openai/gpt-4o-mini"
       temperature: 0.2 # Low for consistent binary decisions
       responseFormat: "json_object"
 
     # Relevancy analysis - scores content relevance to project
     relevancyAnalysis:
-      model: "gpt-4o-mini"
+      model: "openai/gpt-4o-mini"
       temperature: 0.3 # Low for consistent scoring
       responseFormat: "json_object"
 
     # Cross-source analysis - synthesizes themes, connections, contradictions across sources
     # This is the "thinking" step before report writing. Use a stronger model here for better synthesis.
     crossSourceAnalysis:
-      model: "gpt-4o"
+      model: "openai/gpt-4o"
       temperature: 0.4 # Moderate for analytical reasoning
       responseFormat: "json_object"
 
     # Report compilation - generates the final research report
     reportCompilation:
-      model: "gpt-4o-mini"
+      model: "openai/gpt-4o-mini"
       temperature: 0.3 # Low for factual, consistent output
-      responseFormat: "json_object"
-
-    # Clustered report compilation - for multi-source topic reports
-    clusteredReportCompilation:
-      model: "gpt-4o-mini"
-      temperature: 0.3
       responseFormat: "json_object"
 
     # Report summary - generates summary
     reportSummary:
-      model: "gpt-4o-mini"
+      model: "openai/gpt-4o-mini"
       temperature: 0.2 # Low for consistent, factual output
       responseFormat: "json_object"
-
-  # Embeddings configuration (for semantic similarity/clustering)
-  embeddings:
-    model: "text-embedding-3-small"
-    dimensions: 1536
 
 # =============================================================================
 # Search Settings
@@ -123,17 +113,6 @@ research:
 
   # LLM batch processing
   relevancyBatchSize: 10
-
-# =============================================================================
-# Topic Clustering Settings
-# =============================================================================
-clustering:
-  # Enable topic clustering for report generation
-  enabled: true
-
-  # Similarity threshold for grouping articles (0.0 - 1.0)
-  # Higher = stricter matching, fewer clusters
-  similarityThreshold: 0.85
 
 # =============================================================================
 # Report Generation Settings
