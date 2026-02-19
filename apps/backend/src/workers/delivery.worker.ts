@@ -12,9 +12,11 @@ import {
   calculateNextRunAt,
   incrementUserOneShotRun,
   kAnalyticsMonthlyDateKey,
+  recordRunMetrics,
 } from "core";
 import type { Project, NewDeliveryLog, RelevxUserProfile } from "core";
 import type { QueueService } from "../services/queue.service.js";
+import { getFreePlanId } from "../utils/billing.js";
 
 export interface DeliveryJobData {
   userId: string;
@@ -138,6 +140,20 @@ export function createDeliveryProcessor(
         status: "success",
         deliveredAt: now,
       });
+
+      // Record run metrics for top-down analytics
+      if (deliveryLog.stats) {
+        try {
+          const planType =
+            userData.planId === getFreePlanId() ? "free" : "paid";
+          await recordRunMetrics(db, planType, deliveryLog.stats);
+        } catch (err: any) {
+          log.warn(
+            { userId, projectId, error: err.message },
+            "Failed to record run metrics for top-down analytics"
+          );
+        }
+      }
     }
 
     // Post-delivery: update project state and schedule next cycle

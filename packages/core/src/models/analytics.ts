@@ -9,8 +9,22 @@ export interface AnalyticsDocument {
   [key: string]: any;
 }
 
+/** Per-plan metrics for top-down analytics (free vs paid) */
+export interface TopDownPlanMetrics {
+  active_daily: number;
+  active_weekly: number;
+  active_monthly: number;
+  sum_research_duration_ms: number;
+  sum_estimated_cost_usd: number;
+  sum_search_api_calls: number;
+  run_count: number;
+}
+
 export interface TopDownAnalyticsDocument
-  extends Omit<AnalyticsDocument, "num_completed_daily_research_projects"> {}
+  extends Omit<AnalyticsDocument, "num_completed_daily_research_projects"> {
+  free?: Partial<TopDownPlanMetrics>;
+  paid?: Partial<TopDownPlanMetrics>;
+}
 
 export interface UserAnalyticsDocument
   extends Omit<

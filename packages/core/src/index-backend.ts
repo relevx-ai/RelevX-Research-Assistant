@@ -50,6 +50,7 @@ export type {
 export type {
   AnalyticsDocument,
   TopDownAnalyticsDocument,
+  TopDownPlanMetrics,
   UserAnalyticsDocument,
 } from "./models/analytics";
 
@@ -62,7 +63,12 @@ export {
   kAnalyticsUserMonthlyDoc,
   kAnalyticsDailyDateKey,
   kAnalyticsMonthlyDateKey,
+  updateActiveProjectCount,
+  recordRunMetrics,
+  getActiveProjectsByFrequency,
 } from "./utils/analytics";
+
+export type { PlanType, RecurringFrequency } from "./utils/analytics";
 
 export type {
   ImproveProjectDescriptionRequest,
