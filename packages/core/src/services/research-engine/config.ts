@@ -33,7 +33,6 @@ export interface LLMConfig {
     relevancyAnalysis: ModelConfig;
     crossSourceAnalysis: ModelConfig;
     reportCompilation: ModelConfig;
-    clusteredReportCompilation: ModelConfig;
     reportSummary: ModelConfig;
   };
 }
@@ -135,11 +134,6 @@ export const DEFAULT_CONFIG: ResearchConfig = {
         responseFormat: "json_object",
       },
       reportCompilation: {
-        model: "openai/gpt-4o-mini",
-        temperature: 0.3,
-        responseFormat: "json_object",
-      },
-      clusteredReportCompilation: {
         model: "openai/gpt-4o-mini",
         temperature: 0.3,
         responseFormat: "json_object",

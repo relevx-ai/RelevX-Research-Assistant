@@ -44,12 +44,6 @@ llm:
       temperature: 0.3 # Low for factual, consistent output
       responseFormat: "json_object"
 
-    # Clustered report compilation - for multi-source topic reports
-    clusteredReportCompilation:
-      model: "openai/gpt-4o-mini"
-      temperature: 0.3
-      responseFormat: "json_object"
-
     # Report summary - generates summary
     reportSummary:
       model: "openai/gpt-4o-mini"

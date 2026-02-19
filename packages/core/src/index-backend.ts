@@ -93,6 +93,7 @@ export {
   executeResearchForProject,
   setDefaultSearchProvider,
   loadConfig,
+  getModelConfig,
 } from "./services/research-engine";
 
 // Search providers

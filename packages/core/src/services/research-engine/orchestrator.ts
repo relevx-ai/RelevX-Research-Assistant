@@ -164,8 +164,6 @@ export async function executeResearchForProject(
 
   // Merge options with config defaults
   const maxIterations = options?.maxIterations ?? researchConfig.maxIterations;
-  const queriesPerIteration =
-    options?.queriesPerIteration ?? searchConfig.queriesPerIteration;
   const resultsPerQuery =
     options?.resultsPerQuery ?? searchConfig.resultsPerQuery;
   const maxUrlsToExtract =
@@ -175,8 +173,9 @@ export async function executeResearchForProject(
   const defaults = getDefaultSearchProvider();
   const searchProvider = options?.searchProvider || defaults.search;
 
-  // Get model name for cost estimation
+  // Get model names for cost estimation
   const reportModel = getModelConfig("reportCompilation").model;
+  const translationModel = getModelConfig("reportSummary").model;
 
   // Initialize token usage tracker for cost estimation
   const tokenUsage = createTokenUsageTracker();
@@ -276,22 +275,11 @@ export async function executeResearchForProject(
       // 7.1 Generate search queries
       console.log("Generating search queries...");
 
-      // Build additional context with keywords if provided
-      let additionalContext: string | undefined = undefined;
-      if (
-        project.searchParameters?.requiredKeywords &&
-        project.searchParameters.requiredKeywords.length > 0
-      ) {
-        additionalContext = `Please incorporate the following keywords into the search queries: ${project.searchParameters.requiredKeywords.join(
-          ", "
-        )}. These keywords are important for improving search result relevance.`;
-      }
-
       const generatedQueries = await generateSearchQueriesWithRetry(
         project.description,
-        undefined, // searchParams
+        project.searchParameters, // searchParams (keywords, language, etc.)
         undefined, // previousQueries
-        queriesPerIteration, // iteration
+        iteration, // current iteration (1, 2, 3) for broadening strategy
         3 // maxRetries
       );
 
@@ -300,7 +288,7 @@ export async function executeResearchForProject(
       console.log(`Generated ${queries.length} queries`);
 
       // Track token usage for query generation
-      const queryGenInput = project.description + (additionalContext || "");
+      const queryGenInput = project.description;
       const queryGenOutput = JSON.stringify(generatedQueries);
       tokenUsage.inputTokens += estimateTokens(queryGenInput) + 500; // +500 for system prompt
       tokenUsage.outputTokens += estimateTokens(queryGenOutput);
@@ -511,7 +499,7 @@ export async function executeResearchForProject(
       const relevancyResults = await analyzeRelevancyWithRetry(
         contentsToAnalyze,
         project.description,
-        undefined, // searchParams
+        project.searchParameters, // searchParams (keywords for relevancy scoring)
         relevancyThreshold,
         3 // maxRetries
       );
@@ -825,7 +813,7 @@ export async function executeResearchForProject(
             outputTokens: totalTranslationOutputTokens,
             totalTokens: totalTranslationInputTokens + totalTranslationOutputTokens
           },
-          reportModel
+          translationModel
         );
       } catch (error) {
         console.error('Translation failed, delivering untranslated report:', error);
@@ -888,7 +876,7 @@ export async function executeResearchForProject(
             outputTokens: totalTranslationOutputTokens,
             totalTokens: totalTranslationInputTokens + totalTranslationOutputTokens
           },
-          reportModel
+          translationModel
         );
       } catch (error) {
         console.error('Default translation to English failed:', error);

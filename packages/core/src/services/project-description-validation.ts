@@ -7,6 +7,7 @@
 
 import type { ValidateProjectDescriptionResult } from "../models/ai";
 import { getClient } from "./llm/client";
+import { getModelConfig } from "./research-engine/config";
 import type { ChatCompletionMessageParam } from "openai/resources/chat/completions";
 
 const VALIDATION_TEMPERATURE = 0.2;
@@ -53,24 +54,25 @@ export async function validateProjectDescription(
   const userPrompt = USER_PROMPT_TEMPLATE.replace("DESCRIPTION", trimmed);
 
   const client = getClient();
+  const { model } = getModelConfig("queryGeneration");
   const msgs: ChatCompletionMessageParam[] = [
     { role: "system", content: SYSTEM_PROMPT },
     { role: "user", content: userPrompt },
   ];
 
   const response = await client.chat.completions.create({
-    model: "openai/gpt-4o-mini",
+    model,
     temperature: VALIDATION_TEMPERATURE,
     messages: msgs,
     response_format: { type: "json_object" },
   });
 
-  const content = response.choices[0].message.content;
-  if (!content) {
+  const choice = response.choices[0];
+  if (!choice?.message?.content) {
     throw new Error("No content in AI validation response");
   }
 
-  const parsed = JSON.parse(content) as { valid?: boolean; reason?: string };
+  const parsed = JSON.parse(choice.message.content) as { valid?: boolean; reason?: string };
 
   if (typeof parsed?.valid !== "boolean") {
     throw new Error("Invalid response format from AI validation");

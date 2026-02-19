@@ -11,7 +11,6 @@ export type {
   LlmMessage,
   SearchResultToFilter,
   FilteredSearchResult,
-  TopicCluster,
 } from "./../services/llm/types";
 
 export type {

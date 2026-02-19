@@ -7,9 +7,14 @@ export default fp(async (app: any) => {
     throw new Error("Missing required API key OPENROUTER_API_KEY");
   }
 
-  // Import getClient from core — the OpenRouter client is already
-  // initialized by the providers utility before plugins load.
-  const { getClient } = await import("core");
+  const { initializeOpenRouter, getClient, getModelConfig } = await import(
+    "core"
+  );
+
+  // Ensure the OpenRouter client is initialized for non-worker code paths
+  // (e.g. project description improvement, validation). The worker has its
+  // own initializeProviders() call, but the main server process needs this.
+  initializeOpenRouter(openrouterKey);
 
   const aiInterface = {
     async query(
@@ -17,6 +22,8 @@ export default fp(async (app: any) => {
       temperature?: number
     ): Promise<any> {
       const client = getClient();
+      const { model, temperature: configTemp } =
+        getModelConfig("queryGeneration");
 
       const msgs = messages.map((m) => ({
         role: m.role as "system" | "user" | "assistant",
@@ -24,18 +31,24 @@ export default fp(async (app: any) => {
       }));
 
       const response = await client.chat.completions.create({
-        model: "openai/gpt-4o-mini",
-        temperature: temperature ?? 0.7,
+        model,
+        temperature: temperature ?? configTemp ?? 0.7,
         messages: msgs,
         response_format: { type: "json_object" },
       });
 
-      const content = response.choices[0].message.content;
-      if (!content) {
+      const choice = response.choices[0];
+      if (!choice?.message?.content) {
         throw new Error("No content in OpenRouter response");
       }
 
-      return JSON.parse(content);
+      try {
+        return JSON.parse(choice.message.content);
+      } catch {
+        throw new Error(
+          "Failed to parse JSON from OpenRouter response"
+        );
+      }
     },
   };
 

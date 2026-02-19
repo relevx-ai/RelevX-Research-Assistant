@@ -24,20 +24,15 @@ export {
 export {
   compileReport,
   compileReportWithRetry,
-  compileClusteredReport,
-  compileClusteredReportWithRetry,
   generateReportSummary,
   generateReportSummaryWithRetry,
   type CompileReportOptions,
-  type CompileClusteredReportOptions,
   type GenerateSummaryOptions,
 } from "./report-compilation";
 
 export {
   analyzeCrossSources,
   analyzeCrossSourcesWithRetry,
-  analyzeClusteredCrossSources,
-  analyzeClusteredCrossSourcesWithRetry,
   formatAnalysisForReport,
   type CrossSourceAnalysis,
 } from "./cross-source-analysis";
@@ -47,7 +42,6 @@ export {
   RELEVANCY_ANALYSIS_PROMPTS,
   CROSS_SOURCE_ANALYSIS_PROMPTS,
   REPORT_COMPILATION_PROMPTS,
-  CLUSTERED_REPORT_COMPILATION_PROMPTS,
   renderPrompt,
   getPromptConfig,
   type PromptConfig,
@@ -60,6 +54,4 @@ export type {
   RelevancyResult,
   ResultForReport,
   CompiledReport,
-  TopicCluster,
-  ArticleSource,
 } from "./types";

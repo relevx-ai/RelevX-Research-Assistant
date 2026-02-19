@@ -1,5 +1,5 @@
 /**
- * Type definitions for OpenAI service
+ * Type definitions for LLM service
  */
 
 /**
