@@ -249,11 +249,7 @@ export function ProjectCard({ project, allProjects = [], onProjectDeleted, onPro
   return (
     <>
       <Card
-        className={`group glass-card hover:scale-[1.02] transition-all duration-300 h-full flex flex-col cursor-pointer ${
-          project.status === "running"
-            ? "!border-teal-500 !border-2 shadow-glow-sm"
-            : ""
-        }`}
+        className="group glass-card hover:scale-[1.02] transition-all duration-300 h-full flex flex-col cursor-pointer"
         onClick={handleCardClick}
       >
         <CardHeader className="p-4 sm:p-6">
