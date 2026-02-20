@@ -63,7 +63,9 @@ Generate 5 search queries using different strategies:
 4. TEMPORAL queries - include recency indicators like "latest", "recent", "new" (do NOT include specific years or dates)
 
 Each query should be distinct and approach the topic from different angles.
-Queries should be concise but include enough context for precise results. Use natural search language.`,
+Queries should be concise but include enough context for precise results. Use natural search language.
+
+If the project description includes emphasis preferences (e.g., "focus on market trends", "prioritize technical details"), bias your query strategies toward those areas while still maintaining diversity.`,
     `Today's Date: {{currentDate}}
 
 Project Description:
@@ -197,7 +199,9 @@ You must identify:
 
 5. **Synthesized Narrative**: What is the overall story when you connect all the dots? What are the key takeaways a reader should understand about this topic right now?
 
-Be analytical, not descriptive. Don't just summarize what each source says — draw conclusions by combining information across sources.`,
+Be analytical, not descriptive. Don't just summarize what each source says — draw conclusions by combining information across sources.
+
+**User Preferences:** The project description may contain preferences about what to emphasize (e.g., "focus on market trends", "prioritize technical comparisons", "highlight regulatory impacts"). If present, prioritize discovering and surfacing themes related to those preferences. Give them more prominence in your theme ordering and overall narrative. Do not ignore other significant themes — still include them, but weight the user's stated interests more heavily.`,
     `Project: {{projectTitle}}
 Description: {{projectDescription}}
 
@@ -303,7 +307,9 @@ Default to bullet points for listing facts, stats, or updates. Use prose only wh
 - Add a conclusion section that just restates what was said
 - Use numbered citation markers like [1], [2] in the report body (use natural attribution instead)
 
-**Tone:** Analytical, direct, factual. Like a research briefing from an analyst who has read everything and is telling you what matters.`,
+**Tone:** Analytical, direct, factual. Like a research briefing from an analyst who has read everything and is telling you what matters.
+
+**User Preferences Override:** The project description (provided in the user message) may contain output preferences such as formatting requests (e.g., "use tables for comparisons", "include more charts/visuals", "use detailed prose instead of bullet points"), emphasis directives (e.g., "focus on market trends", "highlight competitive landscape"), depth preferences (e.g., "high-level summaries only", "deep technical detail"), or structural requests (e.g., "include an executive summary", "organize by company"). If such preferences are present, they take priority over the default formatting and structure rules above. Adapt your report structure, formatting style, level of detail, and thematic emphasis accordingly. If no such preferences are stated, follow the defaults above exactly.`,
     `Project: {{projectTitle}}
 Description: {{projectDescription}}
 Report Frequency: {{frequency}}
@@ -397,7 +403,9 @@ Default to bullet points for listing facts, stats, or updates. Use prose only wh
 - Add a conclusion that restates what was said
 - Use numbered citation markers like [1], [2] in the report body (use natural attribution instead)
 
-**Tone:** Analytical, direct, factual.`,
+**Tone:** Analytical, direct, factual.
+
+**User Preferences Override:** The project description (provided in the user message) may contain output preferences such as formatting requests (e.g., "use tables for comparisons", "include more charts/visuals", "use detailed prose instead of bullet points"), emphasis directives (e.g., "focus on market trends", "highlight competitive landscape"), depth preferences (e.g., "high-level summaries only", "deep technical detail"), or structural requests (e.g., "include an executive summary", "organize by company"). If such preferences are present, they take priority over the default formatting and structure rules above. Adapt your report structure, formatting style, level of detail, and thematic emphasis accordingly. If no such preferences are stated, follow the defaults above exactly.`,
     `Project: {{projectTitle}}
 Description: {{projectDescription}}
 Report Frequency: {{frequency}}
@@ -451,7 +459,8 @@ export function getReportSummaryPrompts(): PromptConfig {
 - Be direct and concise - no filler words
 - Write in complete sentences
 - Do NOT start with "This report covers..." or similar meta-statements
-- Jump straight into the key findings`,
+- Jump straight into the key findings
+- If the project description contains preferences about emphasis or style (e.g., "focus on market trends", "high-level summaries"), reflect those preferences in what you choose to highlight in the summary`,
     `Write a 2-3 sentence summary for this research report:
 
 Project: {{projectTitle}}
