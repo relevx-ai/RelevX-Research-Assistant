@@ -388,12 +388,6 @@ export default function HomePage() {
         </motion.div>
       </section>
 
-      {/* Footer */}
-      <footer className="border-t border-border/30 py-8 mt-20">
-        <div className="container-wide text-center text-sm text-muted-foreground/60">
-          <p>&copy; 2026 RelevX. All rights reserved.</p>
-        </div>
-      </footer>
     </div>
   );
 }
