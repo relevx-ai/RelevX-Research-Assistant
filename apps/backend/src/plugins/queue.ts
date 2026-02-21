@@ -80,7 +80,7 @@ export default fp(
       {
         connection: redisInstance.duplicate() as unknown as ConnectionOptions,
         concurrency: parseInt(process.env.MAX_CONCURRENT_RESEARCH || "3", 10),
-        lockDuration: 5 * 60_000, // 5 min — research can take a few minutes
+        lockDuration: 10 * 60_000, // 10 min — research can take a few minutes
         stalledInterval: 2 * 60_000, // check for stalled jobs every 2 min
       }
     );
