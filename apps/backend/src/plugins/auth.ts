@@ -8,6 +8,27 @@ export default fp(async (app: any) => {
       return;
     }
 
+    // Admin routes require a separate API key (not Firebase user auth).
+    if (req.routeOptions.url?.startsWith("/admin/")) {
+      const apiKey = req.headers?.["x-admin-api-key"] as string;
+      const expectedKey = process.env.ADMIN_API_KEY;
+
+      if (!expectedKey) {
+        req.log.error("ADMIN_API_KEY not configured — admin routes are disabled");
+        const err: any = new Error("Admin access unavailable");
+        err.statusCode = 503;
+        throw err;
+      }
+
+      if (!apiKey || apiKey !== expectedKey) {
+        const err: any = new Error("Unauthorized");
+        err.statusCode = 401;
+        err.code = "unauthorized";
+        throw err;
+      }
+      return;
+    }
+
     const idToken = req.headers?.["authorization"] as string;
 
     // Branch: Firebase Auth JWT

@@ -80,6 +80,8 @@ export default fp(
       {
         connection: redisInstance.duplicate() as unknown as ConnectionOptions,
         concurrency: parseInt(process.env.MAX_CONCURRENT_RESEARCH || "3", 10),
+        lockDuration: 10 * 60_000, // 10 min — research can take a few minutes
+        stalledInterval: 2 * 60_000, // check for stalled jobs every 2 min
       }
     );
 
@@ -89,6 +91,8 @@ export default fp(
       {
         connection: redisInstance.duplicate() as unknown as ConnectionOptions,
         concurrency: 2,
+        lockDuration: 2 * 60_000, // 2 min — delivery should be quick
+        stalledInterval: 60_000, // check every 1 min
         limiter: {
           max: 2,
           duration: 1200, // 2 jobs per 1.2 seconds
@@ -97,20 +101,47 @@ export default fp(
     );
 
     // Log worker events
+    const maxAttempts: Record<string, number> = { research: 3, delivery: 5 };
     for (const [name, worker] of [
       ["research", researchWorker],
       ["delivery", deliveryWorker],
     ] as const) {
       worker.on("failed", (job: any, err: Error) => {
-        app.log.error(
-          { queue: name, jobId: job?.id, error: err.message },
-          `${name} job failed`
-        );
+        const isTerminal =
+          job && job.attemptsMade >= (maxAttempts[name] ?? Infinity);
+        if (isTerminal) {
+          app.log.fatal(
+            {
+              queue: name,
+              jobId: job.id,
+              attempts: job.attemptsMade,
+              data: job.data,
+              error: err.message,
+            },
+            `TERMINAL: ${name} job exhausted all retries`
+          );
+        } else {
+          app.log.error(
+            {
+              queue: name,
+              jobId: job?.id,
+              attempt: job?.attemptsMade,
+              error: err.message,
+            },
+            `${name} job failed (will retry)`
+          );
+        }
       });
       worker.on("completed", (job: any) => {
         app.log.info(
           { queue: name, jobId: job.id },
           `${name} job completed`
+        );
+      });
+      worker.on("stalled", (jobId: string) => {
+        app.log.warn(
+          { queue: name, jobId },
+          `${name} job stalled — lock expired, will be retried or failed`
         );
       });
     }
@@ -261,6 +292,9 @@ async function runStartupRecovery(
       const project = { id: doc.id, ...doc.data() } as Project;
       if (!project.nextRunAt || !project.userId) continue;
 
+      // Skip if a research job already exists in the queue
+      if (await queueService.hasResearchJob(project.userId, doc.id)) continue;
+
       try {
         await queueService.scheduleResearch({
           userId: project.userId,
@@ -339,8 +373,18 @@ async function runStartupRecovery(
     for (const doc of needsDeliverySnap.docs) {
       const project = { id: doc.id, ...doc.data() } as Project;
       if (!project.userId) continue;
-      // Skip deleted projects
+      // Skip deleted or errored projects (errored = delivery already failed terminally)
       if ((project.status as string) === "deleted") continue;
+      if ((project.status as string) === "error") {
+        app.log.info(
+          { projectId: doc.id },
+          "Skipping delivery recovery for errored project"
+        );
+        continue;
+      }
+
+      // Skip if a delivery job already exists in the queue
+      if (await queueService.hasDeliveryJob(project.userId, doc.id)) continue;
 
       try {
         await queueService.scheduleDelivery({

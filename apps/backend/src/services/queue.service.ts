@@ -137,14 +137,36 @@ export class QueueService {
   }
 
   /**
-   * Cancel all pending jobs for a project (used on delete/pause).
+   * Check if a research job already exists for a project (any state).
+   * Used by recovery scan to skip re-scheduling when the job is fine.
    */
-  async cancelProjectJobs(userId: string, projectId: string): Promise<void> {
-    await this.removeJob(
+  async hasResearchJob(userId: string, projectId: string): Promise<boolean> {
+    return this.jobExistsByPrefix(
       this.researchQueue,
       `research:${userId}:${projectId}`
     );
-    await this.removeJob(
+  }
+
+  /**
+   * Check if a delivery job already exists for a project (any state).
+   */
+  async hasDeliveryJob(userId: string, projectId: string): Promise<boolean> {
+    return this.jobExistsByPrefix(
+      this.deliveryQueue,
+      `delivery:${userId}:${projectId}`
+    );
+  }
+
+  /**
+   * Cancel all pending jobs for a project (used on delete/pause).
+   * Removes both the base job ID and any timestamp-suffixed variants.
+   */
+  async cancelProjectJobs(userId: string, projectId: string): Promise<void> {
+    await this.removeJobsByPrefix(
+      this.researchQueue,
+      `research:${userId}:${projectId}`
+    );
+    await this.removeJobsByPrefix(
       this.deliveryQueue,
       `delivery:${userId}:${projectId}`
     );
@@ -177,6 +199,58 @@ export class QueueService {
     } catch {
       // Job may not exist — safe to treat as removed
       return true;
+    }
+  }
+
+  /**
+   * Check if any job with the given prefix exists in active, delayed, or waiting state.
+   */
+  private async jobExistsByPrefix(
+    queue: Queue,
+    prefix: string
+  ): Promise<boolean> {
+    // Check exact base ID first (fast path)
+    const baseJob = await queue.getJob(prefix);
+    if (baseJob) {
+      const state = await baseJob.getState();
+      if (state === "active" || state === "delayed" || state === "waiting") {
+        return true;
+      }
+    }
+
+    // Check for timestamp-suffixed variants in delayed/waiting
+    for (const state of ["delayed", "waiting"] as const) {
+      const jobs = await queue.getJobs([state]);
+      for (const job of jobs) {
+        if (job.id && job.id.startsWith(prefix)) return true;
+      }
+    }
+    return false;
+  }
+
+  /**
+   * Remove all jobs whose ID starts with `prefix` (handles timestamp-suffixed
+   * variants like `research:uid:pid:1709876543210`).
+   */
+  private async removeJobsByPrefix(
+    queue: Queue,
+    prefix: string
+  ): Promise<void> {
+    // 1. Remove the exact base ID
+    await this.removeJob(queue, prefix);
+
+    // 2. Scan delayed and waiting jobs for timestamp-suffixed variants
+    for (const state of ["delayed", "waiting"] as const) {
+      const jobs = await queue.getJobs([state]);
+      for (const job of jobs) {
+        if (job.id && job.id !== prefix && job.id.startsWith(prefix)) {
+          try {
+            await job.remove();
+          } catch {
+            // Job may have already been picked up — ignore
+          }
+        }
+      }
     }
   }
 }
