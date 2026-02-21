@@ -8,6 +8,12 @@ export default fp(async (app: any) => {
       return;
     }
 
+    // Bull Board serves HTML/JS/CSS that browsers fetch without custom headers,
+    // so we skip API-key auth here. Secure access via SSH tunnel or firewall instead.
+    if (req.routeOptions.url?.startsWith("/admin/queues")) {
+      return;
+    }
+
     // Admin routes require a separate API key (not Firebase user auth).
     if (req.routeOptions.url?.startsWith("/admin/")) {
       const apiKey = req.headers?.["x-admin-api-key"] as string;
