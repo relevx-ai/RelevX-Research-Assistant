@@ -35,10 +35,8 @@ import Link from "next/link";
 
 import { relevx_api } from "@/lib/client";
 
-// Feature comparison data
-const featureComparison = [
-  { feature: "Active Projects", free: "1", pro: "5" },
-  { feature: "Manual Runs", free: "1 / month", pro: "5 / month" },
+// Static feature comparison rows (plan-driven rows are computed in the component)
+const staticFeatureComparison = [
   {
     feature: "Research Frequency",
     free: "Daily, Weekly, Monthly",
@@ -104,6 +102,23 @@ function PricingContent() {
     const interval = plan.infoBillingInterval ?? "month";
     return interval === billingInterval;
   });
+
+  // Build feature comparison with plan-driven rows
+  const freePlan = plans.find((p) => p.infoPrice === 0);
+  const proPlan = plans.find((p) => p.infoPrice > 0);
+  const featureComparison = [
+    {
+      feature: "Active Projects",
+      free: String(freePlan?.settingsMaxActiveProjects ?? 1),
+      pro: String(proPlan?.settingsMaxActiveProjects ?? 5),
+    },
+    {
+      feature: "Manual Runs",
+      free: `${freePlan?.settingsOneShotRunsPerMonth ?? 0} / month`,
+      pro: `${proPlan?.settingsOneShotRunsPerMonth ?? 0} / month`,
+    },
+    ...staticFeatureComparison,
+  ];
 
   // Handle success/failure dialog state
   const successParam = searchParams.get("success");
