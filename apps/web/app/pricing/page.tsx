@@ -25,7 +25,6 @@ import {
   HelpCircle,
   Home,
   ChevronRight,
-  Zap,
 } from "lucide-react";
 import { useAuth } from "@/contexts/auth-context";
 import { signInWithGoogle } from "@/lib/auth";
@@ -266,17 +265,6 @@ function PricingContent() {
                         Billed annually at ${plan.infoPrice}
                       </p>
                     )}
-                  </div>
-
-                  <div className="flex items-center gap-2 pb-4 px-3 py-2 rounded-md bg-teal-500/10 border border-teal-500/20">
-                    <Zap className="h-4 w-4 text-teal-400 flex-shrink-0" />
-                    <span className="text-sm font-medium text-teal-300">
-                      {plan.settingsOneShotRunsPerMonth ?? 0} Manual
-                      {(plan.settingsOneShotRunsPerMonth ?? 0) === 1
-                        ? " Run"
-                        : " Runs"}{" "}
-                      / month
-                    </span>
                   </div>
 
                   {userProfile && userProfile.planId == plan.id ? (
