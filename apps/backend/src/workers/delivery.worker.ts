@@ -125,6 +125,21 @@ export function createDeliveryProcessor(
       );
 
       if (!emailResult.success) {
+        const isLastAttempt = job.attemptsMade + 1 >= (job.opts.attempts ?? 5);
+        if (isLastAttempt) {
+          // Terminal failure — clear preparedDeliveryLogId to prevent the
+          // recovery scan from re-enqueuing this delivery infinitely.
+          log.error(
+            { userId, projectId, attempt: job.attemptsMade + 1 },
+            "Delivery exhausted all retries — clearing preparedDeliveryLogId"
+          );
+          await projectRef.update({
+            status: "error",
+            lastError: `Delivery failed after ${job.attemptsMade + 1} attempts: ${emailResult.error || "unknown"}`,
+            preparedDeliveryLogId: null,
+            updatedAt: Date.now(),
+          });
+        }
         throw new Error(
           `Email delivery failed: ${emailResult.error || "unknown error"}`
         );
