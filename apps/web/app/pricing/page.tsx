@@ -39,7 +39,7 @@ import { relevx_api } from "@/lib/client";
 // Feature comparison data
 const featureComparison = [
   { feature: "Active Projects", free: "1", pro: "5" },
-  { feature: "Run Now Uses", free: "1 / month", pro: "5 / month" },
+  { feature: "Manual Runs", free: "1 / month", pro: "5 / month" },
   {
     feature: "Research Frequency",
     free: "Daily, Weekly, Monthly",
@@ -54,7 +54,6 @@ const featureComparison = [
   { feature: "Advanced Domain Filtering", free: false, pro: true },
   { feature: "Advanced Keyword Filtering", free: false, pro: true },
   { feature: "Language Search Filter", free: false, pro: true },
-  { feature: "Location/Region Search Filter", free: false, pro: true },
   { feature: "Multi-Language Report Translation", free: false, pro: true },
   { feature: "Priority Support", free: false, pro: true },
 ];
@@ -272,10 +271,10 @@ function PricingContent() {
                   <div className="flex items-center gap-2 pb-4 px-3 py-2 rounded-md bg-teal-500/10 border border-teal-500/20">
                     <Zap className="h-4 w-4 text-teal-400 flex-shrink-0" />
                     <span className="text-sm font-medium text-teal-300">
-                      {plan.settingsOneShotRunsPerMonth ?? 0} Run Now
+                      {plan.settingsOneShotRunsPerMonth ?? 0} Manual
                       {(plan.settingsOneShotRunsPerMonth ?? 0) === 1
-                        ? " use"
-                        : " uses"}{" "}
+                        ? " Run"
+                        : " Runs"}{" "}
                       / month
                     </span>
                   </div>
