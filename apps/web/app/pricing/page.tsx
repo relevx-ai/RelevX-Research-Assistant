@@ -237,7 +237,7 @@ function PricingContent() {
           </div>
         </div>
 
-        <div className="grid gap-4 sm:gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-4 sm:gap-6 grid-cols-1 md:grid-cols-2 max-w-3xl mx-auto">
           {filteredPlans.map((plan) => {
             const isAnnual = plan.infoBillingInterval === "year";
             const displayPrice =
@@ -414,7 +414,7 @@ function PricingContent() {
             </p>
           </div>
 
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto max-w-3xl mx-auto">
             <table className="w-full border-collapse">
               <thead>
                 <tr className="border-b border-border/50">
