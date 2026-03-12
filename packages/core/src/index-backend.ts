@@ -65,6 +65,7 @@ export {
   kAnalyticsMonthlyDateKey,
   updateActiveProjectCount,
   recordRunMetrics,
+  recordUserCompletedResearchProject,
   getActiveProjectsByFrequency,
 } from "./utils/analytics";
 

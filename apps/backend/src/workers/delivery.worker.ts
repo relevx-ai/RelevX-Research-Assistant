@@ -13,6 +13,7 @@ import {
   incrementUserOneShotRun,
   kAnalyticsMonthlyDateKey,
   recordRunMetrics,
+  recordUserCompletedResearchProject,
 } from "core";
 import type { Project, NewDeliveryLog, RelevxUserProfile } from "core";
 import type { QueueService } from "../services/queue.service.js";
@@ -166,6 +167,18 @@ export function createDeliveryProcessor(
           log.warn(
             { userId, projectId, error: err.message },
             "Failed to record run metrics for top-down analytics"
+          );
+        }
+      }
+
+      // Record per-user daily research project count (num_completed_daily_research_projects)
+      if (!isOneShot) {
+        try {
+          await recordUserCompletedResearchProject(db, userId, projectId);
+        } catch (err: any) {
+          log.warn(
+            { userId, projectId, error: err.message },
+            "Failed to record user completed research project for analytics"
           );
         }
       }

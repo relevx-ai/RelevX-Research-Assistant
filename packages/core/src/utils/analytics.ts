@@ -1,5 +1,6 @@
 import type { UserAnalyticsDocument } from "../models/analytics";
 import type { DeliveryStats } from "../models/delivery-log";
+import { FieldValue } from "firebase-admin/firestore";
 
 const kAnalyticsCollection = "analytics/research-v1/";
 export const kAnalyticsCollectionTopDown = (dateKey: string) =>
@@ -148,6 +149,26 @@ export async function recordRunMetrics(
       { merge: true }
     );
   });
+}
+
+/**
+ * Record a completed research project for per-user daily analytics.
+ * Appends projectId to num_completed_daily_research_projects for the current day.
+ * Call when a delivery completes successfully so the user's daily count is accurate.
+ */
+export async function recordUserCompletedResearchProject(
+  db: any,
+  userId: string,
+  projectId: string
+): Promise<void> {
+  const dateKey = kAnalyticsDailyDateKey(new Date());
+  const ref = db.doc(kAnalyticsUserCollection(userId, dateKey));
+  await ref.set(
+    {
+      num_completed_daily_research_projects: FieldValue.arrayUnion(projectId),
+    },
+    { merge: true }
+  );
 }
 
 /**
