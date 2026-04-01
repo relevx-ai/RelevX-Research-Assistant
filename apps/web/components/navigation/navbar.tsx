@@ -109,6 +109,14 @@ export function Navbar() {
               asChild
               className="h-auto px-2 sm:px-3 py-1.5 text-xs sm:text-sm font-medium transition-all duration-300 hover:scale-105 hover:bg-teal-500/10 hover:text-teal-300"
             >
+              <Link href="/blogs">Blogs</Link>
+            </Button>
+
+            <Button
+              variant="ghost"
+              asChild
+              className="h-auto px-2 sm:px-3 py-1.5 text-xs sm:text-sm font-medium transition-all duration-300 hover:scale-105 hover:bg-teal-500/10 hover:text-teal-300"
+            >
               <Link href="/pricing">Pricing</Link>
             </Button>
 

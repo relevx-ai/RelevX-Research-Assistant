@@ -24,6 +24,8 @@ export type {
 
 export type { Plan, PlanInfo, FetchPlansResponse } from "./models/plans";
 
+export type { BlogPost, FetchBlogsResponse } from "./models/blogs";
+
 export type {
   RelevxUserBilling,
   BillingIntentResponse,

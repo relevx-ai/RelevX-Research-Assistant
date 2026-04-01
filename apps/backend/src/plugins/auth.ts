@@ -4,7 +4,11 @@ import fp from "fastify-plugin";
 export default fp(async (app: any) => {
   app.addHook("preHandler", async (req: any, _rep: any) => {
     // Allow unauthenticated health checks so uptime probes don't require auth.
-    if (req.routeOptions.url === "/healthz" || req.routeOptions.url === "/api/v1/products/plans") {
+    if (
+      req.routeOptions.url === "/healthz" ||
+      req.routeOptions.url === "/api/v1/products/plans" ||
+      req.routeOptions.url === "/api/v1/products/blogs"
+    ) {
       return;
     }
 

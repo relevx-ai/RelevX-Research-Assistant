@@ -1,5 +1,5 @@
 import type { FastifyPluginAsync } from "fastify";
-import type { PlanInfo, Plan } from "core";
+import type { PlanInfo, Plan, BlogPost } from "core";
 
 export async function getRemoteConfigParam(remoteConfig: any, key: string) {
   try {
@@ -24,6 +24,33 @@ export async function getPlans(remoteConfig: any): Promise<Plan[]> {
       throw new Error("Parsed plans is not an array or valid object");
     }
     return plansArray;
+  }
+
+  return [];
+}
+
+/**
+ * Loads company blog posts from Remote Config key "blogs".
+ * Expected JSON: array of { slug, title, publishedAt?, excerpt?, html, pinned?, metaDescription? }.
+ */
+export async function getBlogs(remoteConfig: any): Promise<BlogPost[]> {
+  const config = await getRemoteConfigParam(remoteConfig, "blogs");
+  const blogsRaw = config?.defaultValue?.value;
+  if (blogsRaw) {
+    const parsed = JSON.parse(blogsRaw);
+    const blogsArray: BlogPost[] = Array.isArray(parsed)
+      ? parsed
+      : Object.values(parsed);
+
+    if (!Array.isArray(blogsArray)) {
+      throw new Error("Parsed blogs is not an array or valid object");
+    }
+    return blogsArray.filter(
+      (b): b is BlogPost =>
+        typeof b?.slug === "string" &&
+        typeof b?.title === "string" &&
+        typeof b?.html === "string"
+    );
   }
 
   return [];
@@ -85,6 +112,31 @@ const routes: FastifyPluginAsync = async (app) => {
           error: {
             code: "internal_error",
             message: "Failed to fetch plans",
+            ...(isDev ? { detail } : {}),
+          },
+        });
+      }
+    }
+  );
+
+  app.get(
+    "/blogs",
+    { preHandler: [app.rlPerRoute(10)] },
+    async (req: any, rep) => {
+      try {
+        const blogs: BlogPost[] = await getBlogs(remoteConfig);
+        return rep.status(200).send({
+          ok: true,
+          blogs,
+        });
+      } catch (err: any) {
+        const isDev = process.env.NODE_ENV !== "production";
+        const detail = err instanceof Error ? err.message : String(err);
+        req.log?.error({ detail }, "/blogs failed");
+        return rep.status(500).send({
+          error: {
+            code: "internal_error",
+            message: "Failed to fetch blogs",
             ...(isDev ? { detail } : {}),
           },
         });
