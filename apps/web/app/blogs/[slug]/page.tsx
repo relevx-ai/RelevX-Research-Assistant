@@ -1,19 +1,10 @@
-import Link from "next/link";
-import { notFound } from "next/navigation";
-import type { Metadata } from "next";
-import { Home, ChevronRight } from "lucide-react";
-import { fetchBlogsServer } from "@/lib/blogs";
+"use client";
 
-function descriptionForPost(post: {
-  metaDescription?: string;
-  excerpt?: string;
-}): string | undefined {
-  if (post.metaDescription?.trim()) return post.metaDescription.trim();
-  if (!post.excerpt?.trim()) return undefined;
-  const plain = post.excerpt.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
-  if (!plain) return undefined;
-  return plain.length > 160 ? `${plain.slice(0, 157)}…` : plain;
-}
+import Link from "next/link";
+import { notFound, useParams } from "next/navigation";
+import { useEffect } from "react";
+import { Home, ChevronRight } from "lucide-react";
+import { useBlogsSession } from "@/components/blogs/blogs-session-provider";
 
 const htmlShellClass =
   "blog-html text-foreground max-w-none " +
@@ -27,47 +18,40 @@ const htmlShellClass =
   "[&_li]:mb-1 [&_blockquote]:border-l-2 [&_blockquote]:border-teal-500/40 [&_blockquote]:pl-4 [&_blockquote]:italic [&_blockquote]:text-muted-foreground " +
   "[&_code]:text-sm [&_code]:bg-muted/50 [&_code]:px-1 [&_code]:py-0.5 [&_code]:rounded [&_pre]:bg-muted/30 [&_pre]:p-4 [&_pre]:rounded-lg [&_pre]:overflow-x-auto [&_pre]:mb-4";
 
-type PageProps = { params: Promise<{ slug: string }> };
+export default function BlogPostPage() {
+  const params = useParams();
+  const slug = typeof params.slug === "string" ? params.slug : "";
+  const { blogs, loading, error } = useBlogsSession();
 
-export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-  const { slug } = await params;
-  try {
-    const blogs = await fetchBlogsServer();
-    const post = blogs.find((b) => b.slug === slug);
-    if (!post) return { title: "Post not found — RelevX" };
-    const description = descriptionForPost(post);
-    const title = `${post.title} | RelevX Blog`;
-    return {
-      title,
-      description,
-      openGraph: {
-        title,
-        description,
-        type: "article",
-        siteName: "RelevX",
-      },
-      twitter: {
-        card: "summary_large_image",
-        title,
-        description,
-      },
-    };
-  } catch {
-    return { title: "Blog — RelevX" };
-  }
-}
+  const post = slug ? blogs.find((b) => b.slug === slug) : undefined;
 
-export default async function BlogPostPage({ params }: PageProps) {
-  const { slug } = await params;
-  let blogs: Awaited<ReturnType<typeof fetchBlogsServer>> = [];
-  try {
-    blogs = await fetchBlogsServer();
-  } catch {
-    throw new Error("Failed to fetch blogs");
+  useEffect(() => {
+    if (post?.title) {
+      document.title = `${post.title} | RelevX Blog`;
+    }
+  }, [post?.title]);
+
+  if (!loading && !error && slug && !post) {
+    notFound();
   }
 
-  const post = blogs.find((b) => b.slug === slug);
-  if (!post) notFound();
+  if (loading) {
+    return (
+      <div className="container py-6 sm:py-8 px-4 sm:px-6 max-w-3xl mx-auto">
+        <p className="text-center text-muted-foreground text-sm">Loading…</p>
+      </div>
+    );
+  }
+
+  if (error || !post) {
+    return (
+      <div className="container py-6 sm:py-8 px-4 sm:px-6 max-w-3xl mx-auto">
+        <p className="text-center text-destructive text-sm">
+          {error ?? "We could not load this post."}
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="container py-6 sm:py-8 px-4 sm:px-6 max-w-3xl mx-auto">

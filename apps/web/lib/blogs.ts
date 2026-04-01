@@ -1,6 +1,37 @@
 import type { BlogPost, FetchBlogsResponse } from "core";
 import { relevx_api } from "./client";
-import { functionsBaseUrl } from "./functions-proxy";
+
+/** Client-only: one successful fetch per tab until full reload or {@link resetBlogsSessionCache}. */
+let sessionBlogs: BlogPost[] | null = null;
+let sessionInflight: Promise<BlogPost[]> | null = null;
+
+export function resetBlogsSessionCache(): void {
+  sessionBlogs = null;
+  sessionInflight = null;
+}
+
+/**
+ * Returns all blogs from a single in-tab request; reuses the same promise/result for the session.
+ */
+export function getBlogsSessionOnce(): Promise<BlogPost[]> {
+  if (sessionBlogs !== null) {
+    return Promise.resolve(sessionBlogs);
+  }
+  if (sessionInflight) {
+    return sessionInflight;
+  }
+  sessionInflight = fetchBlogs()
+    .then((data) => {
+      sessionBlogs = data;
+      sessionInflight = null;
+      return data;
+    })
+    .catch((err) => {
+      sessionInflight = null;
+      throw err;
+    });
+  return sessionInflight;
+}
 
 function postTimestamp(post: BlogPost): number {
   if (!post.publishedAt) return 0;
@@ -33,17 +64,4 @@ export async function fetchBlogs(): Promise<BlogPost[]> {
   }
 
   return sortBlogPostsForListing(response.blogs ?? []);
-}
-
-/**
- * Server-side fetch for RSC (no Authorization header; public route).
- */
-export async function fetchBlogsServer(): Promise<BlogPost[]> {
-  const url = `${functionsBaseUrl()}/api/v1/products/blogs`;
-  const res = await fetch(url, { cache: "no-store" });
-  if (!res.ok) {
-    throw new Error("Failed to fetch blogs");
-  }
-  const data = (await res.json()) as FetchBlogsResponse;
-  return data.blogs ?? [];
 }

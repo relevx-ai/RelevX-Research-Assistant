@@ -1,30 +1,11 @@
+"use client";
+
 import Link from "next/link";
-import type { Metadata } from "next";
 import { Home, ChevronRight } from "lucide-react";
-import { fetchBlogsServer, sortBlogPostsForListing } from "@/lib/blogs";
+import { useBlogsSession } from "@/components/blogs/blogs-session-provider";
 
-export const metadata: Metadata = {
-  title: "Blog | RelevX — AI Research & Inbox Insights",
-  description:
-    "Learn how teams use RelevX for automated research, curated briefs, and inbox delivery. Tips for competitive intel, monitoring, and staying informed without the tab overload.",
-  openGraph: {
-    title: "RelevX Blog — AI-Powered Research Assistant",
-    description:
-      "Guides and ideas for set-and-forget research, source-quality filtering, and insights delivered to your inbox.",
-    siteName: "RelevX",
-  },
-};
-
-export default async function BlogsPage() {
-  let blogs: Awaited<ReturnType<typeof fetchBlogsServer>> = [];
-  let loadError: string | null = null;
-  try {
-    blogs = await fetchBlogsServer();
-  } catch {
-    loadError = "We could not load posts right now. Please try again later.";
-  }
-
-  const sorted = sortBlogPostsForListing(blogs);
+export default function BlogsPage() {
+  const { sortedBlogs, loading, error } = useBlogsSession();
 
   return (
     <div className="container py-6 sm:py-8 px-4 sm:px-6 max-w-3xl mx-auto">
@@ -54,15 +35,17 @@ export default async function BlogsPage() {
         </p>
       </div>
 
-      {loadError ? (
-        <p className="text-center text-destructive text-sm">{loadError}</p>
-      ) : sorted.length === 0 ? (
+      {loading ? (
+        <p className="text-center text-muted-foreground text-sm">Loading posts…</p>
+      ) : error ? (
+        <p className="text-center text-destructive text-sm">{error}</p>
+      ) : sortedBlogs.length === 0 ? (
         <p className="text-center text-muted-foreground text-sm">
           No posts yet. Check back soon.
         </p>
       ) : (
         <ul className="flex flex-col gap-4 sm:gap-5 list-none p-0 m-0">
-          {sorted.map((post) => (
+          {sortedBlogs.map((post) => (
             <li key={post.slug}>
               <Link href={`/blogs/${post.slug}`} className="block group">
                 <div className="rounded-xl border border-border/50 bg-muted/10 p-5 sm:p-6 transition-all duration-300 group-hover:border-teal-500/30 group-hover:bg-muted/20 group-hover:shadow-glow-sm">

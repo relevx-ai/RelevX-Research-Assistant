@@ -1,7 +1,14 @@
+"use client";
+
 import Link from "next/link";
 import { Home, ChevronRight } from "lucide-react";
+import { useEffect } from "react";
 
 export default function BlogPostNotFound() {
+  useEffect(() => {
+    document.title = "Post not found | RelevX Blog";
+  }, []);
+
   return (
     <div className="container py-6 sm:py-8 px-4 sm:px-6 max-w-3xl mx-auto">
       <nav

@@ -3,7 +3,7 @@
  */
 
 import { useState, useEffect } from "react";
-import { fetchBlogs } from "@/lib/blogs";
+import { getBlogsSessionOnce } from "@/lib/blogs";
 import type { BlogPost } from "core";
 
 interface UseBlogsResult {
@@ -22,7 +22,7 @@ export function useBlogs(): UseBlogsResult {
       setLoading(true);
       setError(null);
       try {
-        const list = await fetchBlogs();
+        const list = await getBlogsSessionOnce();
         setBlogs(list);
       } catch (err) {
         console.error("Error fetching blogs:", err);

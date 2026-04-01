@@ -1,18 +1,17 @@
+"use client";
+
 /**
- * Root layout for Next.js app
+ * Root layout for Next.js app (client-only; no RSC / Metadata API).
  */
 
-import type { Metadata } from "next";
 import "./globals.css";
 import { AuthProvider } from "@/contexts/auth-context";
 import { Navbar } from "@/components/navigation/navbar";
 import { Footer } from "@/components/footer";
 
-export const metadata: Metadata = {
-  title: "RelevX - AI-Powered Research Assistant",
-  description:
-    "Set-and-forget research assistant that delivers curated insights straight to your inbox",
-};
+const defaultTitle = "RelevX - AI-Powered Research Assistant";
+const defaultDescription =
+  "Set-and-forget research assistant that delivers curated insights straight to your inbox";
 
 export default function RootLayout({
   children,
@@ -21,6 +20,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className="dark">
+      <head>
+        <title>{defaultTitle}</title>
+        <meta name="description" content={defaultDescription} />
+      </head>
       <body className="antialiased min-h-screen relative overflow-x-hidden">
         {/* Subtle star field */}
         <div className="fixed inset-0 bg-stars opacity-40 pointer-events-none" />
