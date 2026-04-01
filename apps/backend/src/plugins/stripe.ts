@@ -17,5 +17,23 @@ export default fp(async (app) => {
 
   app.decorate("stripe", stripe);
 
-  app.log.info("Stripe initialized successfully");
+  try {
+    const stripeKeyMode = stripeSecretKey.startsWith("sk_test_")
+      ? "test"
+      : stripeSecretKey.startsWith("sk_live_")
+        ? "live"
+        : "unknown";
+    const account = await stripe.accounts.retrieve();
+    app.log.info(
+      {
+        stripeKeyMode,
+        stripeAccountType: account.type,
+        stripeAccountCountry: account.country,
+        stripeChargesEnabled: account.charges_enabled,
+      },
+      "Stripe initialized successfully"
+    );
+  } catch (err) {
+    app.log.warn({ err }, "Stripe initialized, but failed to retrieve account");
+  }
 });

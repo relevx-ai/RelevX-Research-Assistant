@@ -31,13 +31,19 @@ const routes: FastifyPluginAsync = async (app) => {
 
         const userDoc = await userRef.get();
         const user = await firebase.auth.getUser(userId);
+        /** One key per Firebase user so concurrent sign-in handlers cannot create duplicate Stripe customers. */
+        const stripeCustomerIdempotencyKey = `relevx-firebase-user-${userId}`;
         let response: CreateProfileResponse;
         if (!userDoc.exists) {
-          const customer = await stripe.customers.create({
-            email: user.email,
-            phone: user.phoneNumber,
-            name: user.displayName,
-          });
+          const customer = await stripe.customers.create(
+            {
+              email: user.email,
+              phone: user.phoneNumber,
+              name: user.displayName,
+              metadata: { firebaseUid: userId },
+            },
+            { idempotencyKey: stripeCustomerIdempotencyKey }
+          );
 
           const userData: RelevxUserProfile = {
             email: user.email || "",
@@ -78,23 +84,35 @@ const routes: FastifyPluginAsync = async (app) => {
             lastLoginAt: new Date().toISOString(),
           };
 
-          // check to see if user has valid stripe customer id
-          if (
-            !userData.billing.stripeCustomerId ||
-            (await stripe.customers.retrieve(userData.billing.stripeCustomerId))
-              .lastResponse.statusCode !== 200
-          ) {
-            const customer = await stripe.customers.create({
-              email: user.email,
-              phone: user.phoneNumber,
-              name: user.displayName,
-            });
+          let stripeCustomerId = userData.billing.stripeCustomerId;
+          if (stripeCustomerId) {
+            try {
+              const existing = await stripe.customers.retrieve(stripeCustomerId);
+              if ("deleted" in existing && existing.deleted === true) {
+                stripeCustomerId = "";
+              }
+            } catch {
+              stripeCustomerId = "";
+            }
+          }
+
+          if (!stripeCustomerId) {
+            const customer = await stripe.customers.create(
+              {
+                email: user.email ?? undefined,
+                phone: user.phoneNumber ?? undefined,
+                name: user.displayName ?? undefined,
+                metadata: { firebaseUid: userId },
+              },
+              { idempotencyKey: stripeCustomerIdempotencyKey }
+            );
             updateFields["billing.stripeCustomerId"] = customer.id;
+            stripeCustomerId = customer.id;
           }
 
           // check users subscriptions
           const active_subscriptions = await stripe.subscriptions.list({
-            customer: userData.billing.stripeCustomerId,
+            customer: stripeCustomerId,
             status: "active",
           });
 

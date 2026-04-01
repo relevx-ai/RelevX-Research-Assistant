@@ -4,6 +4,24 @@ import type Stripe from "stripe";
 import { isUserSubscribed } from "../utils/billing.js";
 import { getPlans } from "./products.js";
 
+/** Webhook payloads may send Stripe resource IDs as strings or expanded objects. */
+function stripeObjectId(
+  value:
+    | string
+    | Stripe.Customer
+    | Stripe.Subscription
+    | Stripe.DeletedCustomer
+    | null
+    | undefined
+): string | null {
+  if (value == null) return null;
+  if (typeof value === "string") return value;
+  if (typeof value === "object" && "id" in value && typeof value.id === "string") {
+    return value.id;
+  }
+  return null;
+}
+
 const routes: FastifyPluginAsync = async (app) => {
   const firebase = app.firebase;
   const db = firebase.db;
@@ -11,7 +29,13 @@ const routes: FastifyPluginAsync = async (app) => {
   const remoteConfig = firebase.remoteConfig;
 
   app.get("/healthz", async (_req, rep) => {
-    return rep.send({ ok: true });
+    const sk = process.env.FASTIFY_PUBLIC_STRIPE_SECRET_KEY ?? "";
+    const stripeMode = sk.startsWith("sk_test_")
+      ? "test"
+      : sk.startsWith("sk_live_")
+        ? "live"
+        : "unknown";
+    return rep.send({ ok: true, stripeMode });
   });
 
   app.post(
@@ -42,8 +66,8 @@ const routes: FastifyPluginAsync = async (app) => {
       if (event.type === "checkout.session.completed") {
         const session = event.data.object as Stripe.Checkout.Session;
 
-        const subscriptionId = session.subscription;
-        const customerId = session.customer;
+        const subscriptionId = stripeObjectId(session.subscription);
+        const customerId = stripeObjectId(session.customer);
         const metadata = session.metadata;
 
         if (!metadata) {
@@ -55,59 +79,91 @@ const routes: FastifyPluginAsync = async (app) => {
         }
 
         if (metadata && metadata.planId && metadata.userId) {
-          // Create or update user document in Firestore
           const userRef = db.collection("users").doc(metadata.userId);
           const userDoc = await userRef.get();
 
           const planData = (await getPlans(remoteConfig)).find(
             (plan) => plan.id === metadata.planId
-          ) as Plan;
+          ) as Plan | undefined;
           if (!planData) {
             app.log.error(
-              "Plan not found in Stripe Session Event or does not exist in firestore"
+              { planId: metadata.planId },
+              "Plan not found for checkout.session.completed"
             );
-          }
-
-          if (!userDoc.exists) {
+          } else if (!subscriptionId || !customerId) {
             app.log.error(
-              "User not found in Stripe Session Event or does not exist in firestore"
+              {
+                subscriptionId,
+                customerId,
+                sessionId: session.id,
+                mode: session.mode,
+              },
+              "checkout.session.completed missing subscription or customer id"
+            );
+          } else if (!userDoc.exists) {
+            app.log.error(
+              { userId: metadata.userId },
+              "User not found for checkout.session.completed"
             );
           } else {
             const userData = userDoc.data() as RelevxUserProfile;
 
             if (userData.billing.stripeCustomerId !== customerId) {
-              app.log.error(
-                "Users customer id does not match the stripe session customer id"
-              );
-            } else {
-              const newUserData = {
-                ...userData,
-                planId: metadata.planId,
-                freeTrailRedeemed:
-                  userData.freeTrailRedeemed ||
-                  planData.infoName === "Free Trial",
-                updatedAt: new Date().toISOString(),
-                billing: {
-                  ...userData.billing,
-                  stripeSubscriptionId: subscriptionId,
+              app.log.warn(
+                {
+                  firestoreCustomerId: userData.billing.stripeCustomerId,
+                  sessionCustomerId: customerId,
+                  userId: metadata.userId,
                 },
-              };
+                "Stripe session customer differs from Firestore; using session customer"
+              );
+            }
 
-              if (
-                !(await isUserSubscribed(
-                  newUserData as RelevxUserProfile,
-                  stripe
-                ))
-              ) {
-                app.log.error("User is not subscribed");
-              } else {
-                // Update user document in Firestore
-                await userRef.update(newUserData);
+            const freeTrailRedeemed =
+              userData.freeTrailRedeemed || planData.infoName === "Free Trial";
+
+            await userRef.update({
+              planId: metadata.planId,
+              freeTrailRedeemed,
+              updatedAt: new Date().toISOString(),
+              "billing.stripeCustomerId": customerId,
+              "billing.stripeSubscriptionId": subscriptionId,
+            });
+
+            const verifyProfile: RelevxUserProfile = {
+              ...userData,
+              planId: metadata.planId,
+              freeTrailRedeemed,
+              billing: {
+                ...userData.billing,
+                stripeCustomerId: customerId,
+                stripeSubscriptionId: subscriptionId,
+              },
+            };
+            try {
+              const ok = await isUserSubscribed(verifyProfile, stripe);
+              if (!ok) {
+                app.log.warn(
+                  { subscriptionId, userId: metadata.userId },
+                  "Post-checkout subscription verification did not report active/trialing (Firestore still updated)"
+                );
               }
+            } catch (verifyErr) {
+              app.log.warn(
+                { verifyErr, subscriptionId, userId: metadata.userId },
+                "Post-checkout subscription verification threw (Firestore still updated)"
+              );
             }
 
             app.log.info(
-              `checkout.session.completed: ${JSON.stringify(session)}`
+              {
+                event: "checkout.session.completed",
+                userId: metadata.userId,
+                planId: metadata.planId,
+                subscriptionId,
+                customerId,
+              },
+              "Firestore user plan updated after checkout"
             );
           }
         }
